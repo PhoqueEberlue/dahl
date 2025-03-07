@@ -1,0 +1,3 @@
+- Make a wrapper for starpu matrix/block to provide nice accesors such as get(x, y, z), maybe we can even hide data acquiring under the hood, it can be nice.
+- fix cross correlation that isn't working
+- less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
