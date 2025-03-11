@@ -12,13 +12,13 @@ void test_convolution()
     const size_t filter_size = 3;
     convolution conv = create_convolution(input_shape, filter_size, num_filters);
 
-    assert(conv.filter_shape.x == num_filters);
+    assert(conv.filter_shape.x == filter_size);
     assert(conv.filter_shape.y == filter_size);
-    assert(conv.filter_shape.z == filter_size);
+    assert(conv.filter_shape.z == num_filters);
 
-    assert(conv.output_shape.x == num_filters);
-    assert(conv.output_shape.y == 7); // 9 - 3 + 1
-    assert(conv.output_shape.z == 10); // 12 - 3 + 1
+    assert(conv.output_shape.x == 7); // 9 - 3 + 1
+    assert(conv.output_shape.y == 10); // 12 - 3 + 1
+    assert(conv.output_shape.z == num_filters);
 
     assert(conv.filters_handle != nullptr);
     assert(conv.biases_handle != nullptr);
@@ -28,6 +28,8 @@ void test_convolution()
     
     starpu_data_handle_t output_handle = forward_pass(conv, input_handle);
 
+    matrix_print_from_handle(input_handle);
+    block_print_from_handle(conv.filters_handle);
     block_print_from_handle(output_handle);
 
     size_t ldy = starpu_block_get_local_ldy(output_handle);
@@ -35,13 +37,15 @@ void test_convolution()
 
     starpu_data_acquire(output_handle, STARPU_R);
 
-    fp_dahl* output = (fp_dahl*)starpu_block_get_local_ptr(output_handle);
+    dahl_fp* output = (dahl_fp*)starpu_block_get_local_ptr(output_handle);
 
-    // take value at 0, 0, with filter 0 applied
-    fp_dahl res = output[(1 * ldz) + (1 * ldy) + 0];
-    printf("Res: %f", res);
-    
-    // assert(res == 19'831);
+    // take value at 0, 0, with filter 1 applied
+    dahl_fp res = output[(1 * ldz) + (0 * ldy) + 0];
+    assert(res == 74);
+
+    // take value at 1, 0, with filter 1 applied
+    res = output[(1 * ldz) + (0 * ldy) + 1];
+    assert(res == 158);
 
     starpu_data_release(output_handle);
 

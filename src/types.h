@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-typedef double fp_dahl;
+typedef double dahl_fp;
 
 typedef struct
 {
