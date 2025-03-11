@@ -40,18 +40,35 @@ starpu_data_handle_t forward_pass(convolution conv, const starpu_data_handle_t i
 {
     starpu_data_handle_t output_handle = block_init(conv.output_shape);
 
-    struct starpu_task* task = starpu_task_create();
-    task->cl = &cl_cross_correlation_2d;
-    task->handles[0] = input_handle;
-    task->handles[1] = conv.filters_handle;
-    task->handles[2] = output_handle;
-    task->synchronous = 1;
- 
-    int ret = starpu_task_submit(task);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_block_filter_depth_block,
+		.nchildren = conv.num_filters
+	};
 
+	starpu_data_partition(output_handle, &f);
+	starpu_data_partition(conv.filters_handle, &f);
 
-    ret = starpu_task_insert(&cl_relu, STARPU_RW, output_handle);
+    for (int i = 0; i < conv.num_filters; i++)
+    {
+		starpu_data_handle_t sub_output = starpu_data_get_sub_data(output_handle, 1, i);
+		starpu_data_handle_t sub_filters = starpu_data_get_sub_data(conv.filters_handle, 1, i);
+
+        struct starpu_task* task = starpu_task_create();
+        task->cl = &cl_cross_correlation_2d;
+        task->handles[0] = input_handle;
+        task->handles[1] = sub_filters;
+        task->handles[2] = sub_output;
+        task->synchronous = 0;
+     
+        int ret = starpu_task_submit(task);
+        STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+    }
+    
+	starpu_data_unpartition(output_handle, STARPU_MAIN_RAM);
+	starpu_data_unpartition(conv.filters_handle, STARPU_MAIN_RAM);
+
+    int ret = starpu_task_insert(&cl_relu, STARPU_RW, output_handle);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
 
     starpu_task_wait_for_all();

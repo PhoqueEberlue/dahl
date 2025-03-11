@@ -23,12 +23,15 @@ void test_convolution()
     assert(conv.filters_handle != nullptr);
     assert(conv.biases_handle != nullptr);
 
-    starpu_data_handle_t input_handle = matrix_init(input_shape);
-    matrix_fill_random(input_handle);
+    // Here we will pass only one image (input) to forward pass, that why z=1, but we can imagine having multiple images and applying
+    // starpu filters on the block.
+    const shape3d inputs_shape = { .x = 9, .y = 12, .z = 1 };
+    starpu_data_handle_t input_handle = block_init(inputs_shape);
+    block_fill_random(input_handle);
     
     starpu_data_handle_t output_handle = forward_pass(conv, input_handle);
 
-    matrix_print_from_handle(input_handle);
+    block_print_from_handle(input_handle);
     block_print_from_handle(conv.filters_handle);
     block_print_from_handle(output_handle);
 
@@ -41,11 +44,11 @@ void test_convolution()
 
     // take value at 0, 0, with filter 1 applied
     dahl_fp res = output[(1 * ldz) + (0 * ldy) + 0];
-    assert(res == 74);
+    assert(res == 82);
 
     // take value at 1, 0, with filter 1 applied
     res = output[(1 * ldz) + (0 * ldy) + 1];
-    assert(res == 158);
+    assert(res == 0);
 
     starpu_data_release(output_handle);
 
