@@ -41,4 +41,62 @@ static struct starpu_codelet cl_relu =
     .model = &perf_model_relu
 };
 
+
+// Sum the elements of a block over Z axis and fill output block (but will be considered as a matrix)
+// arg: input, output
+void sum_z_axis(void *buffers[2], void *cl_arg);
+
+static struct starpu_perfmodel perf_model_sum_z_axis =
+{
+    .type = STARPU_HISTORY_BASED,
+    .symbol = "perf_model_sum_z_axis"
+};
+ 
+ 
+static struct starpu_codelet cl_sum_z_axis =
+{
+    .cpu_funcs = { sum_z_axis },
+    .nbuffers = 2,
+    .modes = { STARPU_R, STARPU_W },
+    .model = &perf_model_sum_z_axis
+};
+
+// Scale a block with cl_arg
+// arg: input
+void scal(void *buffers[1], void *cl_arg);
+
+static struct starpu_perfmodel perf_model_scal =
+{
+    .type = STARPU_HISTORY_BASED,
+    .symbol = "perf_model_scal"
+};
+ 
+ 
+static struct starpu_codelet cl_scal =
+{
+    .cpu_funcs = { scal },
+    .nbuffers = 1,
+    .modes = { STARPU_RW },
+    .model = &perf_model_scal
+};
+
+// arg: block a, block b
+// op: a -= b
+void sub(void *buffers[2], void *cl_arg);
+
+static struct starpu_perfmodel perf_model_sub =
+{
+    .type = STARPU_HISTORY_BASED,
+    .symbol = "perf_model_sub"
+};
+ 
+ 
+static struct starpu_codelet cl_sub =
+{
+    .cpu_funcs = { sub },
+    .nbuffers = 2,
+    .modes = { STARPU_RW, STARPU_R },
+    .model = &perf_model_sub
+};
+
 #endif //!DAHL_CODELETS_H
