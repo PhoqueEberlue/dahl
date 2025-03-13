@@ -22,24 +22,24 @@
 
 static __global__ void vector_mult_cuda(size_t n, float *val, float factor)
 {
-        unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
+    unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
 
-	if (i < n)
-               val[i] *= factor;
+    if (i < n)
+        val[i] *= factor;
 }
 
 extern "C" void scal_cuda_func(void *buffers[], void *_args)
 {
-        float *factor = (float *)_args;
+    float *factor = (float *)_args;
 
-        /* length of the vector */
-        size_t n = STARPU_VECTOR_GET_NX(buffers[0]);
-        /* local copy of the vector pointer */
-        float *val = (float *)STARPU_VECTOR_GET_PTR(buffers[0]);
-	unsigned threads_per_block = 64;
-	unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
+    /* length of the vector */
+    size_t n = STARPU_VECTOR_GET_NX(buffers[0]);
+    /* local copy of the vector pointer */
+    float *val = (float *)STARPU_VECTOR_GET_PTR(buffers[0]);
+    unsigned threads_per_block = 64;
+    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
 
-        vector_mult_cuda<<<nblocks,threads_per_block,0,starpu_cuda_get_local_stream()>>>(n, val, *factor);
-        cudaError_t status = cudaGetLastError();
-        if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
+    vector_mult_cuda<<<nblocks,threads_per_block,0,starpu_cuda_get_local_stream()>>>(n, val, *factor);
+    cudaError_t status = cudaGetLastError();
+    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
 }
