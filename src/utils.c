@@ -1,21 +1,13 @@
 #include "utils.h"
 #include "starpu_data_interfaces.h"
+#include "types.h"
+#include <assert.h>
 #include <stdio.h>
 
 #define DAHL_MAX_RANDOM_VALUES 10
 
-// Initialize a starpu block at 0 and return its handle
-starpu_data_handle_t block_init(const shape3d shape)
+starpu_data_handle_t block_init_from(const shape3d shape, dahl_fp block[])
 {
-    // -------------- Init filters array and handle (weights) --------------
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* block = (dahl_fp*)malloc(n_elems * sizeof(dahl_fp));
-
-    for (int i = 0; i < n_elems; i += 1)
-    {
-        block[i] = 0;
-    }
-
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
         &handle,
@@ -30,6 +22,21 @@ starpu_data_handle_t block_init(const shape3d shape)
     );
 
     return handle;
+}
+
+// Initialize a starpu block at 0 and return its handle
+starpu_data_handle_t block_init(const shape3d shape)
+{
+    // -------------- Init filters array and handle (weights) --------------
+    size_t n_elems = shape.x * shape.y * shape.z;
+    dahl_fp* block = (dahl_fp*)malloc(n_elems * sizeof(dahl_fp));
+
+    for (int i = 0; i < n_elems; i += 1)
+    {
+        block[i] = 0;
+    }
+
+    return block_init_from(shape, block);
 }
 
 void block_fill_random(starpu_data_handle_t handle)
@@ -50,6 +57,31 @@ void block_fill_random(starpu_data_handle_t handle)
     }
 
 	starpu_data_release(handle);
+}
+
+bool block_equals(starpu_data_handle_t handle_a, starpu_data_handle_t handle_b)
+{
+    const size_t a_nx = starpu_block_get_nx(handle_a);
+	const size_t a_ny = starpu_block_get_ny(handle_a);
+	const size_t a_nz = starpu_block_get_nz(handle_a);
+    dahl_fp* a = (dahl_fp*)starpu_block_get_local_ptr(handle_a);
+
+    const size_t b_nx = starpu_block_get_nx(handle_b);
+	const size_t b_ny = starpu_block_get_ny(handle_b);
+	const size_t b_nz = starpu_block_get_nz(handle_b);
+    dahl_fp* b = (dahl_fp*)starpu_block_get_local_ptr(handle_b);
+
+    assert(a_nx == b_nx && a_ny == b_ny && a_nz == b_nz);
+
+    for (int i = 0; i < a_nx*a_ny*a_nz; i++)
+    {
+        if (a[i] != b[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 char* space_offset(size_t offset)

@@ -16,6 +16,7 @@ int main(int argc, char **argv)
     }
 
     test_convolution();
+    test_tasks();
 
 	/* terminate StarPU, no task can be submitted after */
 	starpu_shutdown();

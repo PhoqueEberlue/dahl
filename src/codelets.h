@@ -99,4 +99,21 @@ static struct starpu_codelet cl_sub =
     .model = &perf_model_sub
 };
 
+void add(void *buffers[2], void *cl_arg);
+
+static struct starpu_perfmodel perf_model_add =
+{
+    .type = STARPU_HISTORY_BASED,
+    .symbol = "perf_model_add"
+};
+ 
+ 
+static struct starpu_codelet cl_add =
+{
+    .cpu_funcs = { add },
+    .nbuffers = 2,
+    .modes = { STARPU_RW, STARPU_R },
+    .model = &perf_model_add
+};
+
 #endif //!DAHL_CODELETS_H
