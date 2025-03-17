@@ -1,53 +1,83 @@
 #include "tests.h"
 #include "../src/tasks.h"
-#include "../src/utils.h"
+#include <stdio.h>
 
-void test_cross_correlation_2d()
+void assert_cross_correlation_2d(dahl_fp* a, shape2d a_shape,
+                                 dahl_fp* b, shape2d b_shape,
+                                 dahl_fp* expect, shape2d expect_shape)
 {
-    shape3d a_shape = { .x = 5, .y = 5, .z = 1 };
-    dahl_fp a[1][5][5] = { {
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-    },};
+    dahl_matrix* matrix_a = matrix_init_from(a_shape, a);
+    dahl_matrix* matrix_b = matrix_init_from(b_shape, b);
+    dahl_matrix* matrix_c = matrix_init(expect_shape);
+    dahl_matrix* matrix_expected = matrix_init_from(expect_shape, expect);
 
-    starpu_data_handle_t a_handle = block_init_from(a_shape, (dahl_fp*) &a);
-
-    shape3d b_shape = { .x = 3, .y = 3, .z = 1 };
-    dahl_fp b[1][3][3] = { {
-        { 1.0F, 0.0F, 1.0F },
-        { 0.0F, 1.0F, 0.0F },
-        { 1.0F, 0.0F, 1.0F },
-    },};
-
-    starpu_data_handle_t b_handle = block_init_from(b_shape, (dahl_fp*) &b);
-
-    block_print_from_handle(a_handle);
-    block_print_from_handle(b_handle);
-
-    shape3d c_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1, .z = a_shape.z - b_shape.z + 1 };
-    starpu_data_handle_t c_handle = block_init(c_shape);
-
-    task_cross_correlation_2d(a_handle, b_handle, c_handle);
-
-    block_print_from_handle(c_handle);
+    task_cross_correlation_2d(matrix_a, matrix_b, matrix_c);
 
     starpu_task_wait_for_all();
 
-    dahl_fp expect[1][3][3] = { {
-        { 5.0F, 5.0F, 5.0F },
-        { 5.0F, 5.0F, 5.0F },
-        { 5.0F, 5.0F, 5.0F },
-    },};
+    assert(matrix_equals(matrix_expected, matrix_c));
+}
 
-    starpu_data_handle_t expect_handle = block_init_from(b_shape, (dahl_fp*) &expect);
+void test_cross_correlation_2d_1()
+{
+    shape2d a_shape = { .x = 5, .y = 5 };
+    shape2d b_shape = { .x = 3, .y = 3 };
+    shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
 
-    assert(block_equals(expect_handle, c_handle));
+    dahl_fp a[5][5] = {
+        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+    };
+
+    dahl_fp b[3][3] = {
+        { 1.0F, 0.0F, 1.0F },
+        { 0.0F, 1.0F, 0.0F },
+        { 1.0F, 0.0F, 1.0F },
+    };
+
+    dahl_fp expect[3][3] = {
+        { 5.0F, 5.0F, 5.0F },
+        { 5.0F, 5.0F, 5.0F },
+        { 5.0F, 5.0F, 5.0F },
+    };
+
+    assert_cross_correlation_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
+}
+
+void test_cross_correlation_2d_2()
+{
+    shape2d a_shape = { .x = 7, .y = 5 };
+    shape2d b_shape = { .x = 4, .y = 3 };
+    shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
+
+    dahl_fp a[5][7] = {
+        { 0.0F, 1.0F, 0.0F, 4.0F, 0.0F, 3.0F, 2.0F },
+        { 0.0F, 0.0F, 6.0F, 0.0F, 8.0F, 1.0F, 1.0F },
+        { 1.0F, 1.0F, 0.0F, 0.0F, 7.0F, 1.0F, 0.0F },
+        { 0.0F, 0.0F, 2.0F, 1.0F, 0.0F, 1.0F, 1.0F },
+        { 8.0F, 9.0F, 0.0F, 2.0F, 3.0F, 0.0F, 0.0F },
+    };
+
+    dahl_fp b[3][4] = {
+        { 2.0F, 1.0F, 2.0F, 1.0F },
+        { 3.0F, 1.0F, 3.0F, 1.0F },
+        { 4.0F, 1.0F, 4.0F, 1.0F },
+    };
+
+    dahl_fp expect[3][4] = {
+        { 28.0F, 35.0F, 79.0F, 39.0F }, 
+        { 25.0F, 30.0F, 61.0F, 30.0F }, 
+        { 53.0F, 61.0F, 37.0F, 27.0F },
+    };
+
+    assert_cross_correlation_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
 }
 
 void test_tasks()
 {
-    test_cross_correlation_2d();
+    test_cross_correlation_2d_1();
+    test_cross_correlation_2d_2();
 }

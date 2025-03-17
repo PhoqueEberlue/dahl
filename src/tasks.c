@@ -1,50 +1,70 @@
 #include "codelets.h"
+#include "types.h"
 #include "tasks.h"
 
-void task_cross_correlation_2d(const starpu_data_handle_t a, const starpu_data_handle_t b, const starpu_data_handle_t c)
+void task_cross_correlation_2d(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c)
 {
-    int ret = starpu_task_insert(&cl_cross_correlation_2d, 
-                                 STARPU_R, a, 
-                                 STARPU_R, b, 
-                                 STARPU_W, c, 0);
+    int ret = starpu_task_insert(&cl_cross_correlation_2d,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
 }
 
-void task_relu(starpu_data_handle_t in)
+void task_relu(dahl_block* const in)
 {
-    int ret = starpu_task_insert(&cl_relu, STARPU_RW, in);
+    int ret = starpu_task_insert(&cl_relu, STARPU_RW, in->handle);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
 }
 
-void task_scal(starpu_data_handle_t in, dahl_fp factor)
+dahl_matrix* task_sum_z_axis(dahl_block const* const in)
 {
-    // Factor may die before the task finishes?
+    shape3d in_shape = block_get_shape(in);
+    shape2d out_shape = { .x = in_shape.x, .y = in_shape.y };
+    dahl_matrix* out = matrix_init(out_shape);
+
+    int ret = starpu_task_insert(&cl_sum_z_axis,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+
+    return out;
+}
+
+void task_scal(dahl_block* const in, dahl_fp const factor)
+{
+    //TODO: Factor may die before the task finishes? Or is it copied?
     int ret = starpu_task_insert(&cl_relu,
                              STARPU_VALUE, &factor, sizeof(&factor),
-                             STARPU_RW, in, 0);
+                             STARPU_RW, in->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
 }
 
-void task_sub(starpu_data_handle_t a, const starpu_data_handle_t b)
+dahl_block* task_sub(dahl_block const* const a, dahl_block const* const b)
 {
+    // Output shape is the same as input's one
+    shape3d c_shape = block_get_shape(a);
+    dahl_block* c = block_init(c_shape);
+
     int ret = starpu_task_insert(&cl_sub, 
-                                 STARPU_RW, a, 
-                                 STARPU_R, b, 0);
+                                 STARPU_R, a->handle, 
+                                 STARPU_R, b->handle, 
+                                 STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+    return c;
 }
 
-void task_add(const starpu_data_handle_t a, const starpu_data_handle_t b)
+dahl_block* task_add(dahl_block const* const a, dahl_block const* const b)
 {
+    // Output shape is the same as input's one
+    shape3d c_shape = block_get_shape(a);
+    dahl_block* c = block_init(c_shape);
+
     int ret = starpu_task_insert(&cl_add, 
-                                 STARPU_RW, a, 
-                                 STARPU_R, b, 0);
+                                 STARPU_R, a->handle, 
+                                 STARPU_R, b->handle, 
+                                 STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
-}
 
-void task_sum_z_axis(const starpu_data_handle_t in, starpu_data_handle_t out)
-{
-    int ret = starpu_task_insert(&cl_sum_z_axis,
-                                 STARPU_R, in,
-                                 STARPU_W, out, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+    return c;
 }

@@ -94,8 +94,8 @@ static struct starpu_perfmodel perf_model_sub =
 static struct starpu_codelet cl_sub =
 {
     .cpu_funcs = { sub },
-    .nbuffers = 2,
-    .modes = { STARPU_RW, STARPU_R },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
     .model = &perf_model_sub
 };
 
@@ -111,8 +111,8 @@ static struct starpu_perfmodel perf_model_add =
 static struct starpu_codelet cl_add =
 {
     .cpu_funcs = { add },
-    .nbuffers = 2,
-    .modes = { STARPU_RW, STARPU_R },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
     .model = &perf_model_add
 };
 
