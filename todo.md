@@ -33,6 +33,15 @@
             +  x]\
     )
     ```
+- lun. 17 mars 2025 11:48:23 CET -> With my new wrapper (dahl_matrix, dahl_block) this is handled, however we still need to separate matrix and block functions in the codelets functions, even if the implementation could be the same. I'm not sure this is a problem though.
+  -> everything can be registered as blocks under the hood?
+  -> seems like a good idea, so we can route corresponding functions e.g.:
+  ```
+  task_relu_block(dahl_block) -> calls cl_relu_block()
+  task_relu_matrix(dahl_matrix) -> calls cl_relu_block() // Same because dahl_matrix is under the hood a block and also because relu implementation is looping through all elements one by one so the dimensions does not matter
+  ```
+  And probably that even for add functions, block and matrix functions could be the same in fact?
 
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
+- is `type const* const` really useful? typically when defining a parameter, obviously the pointer is const and won't be changed no? idk

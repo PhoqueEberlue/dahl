@@ -13,6 +13,8 @@ Checks: "*,
         -readability-static-accessed-through-instance,
         -readability-avoid-const-params-in-decls,
         -misc-non-private-member-variables-in-classes,
+        -readability-identifier-length,
+        -readability-magic-numbers,
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
