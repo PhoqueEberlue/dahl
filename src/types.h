@@ -39,18 +39,18 @@ typedef struct
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: shape3d object describing the dimensions of the block
-dahl_block* block_init(const shape3d shape);
+dahl_block* block_init(shape3d const shape);
 
 // Initialize a dahl_block with random values.
 // parameters:
 // - shape: shape3d object describing the dimensions of the block
-dahl_block* block_init_random(const shape3d shape);
+dahl_block* block_init_random(shape3d const shape);
 
 // Initialize a dahl_block by cloning an existing array.
 // Cloned memory will be freed upon calling `block_free`, however do not forget to free the original array.
 // - shape: shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
-dahl_block* block_init_from(const shape3d shape, dahl_fp* const data);
+dahl_block* block_init_from(shape3d const shape, dahl_fp* const data);
 
 // Returns the block shape
 shape3d block_get_shape(dahl_block const *const block);

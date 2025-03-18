@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "types.h"
+#include "tasks.h"
 
 typedef struct 
 {
@@ -13,16 +13,17 @@ typedef struct
 
     const size_t num_filters;
     const size_t filter_size;
+
     // size * size * num_filters
     const shape3d filter_shape;
     const shape3d output_shape;
 
-    starpu_data_handle_t filters_handle;
-    starpu_data_handle_t biases_handle;
+    dahl_block* filters;
+    dahl_block* biases;
 } convolution;
 
 convolution create_convolution(shape2d input_shape, size_t filter_size, size_t num_filters);
-starpu_data_handle_t forward_pass(convolution conv, starpu_data_handle_t input_handle);
-
+dahl_block* forward_pass(convolution conv, dahl_matrix const* const input);
+dahl_matrix* backward_pass(convolution conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input);
 
 #endif //!DAHL_CONVOLUTION_H

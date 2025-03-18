@@ -1,6 +1,7 @@
 #include "types.h"
 #include "utils.h"
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define DAHL_MAX_RANDOM_VALUES 10
@@ -9,7 +10,7 @@
 // The data parameter is an array that should be allocated before calling the function
 // but its memory will be managed by the same structure.
 // In other words, only dahl_block functions should call this constructor.
-dahl_block* block_init_from_no_copy(const shape3d shape, dahl_fp* const data)
+dahl_block* block_init_from_ptr(const shape3d shape, dahl_fp* const data)
 {
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
@@ -37,12 +38,16 @@ dahl_block* block_init_from(shape3d const shape, dahl_fp* const data)
 {
     size_t const n_elems = shape.x * shape.y * shape.z;
     dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
-    memcpy(data_copy, data, n_elems);
 
-    return block_init_from_no_copy(shape, data_copy);
+    for (int i = 0; i < n_elems; i++)
+    {
+        data_copy[i] = data[i];
+    }
+
+    return block_init_from_ptr(shape, data_copy);
 }
 
-dahl_block* block_init_random(const shape3d shape)
+dahl_block* block_init_random(shape3d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
     dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
@@ -52,10 +57,10 @@ dahl_block* block_init_random(const shape3d shape)
         data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( rand() % DAHL_MAX_RANDOM_VALUES ) );
     }
 
-    return block_init_from_no_copy(shape, data);
+    return block_init_from_ptr(shape, data);
 }
 
-dahl_block* block_init(const shape3d shape)
+dahl_block* block_init(shape3d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
     dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
@@ -65,7 +70,7 @@ dahl_block* block_init(const shape3d shape)
         data[i] = 0;
     }
 
-    return block_init_from_no_copy(shape, data);
+    return block_init_from_ptr(shape, data);
 }
 
 shape3d block_get_shape(dahl_block const *const block)
@@ -199,8 +204,8 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t in
 }
 
 
-// See `block_init_from_no_copy` for more information.
-dahl_matrix* matrix_init_from_no_copy(shape2d const shape, dahl_fp* const data)
+// See `block_init_from_ptr` for more information.
+dahl_matrix* matrix_init_from_ptr(shape2d const shape, dahl_fp* const data)
 {
     starpu_data_handle_t handle = nullptr;
 
@@ -229,9 +234,16 @@ dahl_matrix* matrix_init_from(shape2d const shape, dahl_fp* const data)
 {
     size_t n_elems = shape.x * shape.y;
     dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
-    memcpy(data_copy, data, n_elems);
     
-    return matrix_init_from_no_copy(shape, data);
+    // TODO: memcpy doesn't work, it's not a big deal but it would be nice to understand why
+    // memcpy(data_copy, data, n_elems);
+
+    for (int i = 0; i < n_elems; i++)
+    {
+        data_copy[i] = data[i];
+    }
+
+    return matrix_init_from_ptr(shape, data_copy);
 }
 
 dahl_matrix* matrix_init_random(shape2d const shape)
@@ -258,7 +270,7 @@ dahl_matrix* matrix_init(shape2d const shape)
         data[i] = 0;
     }
 
-    return matrix_init_from_no_copy(shape, data);
+    return matrix_init_from_ptr(shape, data);
 }
 
 shape2d matrix_get_shape(dahl_matrix const *const matrix)
