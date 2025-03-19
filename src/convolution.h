@@ -9,21 +9,23 @@
 
 typedef struct 
 {
-    const shape2d input_shape;
+    shape2d const input_shape;
+    // Last input data
+    dahl_matrix* input_data;
 
-    const size_t num_filters;
-    const size_t filter_size;
+    size_t const num_filters;
+    size_t const filter_size;
 
     // size * size * num_filters
-    const shape3d filter_shape;
-    const shape3d output_shape;
+    shape3d const filter_shape;
+    shape3d const output_shape;
 
     dahl_block* filters;
     dahl_block* biases;
 } convolution;
 
-convolution create_convolution(shape2d input_shape, size_t filter_size, size_t num_filters);
-dahl_block* forward_pass(convolution conv, dahl_matrix const* const input);
-dahl_matrix* backward_pass(convolution conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input);
+convolution* convolution_init(shape2d input_shape, size_t filter_size, size_t num_filters);
+dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* const input);
+dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input);
 
 #endif //!DAHL_CONVOLUTION_H

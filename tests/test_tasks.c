@@ -1,10 +1,8 @@
 #include "tests.h"
 #include "../src/tasks.h"
-#include <math.h>
-#include <stdio.h>
 
 // Asserts that "a cross correlation b = expect"
-void assert_cross_correlation_2d(dahl_fp* a, shape2d a_shape,
+void assert_matrix_cross_correlation(dahl_fp* a, shape2d a_shape,
                                  dahl_fp* b, shape2d b_shape,
                                  dahl_fp* expect, shape2d expect_shape)
 {
@@ -25,7 +23,7 @@ void assert_cross_correlation_2d(dahl_fp* a, shape2d a_shape,
     matrix_free(expect_matrix);
 }
 
-void test_cross_correlation_2d_1()
+void test_matrix_cross_correlation_1()
 {
     shape2d a_shape = { .x = 5, .y = 5 };
     shape2d b_shape = { .x = 3, .y = 3 };
@@ -51,10 +49,10 @@ void test_cross_correlation_2d_1()
         { 5.0F, 5.0F, 5.0F },
     };
 
-    assert_cross_correlation_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
+    assert_matrix_cross_correlation((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
 }
 
-void test_cross_correlation_2d_2()
+void test_matrix_cross_correlation_2()
 {
     shape2d a_shape = { .x = 7, .y = 5 };
     shape2d b_shape = { .x = 4, .y = 3 };
@@ -80,7 +78,7 @@ void test_cross_correlation_2d_2()
         { 53.0F, 61.0F, 37.0F, 27.0F },
     };
 
-    assert_cross_correlation_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
+    assert_matrix_cross_correlation((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
 }
 
 void test_relu()
@@ -124,7 +122,7 @@ void test_relu()
     block_free(expect_block);
 }
 
-void test_sum_z_axis()
+void test_block_sum_z_axis()
 {
     shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
     shape2d expect_shape = { .x = 4, .y = 3 };
@@ -151,7 +149,7 @@ void test_sum_z_axis()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_matrix* expect_matrix = matrix_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_matrix* result_matrix = task_block_sum_z_axis(a_block);
+    dahl_matrix* result_matrix = task_block_block_sum_z_axis(a_block);
 
     assert(matrix_equals(expect_matrix, result_matrix));
     block_free(a_block);
@@ -316,10 +314,10 @@ void test_add()
 
 void test_tasks()
 {
-    test_cross_correlation_2d_1();
-    test_cross_correlation_2d_2();
+    test_matrix_cross_correlation_1();
+    test_matrix_cross_correlation_2();
     test_relu();
-    test_sum_z_axis();
+    test_block_sum_z_axis();
     test_scal();
     test_sub();
     test_add();

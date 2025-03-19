@@ -58,12 +58,16 @@ shape3d block_get_shape(dahl_block const *const block);
 // Compares the two blocks value by value and returns wether or not they're equal.
 bool block_equals(dahl_block const* const a, dahl_block const* const b);
 
-// Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`
+// Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
+// Exactly creates z sub matrices, so `block_get_sub_matrix_nb` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned. TODO: I think?
 void block_partition_along_z(dahl_block* const block);
 
 // Unpartition a block
 void block_unpartition(dahl_block* const block);
+
+// Get the number of sub matrices
+size_t block_get_sub_matrix_nb(dahl_block const* const block);
 
 // Get sub matrix at index
 dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index);

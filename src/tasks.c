@@ -4,10 +4,19 @@
 
 void task_matrix_cross_correlation(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c)
 {
-    int ret = starpu_task_insert(&cl_cross_correlation_2d,
+    int ret = starpu_task_insert(&cl_matrix_cross_correlation,
                                  STARPU_R, a->handle,
                                  STARPU_R, b->handle,
                                  STARPU_W, c->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_max_pooling(dahl_matrix const* const a, dahl_matrix* const b, size_t const pool_size)
+{
+    int ret = starpu_task_insert(&cl_matrix_max_pooling,
+                             STARPU_VALUE, &pool_size, sizeof(&pool_size),
+                             STARPU_R, a->handle,
+                             STARPU_W, b->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -17,13 +26,13 @@ void task_block_relu(dahl_block* const in)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
+dahl_matrix* task_block_block_sum_z_axis(dahl_block const* const in)
 {
     shape3d in_shape = block_get_shape(in);
     shape2d out_shape = { .x = in_shape.x, .y = in_shape.y };
     dahl_matrix* out = matrix_init(out_shape);
 
-    int ret = starpu_task_insert(&cl_sum_z_axis,
+    int ret = starpu_task_insert(&cl_block_sum_z_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -32,7 +41,8 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
 }
 
 // ------------------ SCAL SELF ------------------
-void call_scal_self(starpu_data_handle_t handle, dahl_fp const factor)
+// TODO: make it return to another buffer by default to match call_sub behaviour, then it call be called with the same buffers to scal self if needed.
+void call_scal(starpu_data_handle_t handle, dahl_fp const factor)
 {
     int ret = starpu_task_insert(&cl_scal,
                              STARPU_VALUE, &factor, sizeof(&factor),
@@ -42,12 +52,12 @@ void call_scal_self(starpu_data_handle_t handle, dahl_fp const factor)
 
 void task_block_scal_self(dahl_block* const in, dahl_fp const factor)
 {
-    call_scal_self(in->handle, factor);
+    call_scal(in->handle, factor);
 }
 
 void task_matrix_scal_self(dahl_matrix* const in, dahl_fp const factor)
 {
-    call_scal_self(in->handle, factor);
+    call_scal(in->handle, factor);
 }
 
 // ------------------ SUB ------------------

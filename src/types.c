@@ -194,6 +194,11 @@ void block_unpartition(dahl_block* const block)
     block->is_partitioned = false;
 }
 
+size_t block_get_sub_matrix_nb(dahl_block const* const block)
+{
+    return starpu_data_get_nb_children(block->handle);
+}
+
 dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index)
 {
     assert(block->is_partitioned 
@@ -339,6 +344,12 @@ void matrix_print(dahl_matrix const* const matrix)
 // We don't have to free matrix->data because it should be managed by the user
 void matrix_free(dahl_matrix* matrix)
 {
+    if (matrix->is_sub_block_data)
+    {
+        printf("ERROR: matrix_free() shouldn't be used on sub block data because it will be freed by block_unpartition().");
+        abort();
+    }
+
     starpu_data_unregister(matrix->handle);
     free(matrix->data);
     free(matrix);
