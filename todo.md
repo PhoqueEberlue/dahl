@@ -42,6 +42,7 @@
   ```
   And probably that even for add functions, block and matrix functions could be the same in fact?
 
+- Make dahl_matrix / dahl_block generic? they could use the type we want? -> seems hard, need to think about it.
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
 - is `type const* const` really useful? typically when defining a parameter, obviously the pointer is const and won't be changed no? idk

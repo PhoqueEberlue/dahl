@@ -47,13 +47,13 @@ dahl_block* block_init(shape3d const shape);
 dahl_block* block_init_random(shape3d const shape);
 
 // Initialize a dahl_block by cloning an existing array.
-// Cloned memory will be freed upon calling `block_free`, however do not forget to free the original array.
+// Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
 // - shape: shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(shape3d const shape, dahl_fp* const data);
 
 // Returns the block shape
-shape3d block_get_shape(dahl_block const *const block);
+shape3d block_get_shape(dahl_block const* const block);
 
 // Compares the two blocks value by value and returns wether or not they're equal.
 bool block_equals(dahl_block const* const a, dahl_block const* const b);
@@ -73,7 +73,7 @@ size_t block_get_sub_matrix_nb(dahl_block const* const block);
 dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index);
 
 void block_print(dahl_block const* const);
-void block_free(dahl_block* block);
+void block_finalize(dahl_block* block);
 
 // Initialize a dahl_matrix with every values at 0.
 // parameters:
@@ -86,7 +86,7 @@ dahl_matrix* matrix_init(shape2d const shape);
 dahl_matrix* matrix_init_random(shape2d const shape);
 
 // Initialize a dahl_matrix by cloning an existing array.
-// Cloned memory will be freed upon calling `matrix_free`, however do not forget to free the original array.
+// Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
 // - shape: shape2d object describing the dimensions of the matrix
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(shape2d const shape, dahl_fp* const data);
@@ -98,6 +98,6 @@ shape2d matrix_get_shape(dahl_matrix const *const matrix);
 bool matrix_equals(dahl_matrix const* const matrix_a, dahl_matrix const* const matrix_b);
 
 void matrix_print(dahl_matrix const* const matrix);
-void matrix_free(dahl_matrix* matrix);
+void matrix_finalize(dahl_matrix* matrix);
 
 #endif //!DAHL_TYPES_H

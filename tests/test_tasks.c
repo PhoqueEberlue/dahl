@@ -17,10 +17,10 @@ void assert_matrix_cross_correlation(dahl_fp* a, shape2d a_shape,
 
     assert(matrix_equals(expect_matrix, c_matrix));
 
-    matrix_free(a_matrix);
-    matrix_free(b_matrix);
-    matrix_free(c_matrix);
-    matrix_free(expect_matrix);
+    matrix_finalize(a_matrix);
+    matrix_finalize(b_matrix);
+    matrix_finalize(c_matrix);
+    matrix_finalize(expect_matrix);
 }
 
 void test_matrix_cross_correlation_1()
@@ -118,8 +118,8 @@ void test_relu()
     task_block_relu(a_block);
 
     assert(block_equals(expect_block, a_block));
-    block_free(a_block);
-    block_free(expect_block);
+    block_finalize(a_block);
+    block_finalize(expect_block);
 }
 
 void test_block_sum_z_axis()
@@ -149,12 +149,12 @@ void test_block_sum_z_axis()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_matrix* expect_matrix = matrix_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_matrix* result_matrix = task_block_block_sum_z_axis(a_block);
+    dahl_matrix* result_matrix = task_block_sum_z_axis(a_block);
 
     assert(matrix_equals(expect_matrix, result_matrix));
-    block_free(a_block);
-    matrix_free(expect_matrix);
-    matrix_free(result_matrix);
+    block_finalize(a_block);
+    matrix_finalize(expect_matrix);
+    matrix_finalize(result_matrix);
 }
 
 void test_scal()
@@ -194,8 +194,8 @@ void test_scal()
     task_block_scal_self(a_block, 2);
 
     assert(block_equals(expect_block, a_block));
-    block_free(a_block);
-    block_free(expect_block);
+    block_finalize(a_block);
+    block_finalize(expect_block);
 }
 
 void test_sub()
@@ -249,10 +249,10 @@ void test_sub()
     task_block_sub_self(a_block, b_block);
     assert(block_equals(expect_block, a_block));
 
-    block_free(a_block);
-    block_free(b_block);
-    block_free(result_block);
-    block_free(expect_block);
+    block_finalize(a_block);
+    block_finalize(b_block);
+    block_finalize(result_block);
+    block_finalize(expect_block);
 }
 
 void test_add()
@@ -306,10 +306,10 @@ void test_add()
     task_block_add_self(a_block, b_block);
     assert(block_equals(expect_block, a_block));
 
-    block_free(a_block);
-    block_free(b_block);
-    block_free(result_block);
-    block_free(expect_block);
+    block_finalize(a_block);
+    block_finalize(b_block);
+    block_finalize(result_block);
+    block_finalize(expect_block);
 }
 
 void test_tasks()

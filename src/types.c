@@ -145,7 +145,7 @@ void block_print(dahl_block const* const block)
 }
 
 // We don't have to free block->data because it should be managed by the user
-void block_free(dahl_block* block)
+void block_finalize(dahl_block* block)
 {
     if (block->is_partitioned)
     {
@@ -342,11 +342,11 @@ void matrix_print(dahl_matrix const* const matrix)
 }
 
 // We don't have to free matrix->data because it should be managed by the user
-void matrix_free(dahl_matrix* matrix)
+void matrix_finalize(dahl_matrix* matrix)
 {
     if (matrix->is_sub_block_data)
     {
-        printf("ERROR: matrix_free() shouldn't be used on sub block data because it will be freed by block_unpartition().");
+        printf("ERROR: block_finalize() shouldn't be used on sub block data because it will be freed by block_unpartition().");
         abort();
     }
 

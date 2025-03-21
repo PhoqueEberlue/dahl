@@ -26,7 +26,7 @@ void task_block_relu(dahl_block* const in)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_block_block_sum_z_axis(dahl_block const* const in)
+dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
 {
     shape3d in_shape = block_get_shape(in);
     shape2d out_shape = { .x = in_shape.x, .y = in_shape.y };

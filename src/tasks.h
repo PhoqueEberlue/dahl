@@ -12,7 +12,7 @@
 void task_matrix_cross_correlation(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c);
 
 // Performs max pooling on a and write output on b
-void task_matrix_max_pooling(dahl_matrix const* const a, dahl_matrix const* const b, size_t const pool_size);
+void task_matrix_max_pooling(dahl_matrix const* const a, dahl_matrix* const b, size_t const pool_size);
 
 // Apply relu function on each element of the block, i.e. max(elem i, 0)
 void task_block_relu(dahl_block* const in);

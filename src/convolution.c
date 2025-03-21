@@ -113,7 +113,7 @@ dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_
 
     starpu_task_wait_for_all();
 
-    block_free(dl_dfilters);
+    block_finalize(dl_dfilters);
 
     return dl_dinput;
 }

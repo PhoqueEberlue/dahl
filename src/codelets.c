@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 
-void matrix_cross_correlation(void *buffers[3], void *cl_arg)
+void matrix_cross_correlation(void* buffers[3], void* cl_arg)
 {
     // Input matrix
     size_t const a_nx = STARPU_BLOCK_GET_NX(buffers[0]);
@@ -52,7 +52,7 @@ void matrix_cross_correlation(void *buffers[3], void *cl_arg)
     }
 }
 
-void matrix_max_pooling(void *buffers[2], void *cl_arg)
+void matrix_max_pooling(void* buffers[2], void* cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
@@ -66,6 +66,13 @@ void matrix_max_pooling(void *buffers[2], void *cl_arg)
     size_t const b_ny = STARPU_BLOCK_GET_NY(buffers[1]);
     size_t const b_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
     dahl_fp* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // size_t const c_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    // size_t const c_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    // size_t const c_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
+    // size_t const c_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
+    // size_t const c_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
+    // dahl_fp* const c = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
     assert(b_nx == a_nx / pool_size);
     assert(b_ny == a_ny / pool_size);
@@ -81,6 +88,8 @@ void matrix_max_pooling(void *buffers[2], void *cl_arg)
             size_t end_k = start_k + pool_size;
 
             dahl_fp current_max = 0;
+            // TODO LATER: save the max index so we don't have to evaluate it again for the backward pass
+            // size_t current_max_index[2] = { 0, 0 };
 
             // Loop through k,l on axes x,y of matrix a (input)
             for (size_t l = start_l; l < end_l; l++)
@@ -92,6 +101,8 @@ void matrix_max_pooling(void *buffers[2], void *cl_arg)
                     if (a_value > current_max)
                     {
                         current_max = a_value;
+                        // current_max_index[0] = k;
+                        // current_max_index[1] = l;
                     }
                 }
             }
@@ -101,7 +112,7 @@ void matrix_max_pooling(void *buffers[2], void *cl_arg)
     }
 }
 
-void relu(void *buffers[1], void *cl_arg)
+void relu(void* buffers[1], void* cl_arg)
 {
     size_t const nx = STARPU_BLOCK_GET_NX(buffers[0]);
     size_t const ny = STARPU_BLOCK_GET_NY(buffers[0]);
@@ -117,7 +128,7 @@ void relu(void *buffers[1], void *cl_arg)
     }
 }
 
-void block_sum_z_axis(void *buffers[2], void *cl_arg)
+void block_sum_z_axis(void* buffers[2], void* cl_arg)
 {
     size_t const i_nx = STARPU_BLOCK_GET_NX(buffers[0]);
     size_t const i_ny = STARPU_BLOCK_GET_NY(buffers[0]);
@@ -146,7 +157,7 @@ void block_sum_z_axis(void *buffers[2], void *cl_arg)
     }
 }
 
-void scal(void *buffers[1], void *cl_arg)
+void scal(void* buffers[1], void* cl_arg)
 {
     dahl_fp factor;
     starpu_codelet_unpack_args(cl_arg, &factor);
@@ -162,7 +173,7 @@ void scal(void *buffers[1], void *cl_arg)
     }
 }
 
-void sub(void *buffers[2], void *cl_arg)
+void sub(void* buffers[3], void* cl_arg)
 {
     size_t const a_nx = STARPU_BLOCK_GET_NX(buffers[0]);
     size_t const a_ny = STARPU_BLOCK_GET_NY(buffers[0]);
@@ -205,7 +216,7 @@ void sub(void *buffers[2], void *cl_arg)
     }
 }
 
-void add(void *buffers[2], void *cl_arg)
+void add(void* buffers[3], void* cl_arg)
 {
     size_t const a_nx = STARPU_BLOCK_GET_NX(buffers[0]);
     size_t const a_ny = STARPU_BLOCK_GET_NY(buffers[0]);

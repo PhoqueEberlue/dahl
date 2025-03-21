@@ -92,7 +92,7 @@ static struct starpu_codelet cl_scal =
     .model = &perf_model_scal
 };
 
-void sub(void *buffers[2], void *cl_arg);
+void sub(void *buffers[3], void *cl_arg);
 
 static struct starpu_perfmodel perf_model_sub =
 {
@@ -109,7 +109,7 @@ static struct starpu_codelet cl_sub =
     .model = &perf_model_sub
 };
 
-void add(void *buffers[2], void *cl_arg);
+void add(void *buffers[3], void *cl_arg);
 
 static struct starpu_perfmodel perf_model_add =
 {
