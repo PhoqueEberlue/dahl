@@ -11,13 +11,35 @@ void task_matrix_cross_correlation(dahl_matrix const* const a, dahl_matrix const
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_matrix_max_pooling(dahl_matrix const* const a, dahl_matrix* const b, size_t const pool_size)
+void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out, dahl_matrix* const mask, size_t const pool_size)
 {
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
-                             STARPU_R, a->handle,
-                             STARPU_W, b->handle, 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 
+                             STARPU_W, mask->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+// ------------------ BACKWARD MAX POOLING ------------------
+void call_backward_max_pooling(starpu_data_handle_t in_handle, starpu_data_handle_t mask_handle, starpu_data_handle_t out_handle, size_t const pool_size)
+{
+    int ret = starpu_task_insert(&cl_matrix_backward_max_pooling,
+                             STARPU_VALUE, &pool_size, sizeof(&pool_size),
+                             STARPU_R, in_handle,
+                             STARPU_R, mask_handle, 
+                             STARPU_W, out_handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix const* const mask, dahl_matrix* const out, size_t const pool_size)
+{
+    call_backward_max_pooling(in->handle, mask->handle, out->handle, pool_size);
+}
+
+void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask, size_t const pool_size)
+{
+    call_backward_max_pooling(in->handle, mask->handle, mask->handle, pool_size);
 }
 
 void task_block_relu(dahl_block* const in)

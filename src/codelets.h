@@ -21,7 +21,7 @@ static struct starpu_codelet cl_matrix_cross_correlation =
     .model = &perf_model_matrix_cross_correlation
 };
 
-void matrix_max_pooling(void *buffers[2], void *cl_arg);
+void matrix_max_pooling(void *buffers[3], void *cl_arg);
 
 static struct starpu_perfmodel perf_model_matrix_max_pooling =
 {
@@ -29,13 +29,28 @@ static struct starpu_perfmodel perf_model_matrix_max_pooling =
     .symbol = "perf_model_matrix_max_pooling"
 };
  
- 
 static struct starpu_codelet cl_matrix_max_pooling =
 {
     .cpu_funcs = { matrix_max_pooling },
-    .nbuffers = 2,
-    .modes = { STARPU_R, STARPU_W },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_W, STARPU_W },
     .model = &perf_model_matrix_max_pooling
+};
+
+void matrix_backward_max_pooling(void *buffers[3], void *cl_arg);
+
+static struct starpu_perfmodel perf_model_matrix_backward_max_pooling =
+{
+    .type = STARPU_HISTORY_BASED,
+    .symbol = "perf_model_matrix_backward_max_pooling"
+};
+ 
+static struct starpu_codelet cl_matrix_backward_max_pooling =
+{
+    .cpu_funcs = { matrix_backward_max_pooling },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
+    .model = &perf_model_matrix_backward_max_pooling
 };
 
 void relu(void *buffers[1], void *cl_arg);

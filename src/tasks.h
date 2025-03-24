@@ -11,8 +11,18 @@
 // - the shape of b should be smaller than the shape of a
 void task_matrix_cross_correlation(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c);
 
-// Performs max pooling on a and write output on b
-void task_matrix_max_pooling(dahl_matrix const* const a, dahl_matrix* const b, size_t const pool_size);
+// Performs max pooling on `in`, write output on `out` and store mask of the max values indexes in `mask`
+// - `out` shape should be equal to `in` shape / `pool_size` (euclidian division)
+// - `mask` shape should be the same as `in` shape.
+void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out, dahl_matrix* const mask, size_t const pool_size);
+
+// Performs a backward max pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
+// - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
+// - `mask` shape should be the same as `out` shape.
+void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix const* const mask, dahl_matrix* const out, size_t const pool_size);
+
+// Same as `task_matrix_backward_max_pooling` but stores the output directly in the mask matrix.
+void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask, size_t const pool_size);
 
 // Apply relu function on each element of the block, i.e. max(elem i, 0)
 void task_block_relu(dahl_block* const in);

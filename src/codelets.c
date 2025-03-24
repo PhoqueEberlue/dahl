@@ -43,7 +43,7 @@ void matrix_cross_correlation(void* buffers[3], void* cl_arg)
                     dahl_fp a_value = a[((l + j) * a_ld) + k + i]; // input value
                     dahl_fp b_value = b[(l * b_ld) + k];           // kernel value
                     
-                   cell_res += a_value * b_value;
+                    cell_res += a_value * b_value;
                 }
             }
 
@@ -52,35 +52,36 @@ void matrix_cross_correlation(void* buffers[3], void* cl_arg)
     }
 }
 
-void matrix_max_pooling(void* buffers[2], void* cl_arg)
+void matrix_max_pooling(void* buffers[3], void* cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
 
-    size_t const a_nx = STARPU_BLOCK_GET_NX(buffers[0]);
-    size_t const a_ny = STARPU_BLOCK_GET_NY(buffers[0]);
-    size_t const a_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
-    dahl_fp const* const a = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
 
-    size_t const b_nx = STARPU_BLOCK_GET_NX(buffers[1]);
-    size_t const b_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const b_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
-    dahl_fp* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const out_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
 
-    // size_t const c_nx = STARPU_BLOCK_GET_NX(buffers[2]);
-    // size_t const c_ny = STARPU_BLOCK_GET_NY(buffers[2]);
-    // size_t const c_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
-    // size_t const c_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
-    // size_t const c_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
-    // dahl_fp* const c = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+    size_t const mask_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    size_t const mask_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const mask_ld = STARPU_BLOCK_GET_LDY(buffers[2]);
+    dahl_fp* const mask = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    assert(b_nx == a_nx / pool_size);
-    assert(b_ny == a_ny / pool_size);
+    assert(out_nx == in_nx / pool_size);
+    assert(out_ny == in_ny / pool_size);
 
-    // Loop through i,j on axes x,y of matrix b (output)
-    for (size_t j = 0; j < b_ny; j++)
+    assert(in_nx == mask_nx);
+    assert(in_ny == mask_ny);
+
+    // Loop through i,j on axes x,y of matrix `out`
+    for (size_t j = 0; j < out_ny; j++)
     {
-        for (size_t i = 0; i < b_nx; i++)
+        for (size_t i = 0; i < out_nx; i++)
         {
             size_t start_l = j * pool_size;
             size_t start_k = i * pool_size;
@@ -88,26 +89,78 @@ void matrix_max_pooling(void* buffers[2], void* cl_arg)
             size_t end_k = start_k + pool_size;
 
             dahl_fp current_max = 0;
-            // TODO LATER: save the max index so we don't have to evaluate it again for the backward pass
-            // size_t current_max_index[2] = { 0, 0 };
+            size_t current_max_y = 0;
+            size_t current_max_x = 0;
 
-            // Loop through k,l on axes x,y of matrix a (input)
+            // Loop through k,l on axes x,y of matrix `in`
             for (size_t l = start_l; l < end_l; l++)
             {
                 for (size_t k = start_k; k < end_k; k++)
                 {
-                    dahl_fp a_value = a[(l * a_ld) + k];
+                    dahl_fp in_value = in[(l * in_ld) + k];
 
-                    if (a_value > current_max)
+                    if (in_value > current_max)
                     {
-                        current_max = a_value;
-                        // current_max_index[0] = k;
-                        // current_max_index[1] = l;
+                        current_max = in_value;
+                        current_max_y = l;
+                        current_max_x = k;
                     }
                 }
             }
 
-            b[(j * b_ld) + i] = current_max;
+            out[(j * out_ld) + i] = current_max;
+            mask[(current_max_y * mask_ld) + current_max_x] = 1.0F;
+        }
+    }
+}
+
+void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
+{
+    size_t pool_size;
+    starpu_codelet_unpack_args(cl_arg, &pool_size);
+
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const mask_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const mask_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const mask_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
+    dahl_fp const* const mask = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const out_ld = STARPU_BLOCK_GET_LDY(buffers[2]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+
+    assert(in_nx == out_nx / pool_size);
+    assert(in_ny == out_ny / pool_size);
+
+    assert(out_nx == mask_nx);
+    assert(out_ny == mask_ny);
+
+    // Loop through i,j on axes x,y of matrix `in`
+    for (size_t j = 0; j < in_ny; j++)
+    {
+        for (size_t i = 0; i < in_nx; i++)
+        {
+            size_t start_l = j * pool_size;
+            size_t start_k = i * pool_size;
+            size_t end_l = start_l + pool_size;
+            size_t end_k = start_k + pool_size;
+
+            // Loop through k,l on axes x,y of matrix `out`
+            for (size_t l = start_l; l < end_l; l++)
+            {
+                for (size_t k = start_k; k < end_k; k++)
+                {
+                    dahl_fp in_value = in[(j * in_ld) + i];
+                    dahl_fp mask_value = mask[(l * mask_ld) + k];
+
+                    out[(l * out_ld) + k] = in_value * mask_value;
+                }
+            }
         }
     }
 }
