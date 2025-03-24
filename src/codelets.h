@@ -53,7 +53,7 @@ static struct starpu_codelet cl_matrix_backward_max_pooling =
     .model = &perf_model_matrix_backward_max_pooling
 };
 
-void relu(void *buffers[1], void *cl_arg);
+void relu(void *buffers[2], void *cl_arg);
 
 static struct starpu_perfmodel perf_model_relu =
 {
@@ -65,8 +65,8 @@ static struct starpu_perfmodel perf_model_relu =
 static struct starpu_codelet cl_relu =
 {
     .cpu_funcs = { relu },
-    .nbuffers = 1,
-    .modes = { STARPU_RW },
+    .nbuffers = 2,
+    .modes = { STARPU_R, STARPU_W },
     .model = &perf_model_relu
 };
 
@@ -90,7 +90,7 @@ static struct starpu_codelet cl_block_sum_z_axis =
     .model = &perf_model_block_sum_z_axis
 };
 
-void scal(void *buffers[1], void *cl_arg);
+void scal(void *buffers[2], void *cl_arg);
 
 static struct starpu_perfmodel perf_model_scal =
 {
@@ -102,8 +102,8 @@ static struct starpu_perfmodel perf_model_scal =
 static struct starpu_codelet cl_scal =
 {
     .cpu_funcs = { scal },
-    .nbuffers = 1,
-    .modes = { STARPU_RW },
+    .nbuffers = 2,
+    .modes = { STARPU_R, STARPU_W },
     .model = &perf_model_scal
 };
 

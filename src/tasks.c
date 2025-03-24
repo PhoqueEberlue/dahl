@@ -1,13 +1,14 @@
 #include "codelets.h"
+#include "starpu_data.h"
 #include "types.h"
 #include "tasks.h"
 
-void task_matrix_cross_correlation(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c)
+void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix const* const kernel, dahl_matrix* const out)
 {
     int ret = starpu_task_insert(&cl_matrix_cross_correlation,
-                                 STARPU_R, a->handle,
-                                 STARPU_R, b->handle,
-                                 STARPU_W, c->handle, 0);
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -37,17 +38,31 @@ void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix c
     call_backward_max_pooling(in->handle, mask->handle, out->handle, pool_size);
 }
 
-void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask, size_t const pool_size)
+void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size)
 {
-    call_backward_max_pooling(in->handle, mask->handle, mask->handle, pool_size);
+    call_backward_max_pooling(in->handle, mask_self->handle, mask_self->handle, pool_size);
 }
 
-void task_block_relu(dahl_block* const in)
+// ------------------ BACKWARD MAX POOLING ------------------
+void call_relu(starpu_data_handle_t in_handle, starpu_data_handle_t out_handle)
 {
-    int ret = starpu_task_insert(&cl_relu, STARPU_RW, in->handle);
+    int ret = starpu_task_insert(&cl_relu, 
+                                 STARPU_R, in_handle, 
+                                 STARPU_W, out_handle, 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+void task_block_relu(dahl_block const* const in, dahl_block* const out)
+{
+    call_relu(in->handle, out->handle);
+}
+
+void task_block_relu_self(dahl_block* const self)
+{
+    call_relu(self->handle, self->handle);
+}
+
+// ------------------ SUM Z AXIS ------------------
 dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
 {
     shape3d in_shape = block_get_shape(in);
@@ -64,22 +79,33 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
 
 // ------------------ SCAL SELF ------------------
 // TODO: make it return to another buffer by default to match call_sub behaviour, then it call be called with the same buffers to scal self if needed.
-void call_scal(starpu_data_handle_t handle, dahl_fp const factor)
+void call_scal(starpu_data_handle_t in_handle, starpu_data_handle_t out_handle, dahl_fp const factor)
 {
     int ret = starpu_task_insert(&cl_scal,
                              STARPU_VALUE, &factor, sizeof(&factor),
-                             STARPU_RW, handle, 0);
+                             STARPU_R, in_handle, 
+                             STARPU_W, out_handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_block_scal_self(dahl_block* const in, dahl_fp const factor)
+void task_block_scal(dahl_matrix const* const in, dahl_matrix* const out,  dahl_fp const factor)
 {
-    call_scal(in->handle, factor);
+    call_scal(in->handle, out->handle, factor);
 }
 
-void task_matrix_scal_self(dahl_matrix* const in, dahl_fp const factor)
+void task_matrix_scal(dahl_matrix const* const in, dahl_matrix* const out, dahl_fp const factor)
 {
-    call_scal(in->handle, factor);
+    call_scal(in->handle, out->handle, factor);
+}
+
+void task_block_scal_self(dahl_block* const self, dahl_fp const factor)
+{
+    call_scal(self->handle, self->handle, factor);
+}
+
+void task_matrix_scal_self(dahl_matrix* const self, dahl_fp const factor)
+{
+    call_scal(self->handle, self->handle, factor);
 }
 
 // ------------------ SUB ------------------
@@ -141,7 +167,7 @@ dahl_block* task_block_add(dahl_block const* const a, dahl_block const* const b)
     return c;
 }
 
-dahl_block* task_matrix_add(dahl_matrix const* const a, dahl_matrix const* const b)
+dahl_matrix* task_matrix_add(dahl_matrix const* const a, dahl_matrix const* const b)
 {
     // Output shape is the same as input's one
     shape2d c_shape = matrix_get_shape(a);

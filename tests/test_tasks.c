@@ -115,7 +115,7 @@ void test_relu()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    task_block_relu(a_block);
+    task_block_relu_self(a_block);
 
     assert(block_equals(expect_block, a_block));
     block_finalize(a_block);

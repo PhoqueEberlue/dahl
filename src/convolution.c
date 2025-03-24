@@ -59,7 +59,7 @@ dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* cons
     block_unpartition(output);
     block_unpartition(conv->filters);
 
-    task_block_relu(output);
+    task_block_relu_self(output);
 
     // Could be interesting to know if the relu task is really waiting for other tasks because starting?
     // It should be the case because of the data dependency and because it is working but we may verify that
