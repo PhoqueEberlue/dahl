@@ -3,142 +3,44 @@
 
 #include <starpu.h>
 
-// TODO: doc
-void matrix_cross_correlation(void *buffers[3], void *cl_arg);
+// Helper macro to generate the three essentials codelets definitions:
+// - The actual codelet function signature which is always the same, `void(void**, void*)`
+//   but here we also specify the number of buffers
+// - starpu_perfmodel
+// - starpu_codelet, referencing the function, number of buffers, their access modes and
+//   the perfmodel
+#define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                         \
+    void func_name(void *buffers[num_buffers], void *cl_arg);                      \
+                                                                                   \
+    static struct starpu_perfmodel perf_model_##func_name = {                      \
+        .type = STARPU_HISTORY_BASED,                                              \
+        .symbol = "perf_model_" #func_name                                         \
+    };                                                                             \
+                                                                                   \
+    static struct starpu_codelet cl_##func_name = {                                \
+        .cpu_funcs = { func_name },                                                \
+        .nbuffers = num_buffers,                                                   \
+        .modes = { __VA_ARGS__ },                                                  \
+        .model = &perf_model_##func_name                                           \
+    };
 
-static struct starpu_perfmodel perf_model_matrix_cross_correlation =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_matrix_cross_correlation"
-};
- 
- 
-static struct starpu_codelet cl_matrix_cross_correlation =
-{
-    .cpu_funcs = { matrix_cross_correlation },
-    .nbuffers = 3,
-    .modes = { STARPU_R, STARPU_R, STARPU_W },
-    .model = &perf_model_matrix_cross_correlation
-};
+DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W)
 
-void matrix_max_pooling(void *buffers[3], void *cl_arg);
+// Codelet arg: size_t pool_size
+DEFINE_STARPU_CODELET(matrix_max_pooling, 3, STARPU_R, STARPU_W, STARPU_W)
 
-static struct starpu_perfmodel perf_model_matrix_max_pooling =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_matrix_max_pooling"
-};
- 
-static struct starpu_codelet cl_matrix_max_pooling =
-{
-    .cpu_funcs = { matrix_max_pooling },
-    .nbuffers = 3,
-    .modes = { STARPU_R, STARPU_W, STARPU_W },
-    .model = &perf_model_matrix_max_pooling
-};
+// Codelet arg: size_t pool_size
+DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, STARPU_R, STARPU_R, STARPU_W)
 
-void matrix_backward_max_pooling(void *buffers[3], void *cl_arg);
+DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W)
 
-static struct starpu_perfmodel perf_model_matrix_backward_max_pooling =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_matrix_backward_max_pooling"
-};
- 
-static struct starpu_codelet cl_matrix_backward_max_pooling =
-{
-    .cpu_funcs = { matrix_backward_max_pooling },
-    .nbuffers = 3,
-    .modes = { STARPU_R, STARPU_R, STARPU_W },
-    .model = &perf_model_matrix_backward_max_pooling
-};
+DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W)
 
-void relu(void *buffers[2], void *cl_arg);
+// Codelet arg: dahl_fp factor
+DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W)
 
-static struct starpu_perfmodel perf_model_relu =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_relu"
-};
- 
- 
-static struct starpu_codelet cl_relu =
-{
-    .cpu_funcs = { relu },
-    .nbuffers = 2,
-    .modes = { STARPU_R, STARPU_W },
-    .model = &perf_model_relu
-};
+DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W)
 
-
-// Sum the elements of a block over Z axis and fill output block (but will be considered as a matrix)
-// arg: input, output
-void block_sum_z_axis(void *buffers[2], void *cl_arg);
-
-static struct starpu_perfmodel perf_model_block_sum_z_axis =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_block_sum_z_axis"
-};
- 
- 
-static struct starpu_codelet cl_block_sum_z_axis =
-{
-    .cpu_funcs = { block_sum_z_axis },
-    .nbuffers = 2,
-    .modes = { STARPU_R, STARPU_W },
-    .model = &perf_model_block_sum_z_axis
-};
-
-void scal(void *buffers[2], void *cl_arg);
-
-static struct starpu_perfmodel perf_model_scal =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_scal"
-};
- 
- 
-static struct starpu_codelet cl_scal =
-{
-    .cpu_funcs = { scal },
-    .nbuffers = 2,
-    .modes = { STARPU_R, STARPU_W },
-    .model = &perf_model_scal
-};
-
-void sub(void *buffers[3], void *cl_arg);
-
-static struct starpu_perfmodel perf_model_sub =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_sub"
-};
- 
- 
-static struct starpu_codelet cl_sub =
-{
-    .cpu_funcs = { sub },
-    .nbuffers = 3,
-    .modes = { STARPU_R, STARPU_R, STARPU_W },
-    .model = &perf_model_sub
-};
-
-void add(void *buffers[3], void *cl_arg);
-
-static struct starpu_perfmodel perf_model_add =
-{
-    .type = STARPU_HISTORY_BASED,
-    .symbol = "perf_model_add"
-};
- 
- 
-static struct starpu_codelet cl_add =
-{
-    .cpu_funcs = { add },
-    .nbuffers = 3,
-    .modes = { STARPU_R, STARPU_R, STARPU_W },
-    .model = &perf_model_add
-};
+DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W)
 
 #endif //!DAHL_CODELETS_H
