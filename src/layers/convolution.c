@@ -1,5 +1,4 @@
 #include "convolution.h"
-#include "types.h"
 
 convolution* convolution_init(shape2d input_shape, size_t filter_size, size_t num_filters)
 {

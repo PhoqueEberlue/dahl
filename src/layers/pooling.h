@@ -1,7 +1,8 @@
 #ifndef DAHL_POOLING_H
 #define DAHL_POOLING_H
 
-#include "tasks.h"
+#include "../types.h"
+#include "../tasks.h"
 
 typedef struct 
 {

@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "tasks.h"
+#include "../tasks.h"
+#include "../types.h"
 
-typedef struct 
+typedef struct
 {
     shape2d const input_shape;
     // Last input data

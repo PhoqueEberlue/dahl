@@ -1,6 +1,4 @@
 #include "pooling.h"
-#include "tasks.h"
-#include "types.h"
 
 // Not much to init because most of the other fields need to be computed depending on input data.
 pooling* pooling_init(size_t const pool_size)
