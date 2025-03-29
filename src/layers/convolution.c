@@ -58,7 +58,7 @@ dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* cons
     block_unpartition(output);
     block_unpartition(conv->filters);
 
-    task_block_relu_self(output);
+    task_any_relu_self(AS_ANY(output));
 
     // Could be interesting to know if the relu task is really waiting for other tasks because starting?
     // It should be the case because of the data dependency and because it is working but we may verify that
@@ -93,7 +93,7 @@ dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_
         dahl_matrix* tmp = matrix_init(conv->input_shape);
         
         task_matrix_cross_correlation(sub_dl_dout, sub_filters, tmp);
-        task_matrix_add_self(dl_dinput, tmp);
+        task_any_add_self(AS_ANY(dl_dinput), AS_ANY(tmp));
     }
 
     starpu_task_wait_for_all();
@@ -105,10 +105,10 @@ dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
     // biases -= dl_dout * learning_rate
-    task_block_scal_self(dl_dfilters, learning_rate);
-    task_block_scal_self(dl_dout, learning_rate);
-    task_block_sub_self(conv->filters, dl_dfilters);
-    task_block_sub_self(conv->biases, dl_dout);
+    task_any_scal_self(AS_ANY(dl_dfilters), learning_rate);
+    task_any_scal_self(AS_ANY(dl_dout), learning_rate);
+    task_any_sub_self(AS_ANY(conv->filters), AS_ANY(dl_dfilters));
+    task_any_sub_self(AS_ANY(conv->biases), AS_ANY(dl_dout));
 
     starpu_task_wait_for_all();
 

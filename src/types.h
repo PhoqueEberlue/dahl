@@ -92,6 +92,10 @@ typedef struct
             }                                                 \
     )
 
+#define AS_BLOCK(x) (dahl_block*)((x).structure.block)
+#define AS_MATRIX(x) (dahl_matrix*)((x).structure.matrix)
+#define AS_VECTOR(x) (dahl_vector*)((x).structure.vector)
+
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: shape3d object describing the dimensions of the block
@@ -186,5 +190,10 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
 
 void vector_print(dahl_vector const* const vector);
 void vector_finalize(dahl_vector* vector);
+
+starpu_data_handle_t any_get_handle(dahl_any const any);
+
+// Allocate and return a `dahl_any` with the same shape as the parameter
+dahl_any any_zeros_like(dahl_any const any);
 
 #endif //!DAHL_TYPES_H

@@ -115,7 +115,7 @@ void test_relu()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    task_block_relu_self(a_block);
+    task_any_relu_self(AS_ANY(a_block));
 
     assert(block_equals(expect_block, a_block));
     block_finalize(a_block);
@@ -191,7 +191,7 @@ void test_scal()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    task_block_scal_self(a_block, 2);
+    task_any_scal_self(AS_ANY(a_block), 2);
 
     assert(block_equals(expect_block, a_block));
     block_finalize(a_block);
@@ -241,12 +241,12 @@ void test_sub()
     dahl_block* b_block = block_init_from(b_shape, (dahl_fp*)&b);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_block* result_block = task_block_sub(a_block, b_block);
+    dahl_block* result_block = AS_BLOCK(task_any_sub(AS_ANY(a_block), AS_ANY(b_block)));
 
     assert(block_equals(expect_block, result_block)); 
 
     // here it modifies a instead of returning the result
-    task_block_sub_self(a_block, b_block);
+    task_any_sub_self(AS_ANY(a_block), AS_ANY(b_block));
     assert(block_equals(expect_block, a_block));
 
     block_finalize(a_block);
@@ -298,12 +298,12 @@ void test_add()
     dahl_block* b_block = block_init_from(b_shape, (dahl_fp*)&b);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_block* result_block = task_block_add(a_block, b_block);
+    dahl_block* result_block = AS_BLOCK(task_any_add(AS_ANY(a_block), AS_ANY(b_block)));
 
     assert(block_equals(expect_block, result_block)); 
 
     // here it modifies a instead of returning the result
-    task_block_add_self(a_block, b_block);
+    task_any_add_self(AS_ANY(a_block), AS_ANY(b_block));
     assert(block_equals(expect_block, a_block));
 
     block_finalize(a_block);

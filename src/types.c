@@ -221,7 +221,7 @@ dahl_matrix* matrix_init_from_ptr(shape2d const shape, dahl_fp* const data)
         STARPU_MAIN_RAM,
         (uintptr_t)data,
         shape.x,
-        0, // TODO: does this still works?
+        shape.x*shape.y,
         shape.x,
         shape.y,
         1,
@@ -423,8 +423,8 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* const data)
         &handle,
         STARPU_MAIN_RAM,
         (uintptr_t)data,
-        0,   // ldy
-        0,   // ldz
+        len,   // TODO: is it the len?
+        len,   // TODO: is it the len?
         len, // nx
         1,   // ny
         1,   // nz
@@ -538,4 +538,36 @@ void vector_finalize(dahl_vector* vector)
     starpu_data_unregister(vector->handle);
     free(vector->data);
     free(vector);
+}
+
+starpu_data_handle_t any_get_handle(dahl_any const any)
+{
+    switch (any.type)
+    {
+        case dahl_type_block:
+            return any.structure.block->handle;
+        case dahl_type_matrix:
+            return any.structure.matrix->handle;
+        case dahl_type_vector:
+            return any.structure.vector->handle;
+    }
+}
+
+dahl_any any_zeros_like(dahl_any const any)
+{
+    switch (any.type)
+    {
+        case dahl_type_block:
+            auto b_shape = block_get_shape(any.structure.block);
+            dahl_block* b = block_init(b_shape);
+            return AS_ANY(b);
+        case dahl_type_matrix:
+            auto m_shape = matrix_get_shape(any.structure.matrix);
+            dahl_matrix* m = matrix_init(m_shape);
+            return AS_ANY(m);
+        case dahl_type_vector:
+            auto v_len = vector_get_len(any.structure.vector);
+            dahl_vector* v = vector_init(v_len);
+            return AS_ANY(v);
+    }
 }
