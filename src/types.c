@@ -1,4 +1,5 @@
 #include "types.h"
+#include "starpu_data_filters.h"
 #include "utils.h"
 #include <assert.h>
 #include <stdio.h>
@@ -220,7 +221,7 @@ dahl_matrix* matrix_init_from_ptr(shape2d const shape, dahl_fp* const data)
         STARPU_MAIN_RAM,
         (uintptr_t)data,
         shape.x,
-        shape.x*shape.y,
+        0, // TODO: does this still works?
         shape.x,
         shape.y,
         1,
@@ -231,6 +232,8 @@ dahl_matrix* matrix_init_from_ptr(shape2d const shape, dahl_fp* const data)
     matrix->handle = handle;
     matrix->data = data;
     matrix->is_sub_block_data = false;
+    matrix->is_partitioned = false;
+    matrix->sub_vectors = nullptr;
 
     return matrix;
 }
@@ -289,8 +292,8 @@ shape2d matrix_get_shape(dahl_matrix const *const matrix)
 
 bool matrix_equals(dahl_matrix const* const matrix_a, dahl_matrix const* const matrix_b)
 {
-    shape2d shape_a = matrix_get_shape(matrix_a);
-    shape2d shape_b = matrix_get_shape(matrix_b);
+    shape2d const shape_a = matrix_get_shape(matrix_a);
+    shape2d const shape_b = matrix_get_shape(matrix_b);
 
     assert(shape_a.x == shape_b.x 
         && shape_a.y == shape_b.y);
@@ -344,13 +347,195 @@ void matrix_print(dahl_matrix const* const matrix)
 // We don't have to free matrix->data because it should be managed by the user
 void matrix_finalize(dahl_matrix* matrix)
 {
+    if (matrix->is_partitioned)
+    {
+        // Case where user forgot to unpartition data
+        starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
+    }
+
     if (matrix->is_sub_block_data)
     {
-        printf("ERROR: block_finalize() shouldn't be used on sub block data because it will be freed by block_unpartition().");
+        printf("ERROR: matrix_finalize() shouldn't be used on sub block data because it will be freed by block_unpartition().");
         abort();
     }
 
     starpu_data_unregister(matrix->handle);
     free(matrix->data);
     free(matrix);
+}
+
+void matrix_partition_along_y(dahl_matrix* const matrix)
+{
+    shape2d const shape = matrix_get_shape(matrix);
+
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_matrix_filter_vertical_block,
+		.nchildren = shape.y,
+	};
+
+	starpu_data_partition(matrix->handle, &f);
+    
+    matrix->is_partitioned = true;
+    matrix->sub_vectors = malloc(shape.y * sizeof(dahl_matrix));
+
+    for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
+    {
+		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
+
+        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_vector_handle);
+
+        matrix->sub_vectors[i].handle = sub_vector_handle;
+        matrix->sub_vectors[i].data = data;
+        matrix->sub_vectors[i].is_sub_matrix_data = false;
+    }
+}
+
+void matrix_unpartition(dahl_matrix* const matrix)
+{
+    starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
+    free(matrix->sub_vectors);
+    matrix->sub_vectors = nullptr;
+    matrix->is_partitioned = false;
+}
+
+size_t matrix_get_sub_vector_nb(dahl_matrix const* const matrix)
+{
+    return starpu_data_get_nb_children(matrix->handle);
+}
+
+dahl_vector* matrix_get_sub_matrix(dahl_matrix const* const matrix, const size_t index)
+{
+    assert(matrix->is_partitioned 
+        && matrix->sub_vectors != nullptr 
+        && index < starpu_data_get_nb_children(matrix->handle));
+
+    return &matrix->sub_vectors[index];
+}
+
+// See `block_init_from_ptr` for more information.
+dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* const data)
+{
+    starpu_data_handle_t handle = nullptr;
+
+    // Under the hood, dahl_vector is in fact a starpu_block with only 1 y and z dimensions
+    starpu_block_data_register(
+        &handle,
+        STARPU_MAIN_RAM,
+        (uintptr_t)data,
+        0,   // ldy
+        0,   // ldz
+        len, // nx
+        1,   // ny
+        1,   // nz
+        sizeof(dahl_fp)
+    );
+
+    dahl_vector* vector = malloc(sizeof(dahl_vector));
+    vector->handle = handle;
+    vector->data = data;
+    vector->is_sub_matrix_data = false;
+
+    return vector;
+}
+
+dahl_vector* vector_init_from(size_t const len, dahl_fp* const data)
+{
+    dahl_fp* data_copy = malloc(len * sizeof(dahl_fp));
+    
+    for (int i = 0; i < len; i++)
+    {
+        data_copy[i] = data[i];
+    }
+
+    return vector_init_from_ptr(len, data_copy);
+}
+
+dahl_vector* vector_init_random(size_t const len)
+{
+    dahl_fp* data = malloc(len * sizeof(dahl_fp));
+
+    for (int i = 0; i < len; i += 1)
+    {
+        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( rand() % DAHL_MAX_RANDOM_VALUES ) );
+    }
+
+    return vector_init_from(len, data);
+}
+
+// Initialize a starpu block at 0 and return its handle
+dahl_vector* vector_init(size_t const len)
+{
+    dahl_fp* data = malloc(len * sizeof(dahl_fp));
+
+    for (int i = 0; i < len; i += 1)
+    {
+        data[i] = 0;
+    }
+
+    return vector_init_from_ptr(len, data);
+}
+
+size_t vector_get_len(dahl_vector const *const vector)
+{
+    return starpu_block_get_nx(vector->handle);
+}
+
+bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b)
+{
+    size_t const len_a = vector_get_len(vector_a);
+    size_t const len_b = vector_get_len(vector_b);
+
+    assert(len_a == len_b
+        && len_a == len_b);
+
+    starpu_data_acquire(vector_a->handle, STARPU_R);
+    starpu_data_acquire(vector_b->handle, STARPU_R);
+
+    bool res = true;
+
+    for (int i = 0; i < (len_a * len_b); i++)
+    {
+        if (vector_a->data[i] != vector_b->data[i])
+        {
+            res = false;
+            continue;
+        }
+    }
+
+    starpu_data_release(vector_a->handle);
+    starpu_data_release(vector_b->handle);
+
+    return res;
+}
+
+void vector_print(dahl_vector const* const vector)
+{
+    const size_t len = vector_get_len(vector);
+
+	starpu_data_acquire(vector->handle, STARPU_R);
+
+    printf("vector=%p nx=%zu\n", vector->data, len);
+
+    for(size_t x = 0; x < len; x++)
+    {
+        printf("%f ", vector->data[x]);
+    }
+    printf("\n");
+
+	starpu_data_release(vector->handle);
+}
+
+// We don't have to free matrix->data because it should be managed by the user
+void vector_finalize(dahl_vector* vector)
+{
+    if (vector->is_sub_matrix_data)
+    {
+        printf("ERROR: vector_finalize() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
+        abort();
+    }
+
+    starpu_data_unregister(vector->handle);
+    free(vector->data);
+    free(vector);
 }
