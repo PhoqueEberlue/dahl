@@ -43,6 +43,7 @@
     ```
     And probably that even for add functions, block and matrix functions could be the same in fact?
     => THIS IS WHAT HAVE BEEN CHOSEN
+
 -------------------------------------------------------------------------------
 - Make dahl_matrix / dahl_block generic? they could use the type we want? -> seems hard, need to think about it.
     ```c
@@ -114,17 +115,141 @@
         }
     }
     ```
-    Solution 1 is the actual one, this is the fastest because only one type can be used at runtime, so everything is perfectly tailor-made.
-    Solution 2 keeps the code in a readable state, however the performance for calling the functions, passing by address and doing the good casts
+    - Solution 1 is the actual one, this is the fastest because only one type can be used at runtime, so everything is perfectly tailor-made.
+    - Solution 2 keeps the code in a readable state, however the performance for calling the functions, passing by address and doing the good casts
     does severely degrade the performance.
-    Solution 3 makes the code awful but it is performing almost as great as solution 1, probably thanks to branch prediction.
-    Solution 4 involves using C++ templates, however it is still mandatory to link everything together by hand for each codelet for each type... 
+    - Solution 3 makes the code awful but it is performing almost as great as solution 1, probably thanks to branch prediction.
+    - Solution 4 involves using C++ templates, however it is still mandatory to link everything together by hand for each codelet for each type... 
     Nntile does that, the code is indeed less readable.
+
     -> lun. 24 mars 2025 14:57:44 CET, for now, the use case of generic types is just to store indexes into a block. Instead we could create a data
     structure "view" which makes sense to have it's own implementation?
+
+-------------------------------------------------------------------------------
+- ven. 28 mars 2025 08:26:17 CET
+    ~ Macro nightmare ~
+    ```c
+    #define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                         \
+        void func_name(void *buffers[num_buffers], void *cl_arg);                      \
+                                                                                       \
+        static struct starpu_perfmodel perf_model_##func_name = {                      \
+            .type = STARPU_HISTORY_BASED,                                              \
+            .symbol = "perf_model_" #func_name                                         \
+        };                                                                             \
+                                                                                       \
+        static struct starpu_codelet cl_##func_name = {                                \
+            .cpu_funcs = { func_name },                                                \
+            .nbuffers = num_buffers,                                                   \
+            .modes = { __VA_ARGS__ },                                                  \
+            .model = &perf_model_##func_name                                           \
+        };                                                                             \
+                                                                                       \
+        void call_##func_name(SELECT_ARGS(num_buffers, starpu_data_handle_t))          \
+        {                                                                              \
+            int ret = starpu_task_insert(&cl_##func_name,                              \
+                                         SELECT_ACCESS_HANDLE(num_buffers, __VA_ARGS__)\
+                                         0);                                           \
+                                                                                       \
+            STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");                \
+        }
+
+
+    #define GET_ARG_1(A, ...) A
+    #define GET_ARG_2(_1, A, ...) A
+    #define GET_ARG_3(_1, _2, A, ...) A
+    #define GET_ARG_4(_1, _2, _3, A, ...) A
+    #define GET_ARG_5(_1, _2, _3, _4, A, ...) A
+
+    #define ARG(N, T) T a##N
+    #define ARG_LIST_1(T) ARG(1, T)
+    #define ARG_LIST_2(T) ARG_LIST_1(T), ARG(2, T)
+    #define ARG_LIST_3(T) ARG_LIST_2(T), ARG(3, T)
+    #define ARG_LIST_4(T) ARG_LIST_3(T), ARG(4, T)
+    #define ARG_LIST_5(T) ARG_LIST_4(T), ARG(5, T)
+    #define SELECT_ARGS(N, T) ARG_LIST_##N(T)
+
+    #define ACCESS_HANDLE(N, ...) GET_ARG_##N(__VA_ARGS__), a##N,
+    #define ACCESS_HANDLE_LIST_1(...) ACCESS_HANDLE(1, __VA_ARGS__)
+    #define ACCESS_HANDLE_LIST_2(...) ACCESS_HANDLE_LIST_1(__VA_ARGS__) ACCESS_HANDLE(2, __VA_ARGS__)
+    #define ACCESS_HANDLE_LIST_3(...) ACCESS_HANDLE_LIST_2(__VA_ARGS__) ACCESS_HANDLE(3, __VA_ARGS__)
+    #define SELECT_ACCESS_HANDLE(N, ...) ACCESS_HANDLE_LIST_##N(__VA_ARGS__)
+
+    DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(matrix_max_pooling, 3, STARPU_R, STARPU_W, STARPU_W)
+    DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, STARPU_R, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W)
+    DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W)
+    ```
+    The first part is actually pretty nice to define perf models, codelets struct and function, but the call_function() is too much. 
+
+-------------------------------------------------------------------------------
+- Simplifying the api by providing a common type "any" that would let you pass anything (block, matrix, vector) so that the functions that performs elementary operations could be called by the same function (e.g. ADD is the same implementation for every data types).
+    Actualy if I did a simple function to convert a type, let's say block, to the any type, it would complexify the user code by adding a lot of local variables in their code for each "type casting".
+    Another solution is to only use any type as a stack allocated object, thus it can be passed directly by value, so we can call `operator(block_as_any())` where operator takes a any.
+    However it again adds functions with long names (block_as_any, vector_as_any etc.), and if an operator has a lot of parameters it can become a mess.
+    Instead we can use macros to handle that, as type is knowned at compilation anyways, giving us more syntax sugar
+    ```c
+    struct a
+    {
+        int i;
+    };
+
+    struct b
+    {
+        int i;
+    };
+
+    struct any
+    {
+        union data
+        {
+            struct a* a;
+            struct b* b;
+        } data;
+
+        enum type
+        {
+            type_a,
+            type_b,
+        } type;
+    };
+
+    #define AS_ANY(x) _Generic((x),              \
+        struct a*:                               \
+            (struct any)                         \
+            {                                    \
+                .data = { .a = (struct a*)(x) }, \
+                .type = type_a                   \
+            },                                   \
+        struct b*:                               \
+            (struct any)                         \
+            {                                    \
+                .data = { .b = (struct b*)(x) }, \
+                .type = type_b                   \
+            }                                    \
+    )
+
+    void fn(struct any an)
+    {
+        // actually checks with value any is
+    }
+
+    int main()
+    {
+        struct a a = { .i = 42 };
+        struct b b = { .i = 12 };
+
+        fn(AS_ANY(&a));
+    }
+    ```
 
 -------------------------------------------------------------------------------
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
 - is `type const* const` really useful? typically when defining a parameter, obviously the pointer is const and won't be changed no? idk
     => Yes it is!
+- Check discarded const
+- test backward pass
