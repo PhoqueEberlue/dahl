@@ -3,8 +3,8 @@
 
 // Asserts that "a cross correlation b = expect"
 void assert_matrix_cross_correlation(dahl_fp* a, shape2d a_shape,
-                                 dahl_fp* b, shape2d b_shape,
-                                 dahl_fp* expect, shape2d expect_shape)
+                                     dahl_fp* b, shape2d b_shape,
+                                     dahl_fp* expect, shape2d expect_shape)
 {
     dahl_matrix* a_matrix = matrix_init_from(a_shape, a);
     dahl_matrix* b_matrix = matrix_init_from(b_shape, b);
