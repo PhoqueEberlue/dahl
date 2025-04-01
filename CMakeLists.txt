@@ -27,21 +27,32 @@ endif()
 # Example of linking cuda file to c
 add_library(scal_obj STATIC kernels/scal.cu)
 
-# Get every .h and .c in ./src/ and put them in variable ${dahl_files}
-file(GLOB_RECURSE dahl_files CONFIGURE_DEPENDS "./src/*.h" "./src/*.c")
-file(GLOB_RECURSE test_files CONFIGURE_DEPENDS "./tests/*.c")
-file(GLOB_RECURSE kernel_files CONFIGURE_DEPENDS "./kernels/*.cu")
+# Get every .h and .c in ./src ./include, and .cu in kernerls
+file(GLOB_RECURSE dahl_includes CONFIGURE_DEPENDS "./include/*.h")
+file(GLOB_RECURSE dahl_sources CONFIGURE_DEPENDS "./src/*.h" "./src/*.c")
+file(GLOB_RECURSE dahl_kernels CONFIGURE_DEPENDS "./kernels/*.cu")
+
+# Tests files
+file(GLOB_RECURSE dahl_tests CONFIGURE_DEPENDS "./tests/*.c")
 
 set(kernel_files
     kernels/scal.cu
 )
 
-add_executable(tests
-    ${dahl_files}
-    ${kernel_files}
-    ${test_files}
+add_library(dahl
+    ${dahl_includes}
+    ${dahl_sources}
+    ${dahl_kernels}
 )
 
-# TODO: add_library, with an include folder
+add_executable(tests
+    ${dahl_tests}
+)
 
-target_link_libraries(tests PRIVATE czmq scal_obj)
+add_executable(example-mnist
+    "./examples/fashion-mnist.c"
+)
+
+target_link_libraries(dahl PRIVATE czmq scal_obj)
+target_link_libraries(tests PUBLIC dahl)
+target_link_libraries(example-mnist PUBLIC dahl)

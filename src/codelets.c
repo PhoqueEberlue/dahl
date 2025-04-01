@@ -1,6 +1,6 @@
 #include "codelets.h"
 #include "starpu_task_util.h"
-#include "types.h"
+#include "../include/dahl_types.h"
 #include <assert.h>
 #include <stdlib.h>
 
@@ -52,7 +52,7 @@ void matrix_cross_correlation(void* buffers[3], void* cl_arg)
     }
 }
 
-void matrix_max_pooling(void* buffers[3], void* cl_arg)
+void matrix_max_dahl_pooling(void* buffers[3], void* cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
@@ -114,7 +114,7 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     }
 }
 
-void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
+void matrix_backward_max_dahl_pooling(void *buffers[3], void *cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);

@@ -1,15 +1,16 @@
-#include "pooling.h"
+#include "../../include/dahl_pooling.h"
+#include "../../include/dahl_tasks.h"
 
 // Not much to init because most of the other fields need to be computed depending on input data.
-pooling* pooling_init(size_t const pool_size)
+dahl_pooling* pooling_init(size_t const pool_size)
 {
-    pooling* pool = malloc(sizeof(pooling));
+    dahl_pooling* pool = malloc(sizeof(dahl_pooling));
     *(size_t*)&pool->pool_size = pool_size;
 
     return pool;
 }
 
-dahl_block* pooling_forward(pooling* const pool, dahl_block const* const input)
+dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const input)
 {
     pool->input_data = input; // TODO: I mean, input value itself isn't changed? though how do we free the memory?
     pool->input_shape = block_get_shape(input);
@@ -43,7 +44,7 @@ dahl_block* pooling_forward(pooling* const pool, dahl_block const* const input)
     return pool->output_data;
 }
 
-dahl_block* pooling_backward(pooling* const pool, dahl_block const* const dl_dout)
+dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block const* const dl_dout)
 {
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);

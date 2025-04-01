@@ -24,23 +24,13 @@
         .model = &perf_model_##func_name                                           \
     };
 
-DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W)
-
-// Codelet arg: size_t pool_size
-DEFINE_STARPU_CODELET(matrix_max_pooling, 3, STARPU_R, STARPU_W, STARPU_W)
-
-// Codelet arg: size_t pool_size
-DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, STARPU_R, STARPU_R, STARPU_W)
-
-DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W)
-
-DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W)
-
-// Codelet arg: dahl_fp factor
-DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W)
-
-DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W)
-
-DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W)
+DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_max_dahl_pooling, 3, STARPU_R, STARPU_W, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_backward_max_dahl_pooling, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W);
 
 #endif //!DAHL_CODELETS_H

@@ -1,8 +1,8 @@
-#include "convolution.h"
+#include "../../include/dahl_convolution.h"
 
-convolution* convolution_init(shape2d input_shape, size_t filter_size, size_t num_filters)
+dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
-    shape3d filter_shape = {
+    dahl_shape3d filter_shape = {
         .x = filter_size,
         .y = filter_size,
         .z = num_filters,
@@ -10,7 +10,7 @@ convolution* convolution_init(shape2d input_shape, size_t filter_size, size_t nu
     
     dahl_block* filters = block_init_random(filter_shape);
 
-    shape3d output_shape = {
+    dahl_shape3d output_shape = {
         .x = input_shape.x - filter_size + 1,
         .y = input_shape.y - filter_size + 1,
         .z = num_filters,
@@ -18,25 +18,25 @@ convolution* convolution_init(shape2d input_shape, size_t filter_size, size_t nu
 
     dahl_block* biases = block_init_random(output_shape);
 
-    convolution* conv = malloc(sizeof(convolution));
+    dahl_convolution* conv = malloc(sizeof(dahl_convolution));
 
     // Little trick to initialize const fields dynamically
-    *(shape2d*)&conv->input_shape = input_shape;
+    *(dahl_shape2d*)&conv->input_shape = input_shape;
     *(size_t*)&conv->num_filters = num_filters;
     *(size_t*)&conv->filter_size = filter_size;
-    *(shape3d*)&conv->filter_shape = filter_shape;
-    *(shape3d*)&conv->output_shape = output_shape;
+    *(dahl_shape3d*)&conv->filter_shape = filter_shape;
+    *(dahl_shape3d*)&conv->output_shape = output_shape;
     conv->filters = filters;
     conv->biases = biases;
 
     return conv;
 }
 
-dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* const input)
+dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const* const input)
 {
     // TODO: we may free data between each call of this function? (at each epoch?)
     // so maybe store and free the output from the previous call here?
-    // or it should be freed in pooling_forward_pass which should be the last one to use it, 
+    // or it should be freed in dahl_pooling_forward_pass which should be the last one to use it, 
     // but it seems like a bad idea.
     
     dahl_block* output = block_init(conv->output_shape);
@@ -58,7 +58,7 @@ dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* cons
     block_unpartition(output);
     block_unpartition(conv->filters);
 
-    task_any_relu_self(AS_ANY(output));
+    TASK_RELU_SELF(output);
 
     // Could be interesting to know if the relu task is really waiting for other tasks because starting?
     // It should be the case because of the data dependency and because it is working but we may verify that
@@ -67,7 +67,7 @@ dahl_block* convolution_forward(convolution* const conv, dahl_matrix const* cons
     return output;
 }
 
-dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input)
+dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input)
 {
     // derivative loss
     dahl_matrix* dl_dinput = matrix_init(conv->input_shape);
@@ -93,7 +93,7 @@ dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_
         dahl_matrix* tmp = matrix_init(conv->input_shape);
         
         task_matrix_cross_correlation(sub_dl_dout, sub_filters, tmp);
-        task_any_add_self(AS_ANY(dl_dinput), AS_ANY(tmp));
+        TASK_ADD_SELF(dl_dinput, tmp);
     }
 
     starpu_task_wait_for_all();
@@ -105,10 +105,10 @@ dahl_matrix* convolution_backward(convolution* const conv, dahl_block* const dl_
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
     // biases -= dl_dout * learning_rate
-    task_any_scal_self(AS_ANY(dl_dfilters), learning_rate);
-    task_any_scal_self(AS_ANY(dl_dout), learning_rate);
-    task_any_sub_self(AS_ANY(conv->filters), AS_ANY(dl_dfilters));
-    task_any_sub_self(AS_ANY(conv->biases), AS_ANY(dl_dout));
+    TASK_SCAL_SELF(dl_dfilters, learning_rate);
+    TASK_SCAL_SELF(dl_dout, learning_rate);
+    TASK_SUB_SELF(conv->filters, dl_dfilters);
+    TASK_SUB_SELF(conv->biases, dl_dout);
 
     starpu_task_wait_for_all();
 

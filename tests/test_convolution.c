@@ -1,16 +1,16 @@
 #include "starpu_data_interfaces.h"
 #include "tests.h"
 
-//#include "../src/convolution.h"
+//#include "../src/dahl_convolution.h"
 #include "../src/utils.h"
 #include <stdio.h>
 
-// void test_convolution()
+// void test_dahl_convolution()
 // {
-//     const shape2d input_shape = { .x = 9, .y = 12 };
+//     const dahl_shape2d input_shape = { .x = 9, .y = 12 };
 //     const size_t num_filters = 10;
 //     const size_t filter_size = 3;
-//     convolution conv = create_convolution(input_shape, filter_size, num_filters);
+//     dahl_convolution conv = create_dahl_convolution(input_shape, filter_size, num_filters);
 // 
 //     assert(conv.filter_shape.x == filter_size);
 //     assert(conv.filter_shape.y == filter_size);
@@ -25,7 +25,7 @@
 // 
 //     // Here we will pass only one image (input) to forward pass, that why z=1, but we can imagine having multiple images and applying
 //     // starpu filters on the block.
-//     const shape3d inputs_shape = { .x = 9, .y = 12, .z = 1 };
+//     const dahl_shape3d inputs_shape = { .x = 9, .y = 12, .z = 1 };
 //     starpu_data_handle_t input_handle = block_init(inputs_shape);
 //     block_fill_random(input_handle);
 //     

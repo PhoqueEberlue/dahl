@@ -1,10 +1,10 @@
 #include "tests.h"
-#include "../src/tasks.h"
+#include "../include/dahl.h"
 
 // Asserts that "a cross correlation b = expect"
-void assert_matrix_cross_correlation(dahl_fp* a, shape2d a_shape,
-                                     dahl_fp* b, shape2d b_shape,
-                                     dahl_fp* expect, shape2d expect_shape)
+void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
+                                     dahl_fp* b, dahl_shape2d b_shape,
+                                     dahl_fp* expect, dahl_shape2d expect_shape)
 {
     dahl_matrix* a_matrix = matrix_init_from(a_shape, a);
     dahl_matrix* b_matrix = matrix_init_from(b_shape, b);
@@ -25,9 +25,9 @@ void assert_matrix_cross_correlation(dahl_fp* a, shape2d a_shape,
 
 void test_matrix_cross_correlation_1()
 {
-    shape2d a_shape = { .x = 5, .y = 5 };
-    shape2d b_shape = { .x = 3, .y = 3 };
-    shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
+    dahl_shape2d a_shape = { .x = 5, .y = 5 };
+    dahl_shape2d b_shape = { .x = 3, .y = 3 };
+    dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
 
     dahl_fp a[5][5] = {
         { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
@@ -54,9 +54,9 @@ void test_matrix_cross_correlation_1()
 
 void test_matrix_cross_correlation_2()
 {
-    shape2d a_shape = { .x = 7, .y = 5 };
-    shape2d b_shape = { .x = 4, .y = 3 };
-    shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
+    dahl_shape2d a_shape = { .x = 7, .y = 5 };
+    dahl_shape2d b_shape = { .x = 4, .y = 3 };
+    dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
 
     dahl_fp a[5][7] = {
         { 0.0F, 1.0F, 0.0F, 4.0F, 0.0F, 3.0F, 2.0F },
@@ -83,8 +83,8 @@ void test_matrix_cross_correlation_2()
 
 void test_relu()
 {
-    shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
-    shape3d expect_shape = a_shape;
+    dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
+    dahl_shape3d expect_shape = a_shape;
 
     dahl_fp a[2][3][4] = {
         {
@@ -115,7 +115,7 @@ void test_relu()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    task_any_relu_self(AS_ANY(a_block));
+    TASK_RELU_SELF(a_block);
 
     assert(block_equals(expect_block, a_block));
     block_finalize(a_block);
@@ -124,8 +124,8 @@ void test_relu()
 
 void test_block_sum_z_axis()
 {
-    shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
-    shape2d expect_shape = { .x = 4, .y = 3 };
+    dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
+    dahl_shape2d expect_shape = { .x = 4, .y = 3 };
 
     dahl_fp a[2][3][4] = {
         {
@@ -159,8 +159,8 @@ void test_block_sum_z_axis()
 
 void test_scal()
 {
-    shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
-    shape3d expect_shape = a_shape;
+    dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
+    dahl_shape3d expect_shape = a_shape;
 
     dahl_fp a[2][3][4] = {
         {
@@ -191,7 +191,7 @@ void test_scal()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    task_any_scal_self(AS_ANY(a_block), 2);
+    TASK_SCAL_SELF(a_block, 2);
 
     assert(block_equals(expect_block, a_block));
     block_finalize(a_block);
@@ -200,9 +200,9 @@ void test_scal()
 
 void test_sub()
 {
-    shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
-    shape3d b_shape = a_shape;
-    shape3d expect_shape = a_shape;
+    dahl_shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
+    dahl_shape3d b_shape = a_shape;
+    dahl_shape3d expect_shape = a_shape;
 
     dahl_fp a[2][2][2] = {
         {
@@ -241,12 +241,13 @@ void test_sub()
     dahl_block* b_block = block_init_from(b_shape, (dahl_fp*)&b);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_block* result_block = AS_BLOCK(task_any_sub(AS_ANY(a_block), AS_ANY(b_block)));
+    dahl_block* result_block = block_init(a_shape);
+    TASK_SUB(a_block, b_block, result_block);
 
     assert(block_equals(expect_block, result_block)); 
 
-    // here it modifies a instead of returning the result
-    task_any_sub_self(AS_ANY(a_block), AS_ANY(b_block));
+    // here it modifies `a` instead of returning the result
+    TASK_SUB_SELF(a_block, b_block);
     assert(block_equals(expect_block, a_block));
 
     block_finalize(a_block);
@@ -257,9 +258,9 @@ void test_sub()
 
 void test_add()
 {
-    shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
-    shape3d b_shape = a_shape;
-    shape3d expect_shape = a_shape;
+    dahl_shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
+    dahl_shape3d b_shape = a_shape;
+    dahl_shape3d expect_shape = a_shape;
 
     dahl_fp a[2][2][2] = {
         {
@@ -298,12 +299,13 @@ void test_add()
     dahl_block* b_block = block_init_from(b_shape, (dahl_fp*)&b);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    dahl_block* result_block = AS_BLOCK(task_any_add(AS_ANY(a_block), AS_ANY(b_block)));
+    dahl_block* result_block = block_init(a_shape);
+    TASK_ADD(a_block, b_block, result_block);
 
     assert(block_equals(expect_block, result_block)); 
 
     // here it modifies a instead of returning the result
-    task_any_add_self(AS_ANY(a_block), AS_ANY(b_block));
+    TASK_ADD_SELF(a_block, b_block);
     assert(block_equals(expect_block, a_block));
 
     block_finalize(a_block);

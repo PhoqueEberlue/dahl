@@ -4,7 +4,7 @@
 #include <starpu.h>
 #include <assert.h>
 
-void test_convolution();
+void test_dahl_convolution();
 void test_tasks();
 
 #endif //!DAHL_TESTS_H
