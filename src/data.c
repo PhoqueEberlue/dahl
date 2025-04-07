@@ -511,7 +511,7 @@ starpu_data_handle_t vector_get_handle(dahl_vector const* const vector)
     return vector->handle;
 }
 
-bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b)
+bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b, bool const rounding)
 {
     size_t const len_a = vector_get_len(vector_a);
     size_t const len_b = vector_get_len(vector_b);
@@ -526,10 +526,21 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
 
     for (int i = 0; i < len_a; i++)
     {
-        if (round(vector_a->data[i]) != round(vector_b->data[i]))
+        if (rounding)
         {
-            res = false;
-            break;
+            if (round(vector_a->data[i]) != round(vector_b->data[i]))
+            {
+                res = false;
+                break;
+            }
+        }
+        else 
+        {
+            if (vector_a->data[i] != vector_b->data[i])
+            {
+                res = false;
+                break;
+            }
         }
     }
 

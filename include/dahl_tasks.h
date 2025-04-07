@@ -38,6 +38,9 @@ void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
 // - returns the result as a dahl_fp
 dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* const b);
 
+// Create and return a diagonal dahl_matrix of the input dahl_vector
+dahl_matrix* task_vector_diag(dahl_vector const* const in);
+
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)
 void task_relu(dahl_any const in, dahl_any out);

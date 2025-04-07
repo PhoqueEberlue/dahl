@@ -325,7 +325,7 @@ void test_vector_softmax()
     task_vector_softmax(in, out);
 
     // Note that values are rounded up in order to compare
-    assert(vector_equals(expect_vec, out));
+    assert(vector_equals(expect_vec, out, true));
 
     dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6.0F, 3.7F, 6.1F, 3.2F };
     dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
@@ -336,21 +336,68 @@ void test_vector_softmax()
 
     task_vector_softmax(in_2, out);
 
-    assert(vector_equals(expect_vec_2, out));
+    assert(vector_equals(expect_vec_2, out, true));
+
+    vector_finalize(in);
+    vector_finalize(out);
+    vector_finalize(expect_vec);
+    vector_finalize(in_2);
+    vector_finalize(expect_vec_2);
 }
 
 void test_vector_dot_product()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
-    dahl_vector* a = vector_init_from(len, (dahl_fp*)&data);
+    dahl_fp data_1[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* a = vector_init_from(len, (dahl_fp*)&data_1);
 
     dahl_fp expect = 285.0F;
 
     dahl_fp result = task_vector_dot_product(a, a);
-    printf("%f", result);
 
     assert(expect == result);
+
+    dahl_fp data_2[len] = { 9.0F, 8.0F, 7.0F, 6.0F, 5.0F, 4.0F, 3.0F, 2.0F, 1.0F, 0.0F };
+    dahl_vector* b = vector_init_from(len, (dahl_fp*)&data_2);
+
+    dahl_fp expect_2 = 120.0F;
+
+    result = task_vector_dot_product(a, b);
+
+    assert(expect_2 == result);
+
+    vector_finalize(a);
+    vector_finalize(b);
+}
+
+void test_vector_diag()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* a = vector_init_from(len, (dahl_fp*)&data);
+
+    dahl_shape2d expect_shape = {.x=len, .y=len};
+    dahl_fp expect[len][len] = { 
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 2.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 3.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 4.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 5.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 6.0F, 0.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 7.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 8.0F, 0.0F },
+        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 9.0F }
+    };
+    dahl_matrix* expect_matrix = matrix_init_from(expect_shape, (dahl_fp*)&expect);
+
+    dahl_matrix* result = task_vector_diag(a);
+
+    assert(matrix_equals(expect_matrix, result));
+
+    vector_finalize(a);
+    matrix_finalize(expect_matrix);
+    matrix_finalize(result);
 }
 
 void test_tasks()
@@ -364,4 +411,5 @@ void test_tasks()
     test_add();
     test_vector_softmax();
     test_vector_dot_product();
+    test_vector_diag();
 }

@@ -145,7 +145,7 @@ size_t vector_get_len(dahl_vector const *const vector);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
 // Note: values are rounded in order to obtain valid comparisons.
-bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b);
+bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b, bool const rounding);
 
 void vector_print(dahl_vector const* const vector);
 void vector_finalize(dahl_vector* vector);

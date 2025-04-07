@@ -247,9 +247,29 @@
     ```
 
 -------------------------------------------------------------------------------
+- Simplify and/or homogeneize the way tasks returns values.
+    For examle, let `add` that takes a and b parameters and write a + b in c
+    This function can be writen as:
+    ```c
+    // 1: Return the result via the pointer c
+    void add(void* a, void* b, void* c);
+
+    // 2: Simply return the result with the return keyword
+    void* add(void* a, void* b);
+
+    // 3: Writes the result directly in buffer a
+    void add_self(void* a_self, void* b);
+    ```
+    All of those solutions are correct but they serve different purposes in terms of memory managment.
+    1. forces the user to instanciate c on its own, which may reduce the possibility to forget calling finalize to free the memory.
+    Also it is very useful when another buffer can be reused to store the result into c. For example we might perform operations on
+    sub matrices of a block, and in this case we want to store every sub result in a common block buffer.
+    2. makes less writing for the user, the returned objected can be instanciated with the correct dimensions by the function.
+    Yet the user shouldn't forget to free the memory.
+    3. Also very useful when directly writing the result to the buffer a is not a problem.
+    For now, most of the tasks implement syntax 1 and 3 -> find a nice way to differentiate the 3 functions and add it in the doc
+
+-------------------------------------------------------------------------------
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
-- is `type const* const` really useful? typically when defining a parameter, obviously the pointer is const and won't be changed no? idk
-    => Yes it is!
-- Check discarded const
 - test backward pass

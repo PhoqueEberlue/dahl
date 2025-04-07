@@ -127,3 +127,18 @@ dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* c
 
     return res;
 }
+
+dahl_matrix* task_vector_diag(dahl_vector const* const in)
+{
+    size_t vec_len = vector_get_len(in);
+
+    dahl_shape2d out_shape = { .x = vec_len, .y = vec_len };
+    dahl_matrix* out = matrix_init(out_shape);
+
+    int ret = starpu_task_insert(&cl_vector_diag,
+                                 STARPU_R, vector_get_handle(in),
+                                 STARPU_W, matrix_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
+}

@@ -1,4 +1,5 @@
 #include "codelets.h"
+#include "starpu_data_interfaces.h"
 #include "starpu_task_util.h"
 #include "../include/dahl_types.h"
 #include <assert.h>
@@ -390,4 +391,26 @@ void vector_dot_product(void* buffers[2], void* cl_arg)
 
     // Pass return value as a pointer within the arguments of the codelet
     *res_p = res;
+}
+
+void vector_diag(void* buffers[2], void* cl_arg)
+{
+    // Input vector
+    size_t const in_len = STARPU_BLOCK_GET_NX(buffers[0]);
+    dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Output matrix
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const out_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(in_len == out_nx);
+    assert(in_len == out_ny);
+
+    for (size_t i = 0; i < in_len; i++)
+    {
+        // Copy the vector's elements in a diagonal manner into the matrix
+        out[(i * out_ld) + i] = in[i];
+    }
 }
