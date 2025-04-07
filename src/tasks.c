@@ -3,6 +3,7 @@
 
 // Including data.h and not include/dahl_data.h so we have access to the private functions
 #include "data.h"
+#include "starpu_task.h"
 
 void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix const* const kernel, dahl_matrix* const out)
 {
@@ -95,4 +96,34 @@ void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out)
                                  STARPU_R, vector_get_handle(in),
                                  STARPU_W, vector_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* const b)
+{
+    dahl_fp res = 0;
+    dahl_fp* res_p = &res;
+
+    struct starpu_task* task = starpu_task_create();
+    task->cl = &cl_vector_dot_product;
+
+    // Initialize argument buffer to obtain the return value with a pointer pointer
+    char *arg_buffer;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
+
+    task->cl_arg = arg_buffer;
+    task->cl_arg_size = arg_buffer_size;
+    task->nbuffers = 2;
+    task->handles[0] = vector_get_handle(a);
+    task->handles[1] = vector_get_handle(b);
+    task->detach = 0;
+
+    int ret = starpu_task_submit(task); 
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    ret = starpu_task_wait(task);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return res;
 }

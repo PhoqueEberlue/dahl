@@ -28,8 +28,15 @@ void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix c
 // Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
 void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size);
 
+// ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
+
+// Performs `a`  `b`, where:
+// - `` is the dot product
+// - `a`, `b` are dahl_vector of the same length
+// - returns the result as a dahl_fp
+dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* const b);
 
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)
@@ -45,7 +52,6 @@ void task_scal(dahl_any const in, dahl_any out, dahl_fp const factor);
 // Performs `c` = `a` - `b`, where:
 // - `-` is the value by value substraction
 // - `a`, `b` and `c` are dahl_any objects of the same shape
-// - `c` is created and returned by the function
 void task_sub(dahl_any const a, dahl_any const b, dahl_any c);
 #define TASK_SUB(A, B, C) task_sub(AS_ANY(A), AS_ANY(B), AS_ANY(C))
 
@@ -58,7 +64,6 @@ void task_sub(dahl_any const a, dahl_any const b, dahl_any c);
 // Performs `c` = `a` + `b`, where:
 // - `+` is the value by value addition
 // - `a`, `b` and `c` are dahl_any objects of the same shape
-// - `c` is created and returned by the function
 void task_add(dahl_any const a, dahl_any const b, dahl_any c);
 #define TASK_ADD(A, B, C) task_add(AS_ANY(A), AS_ANY(B), AS_ANY(C))
 

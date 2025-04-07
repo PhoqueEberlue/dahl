@@ -332,7 +332,7 @@ void add(void* buffers[3], void* cl_arg)
     }
 }
 
-void vector_softmax(void *buffers[2], void *cl_arg)
+void vector_softmax(void* buffers[2], void* cl_arg)
 {
     size_t const in_len = STARPU_BLOCK_GET_NX(buffers[0]);
     dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
@@ -367,4 +367,27 @@ void vector_softmax(void *buffers[2], void *cl_arg)
     {
         out[i] = out[i] / sum_values;
     }
+}
+
+void vector_dot_product(void* buffers[2], void* cl_arg)
+{
+    dahl_fp *res_p;
+    starpu_codelet_unpack_args(cl_arg, &res_p);
+    dahl_fp res = *res_p;
+
+    size_t const a_len = STARPU_BLOCK_GET_NX(buffers[0]);
+    dahl_fp const* const a = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const b_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp const* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(a_len == b_len);
+
+    for (size_t i = 0; i < a_len; i++)
+    {
+        res += a[i] * b[i];
+    }
+
+    // Pass return value as a pointer within the arguments of the codelet
+    *res_p = res;
 }

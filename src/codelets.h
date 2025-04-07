@@ -10,7 +10,7 @@
 // - starpu_codelet, referencing the function, number of buffers, their access modes and
 //   the perfmodel
 #define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                         \
-    void func_name(void *buffers[num_buffers], void *cl_arg);                      \
+    void func_name(void* buffers[num_buffers], void* cl_arg);                      \
                                                                                    \
     static struct starpu_perfmodel perf_model_##func_name = {                      \
         .type = STARPU_HISTORY_BASED,                                              \
@@ -33,5 +33,6 @@ DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_dot_product, 2, STARPU_R, STARPU_R);
 
 #endif //!DAHL_CODELETS_H

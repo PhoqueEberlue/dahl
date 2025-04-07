@@ -1,4 +1,5 @@
 #include "tests.h"
+#include <stdio.h>
 
 // Asserts that "a cross correlation b = expect"
 void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
@@ -311,7 +312,7 @@ void test_add()
     block_finalize(expect_block);
 }
 
-void test_softmax()
+void test_vector_softmax()
 {
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
@@ -338,6 +339,20 @@ void test_softmax()
     assert(vector_equals(expect_vec_2, out));
 }
 
+void test_vector_dot_product()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* a = vector_init_from(len, (dahl_fp*)&data);
+
+    dahl_fp expect = 285.0F;
+
+    dahl_fp result = task_vector_dot_product(a, a);
+    printf("%f", result);
+
+    assert(expect == result);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -347,5 +362,6 @@ void test_tasks()
     test_scal();
     test_sub();
     test_add();
-    test_softmax();
+    test_vector_softmax();
+    test_vector_dot_product();
 }
