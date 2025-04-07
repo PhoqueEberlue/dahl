@@ -1,5 +1,6 @@
 #include "../../include/dahl_pooling.h"
 #include "../../include/dahl_tasks.h"
+#include <stdlib.h>
 
 // Not much to init because most of the other fields need to be computed depending on input data.
 dahl_pooling* pooling_init(size_t const pool_size)
@@ -31,7 +32,7 @@ dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const in
     for (int i = 0; i < sub_matrix_nb; i++)
     {
         dahl_matrix* sub_input = block_get_sub_matrix(pool->input_data, i);
-        dahl_matrix* sub_output = block_get_sub_matrix(pool->input_data, i);
+        dahl_matrix* sub_output = block_get_sub_matrix(pool->output_data, i);
         dahl_matrix* sub_mask = block_get_sub_matrix(pool->mask, i);
 
         task_matrix_max_pooling(sub_input, sub_output, sub_mask, pool->pool_size);
@@ -44,7 +45,7 @@ dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const in
     return pool->output_data;
 }
 
-dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block const* const dl_dout)
+dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block* const dl_dout)
 {
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);

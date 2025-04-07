@@ -1,6 +1,7 @@
 #include "data.h"
 #include "utils.h"
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -114,7 +115,7 @@ bool block_equals(dahl_block const* const block_a, dahl_block const* const block
         if (block_a->data[i] != block_b->data[i])
         {
             res = false;
-            continue;
+            break;
         }
     }
 
@@ -122,6 +123,17 @@ bool block_equals(dahl_block const* const block_a, dahl_block const* const block
     starpu_data_release(block_b->handle);
 
     return res;
+}
+
+dahl_fp* block_data_acquire(dahl_block const* const block)
+{
+    starpu_data_acquire(block->handle, STARPU_R);
+    return block->data;
+}
+
+void block_data_release(dahl_block const* const block)
+{
+    starpu_data_release(block->handle);
 }
 
 void block_partition_along_z(dahl_block* const block)
@@ -321,7 +333,7 @@ bool matrix_equals(dahl_matrix const* const matrix_a, dahl_matrix const* const m
         if (matrix_a->data[i] != matrix_b->data[i])
         {
             res = false;
-            continue;
+            break;
         }
     }
 
@@ -512,12 +524,12 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
 
     bool res = true;
 
-    for (int i = 0; i < (len_a * len_b); i++)
+    for (int i = 0; i < len_a; i++)
     {
-        if (vector_a->data[i] != vector_b->data[i])
+        if (round(vector_a->data[i]) != round(vector_b->data[i]))
         {
             res = false;
-            continue;
+            break;
         }
     }
 

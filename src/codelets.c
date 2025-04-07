@@ -2,6 +2,8 @@
 #include "starpu_task_util.h"
 #include "../include/dahl_types.h"
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -52,7 +54,7 @@ void matrix_cross_correlation(void* buffers[3], void* cl_arg)
     }
 }
 
-void matrix_max_dahl_pooling(void* buffers[3], void* cl_arg)
+void matrix_max_pooling(void* buffers[3], void* cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
@@ -114,7 +116,7 @@ void matrix_max_dahl_pooling(void* buffers[3], void* cl_arg)
     }
 }
 
-void matrix_backward_max_dahl_pooling(void *buffers[3], void *cl_arg)
+void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
 {
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
@@ -327,5 +329,42 @@ void add(void* buffers[3], void* cl_arg)
                 c[(z * c_ldz) + (y * c_ldy) + x] = value_a + value_b;
             }
         }
+    }
+}
+
+void vector_softmax(void *buffers[2], void *cl_arg)
+{
+    size_t const in_len = STARPU_BLOCK_GET_NX(buffers[0]);
+    dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(in_len == out_len);
+
+    dahl_fp max_value = 0.0F;
+
+    // Getting max value
+    for (size_t i = 0; i < in_len; i++)
+    {
+        if (in[i] > max_value)
+        {
+            max_value = in[i];
+        }
+    }
+
+    dahl_fp sum_values = 0.0F;
+
+    // Shifting by the max value, computing exponent for each element, and summing
+    for (size_t i = 0; i < in_len; i++)
+    {
+        out[i] = exp(in[i] - max_value);
+        sum_values += out[i];
+    }
+
+    // Computing the probabilities
+    for (size_t i = 0; i < in_len; i++)
+    {
+        out[i] = out[i] / sum_values;
     }
 }

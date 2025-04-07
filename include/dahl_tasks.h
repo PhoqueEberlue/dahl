@@ -25,8 +25,11 @@ void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out
 // - `mask` shape should be the same as `out` shape.
 void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix const* const mask, dahl_matrix* const out, size_t const pool_size);
 
-// Same as `task_matrix_backward_max_dahl_pooling` but stores the output directly in `mask_self`.
+// Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
 void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size);
+
+// Performs the softmax function with `in` vector and writes the result to `out`.
+void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
 
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)

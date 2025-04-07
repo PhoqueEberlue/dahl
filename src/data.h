@@ -2,8 +2,8 @@
 
 #include <starpu.h>
 
-// Definitions of dahl data structures here as opaque types, so their fields are not accessible
-// from the public API.
+// Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
+// so their fields are not accessible from the public API.
 typedef struct _dahl_vector
 {
     starpu_data_handle_t handle;

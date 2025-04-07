@@ -1,7 +1,6 @@
 #ifndef DAHL_DATA_H
 #define DAHL_DATA_H
 
-#include <stdlib.h>
 #include "dahl_types.h"
 
 
@@ -74,6 +73,9 @@ dahl_shape3d block_get_shape(dahl_block const* const block);
 // Compares the two blocks value by value and returns wether or not they're equal.
 bool block_equals(dahl_block const* const a, dahl_block const* const b);
 
+dahl_fp* block_data_acquire(dahl_block const* const block);
+void block_data_release(dahl_block const* const block);
+
 // Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
 // Exactly creates z sub matrices, so `block_get_sub_matrix_nb` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned. TODO: I think?
@@ -142,6 +144,7 @@ dahl_vector* vector_init_from(size_t const len, dahl_fp* const data);
 size_t vector_get_len(dahl_vector const *const vector);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
+// Note: values are rounded in order to obtain valid comparisons.
 bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b);
 
 void vector_print(dahl_vector const* const vector);

@@ -21,6 +21,6 @@ typedef struct
 
 dahl_pooling* pooling_init(size_t const pool_size);
 dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const input);
-dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block const* const dl_dout);
+dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block* const dl_dout);
 
 #endif //!DAHL_POOLING_H

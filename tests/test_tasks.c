@@ -1,5 +1,4 @@
 #include "tests.h"
-#include "../include/dahl.h"
 
 // Asserts that "a cross correlation b = expect"
 void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
@@ -12,8 +11,6 @@ void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
     dahl_matrix* expect_matrix = matrix_init_from(expect_shape, expect);
 
     task_matrix_cross_correlation(a_matrix, b_matrix, c_matrix);
-
-    starpu_task_wait_for_all();
 
     assert(matrix_equals(expect_matrix, c_matrix));
 
@@ -314,6 +311,33 @@ void test_add()
     block_finalize(expect_block);
 }
 
+void test_softmax()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
+    dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
+    dahl_vector* out = vector_init(len);
+
+    dahl_fp expect[len] = { 0.1F, 0.1F, 0.1F, 0.1F, 0.1F, 0.1F, 0.1F, 0.1F, 0.1F, 0.1F };
+    dahl_vector* expect_vec = vector_init_from(len, (dahl_fp*)&expect);
+
+    task_vector_softmax(in, out);
+
+    // Note that values are rounded up in order to compare
+    assert(vector_equals(expect_vec, out));
+
+    dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6.0F, 3.7F, 6.1F, 3.2F };
+    dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
+
+    dahl_fp expect_2[len] = { 0.000015F, 0.000109F, 0.014701F, 0.002430F, 0.000121F, 
+                              0.980384F, 0.000988F, 0.000099F, 0.001092F, 0.000060F };
+    dahl_vector* expect_vec_2 = vector_init_from(len, (dahl_fp*)&expect_2);
+
+    task_vector_softmax(in_2, out);
+
+    assert(vector_equals(expect_vec_2, out));
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -323,4 +347,5 @@ void test_tasks()
     test_scal();
     test_sub();
     test_add();
+    test_softmax();
 }

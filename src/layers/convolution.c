@@ -1,4 +1,5 @@
 #include "../../include/dahl_convolution.h"
+#include <starpu.h>
 
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
@@ -60,7 +61,7 @@ dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const*
 
     TASK_RELU_SELF(output);
 
-    // Could be interesting to know if the relu task is really waiting for other tasks because starting?
+    // TODO: Could be interesting to know if the relu task is really waiting for other tasks before starting?
     // It should be the case because of the data dependency and because it is working but we may verify that
     starpu_task_wait_for_all();
 

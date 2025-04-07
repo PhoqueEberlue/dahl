@@ -15,7 +15,7 @@ void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix cons
 
 void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out, dahl_matrix* const mask, size_t const pool_size)
 {
-    int ret = starpu_task_insert(&cl_matrix_max_dahl_pooling,
+    int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
                              STARPU_R, matrix_get_handle(in),
                              STARPU_W, matrix_get_handle(out), 
@@ -25,7 +25,7 @@ void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out
 
 void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix const* const mask, dahl_matrix* const out, size_t const pool_size)
 {
-    int ret = starpu_task_insert(&cl_matrix_backward_max_dahl_pooling,
+    int ret = starpu_task_insert(&cl_matrix_backward_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
                              STARPU_R, matrix_get_handle(in),
                              STARPU_R, matrix_get_handle(mask), 
@@ -84,5 +84,15 @@ void task_add(dahl_any const a, dahl_any const b, dahl_any c)
                                  STARPU_R, any_get_handle(a),
                                  STARPU_R, any_get_handle(b),
                                  STARPU_W, any_get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+// Note: do not implement a self function (in and out being the same buffers), as 
+// out buffer is used to stored partial computations this would mess the results.
+void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out)
+{
+    int ret = starpu_task_insert(&cl_vector_softmax,
+                                 STARPU_R, vector_get_handle(in),
+                                 STARPU_W, vector_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
