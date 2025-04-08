@@ -400,6 +400,56 @@ void test_vector_diag()
     matrix_finalize(result);
 }
 
+void test_add_value()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
+
+    dahl_vector* out = vector_init(len);
+
+    dahl_fp expect[len] = { 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F, 10.0F, 11.0F, 12.0F, 13.0F };
+    dahl_vector* expect_vec = vector_init_from(len, (dahl_fp*)&expect);
+
+    TASK_ADD_VALUE(in, out, 4.0F);
+
+    assert(vector_equals(expect_vec, out, false));
+
+    // Directly modifies in
+    TASK_ADD_VALUE_SELF(in, 4.0F);
+
+    assert(vector_equals(expect_vec, in, false));
+
+    vector_finalize(in);
+    vector_finalize(out);
+    vector_finalize(expect_vec);
+}
+
+void test_sub_value()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
+
+    dahl_vector* out = vector_init(len);
+
+    dahl_fp expect[len] = { -4.0F, -3.0F, -2.0F, -1.0F, 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F };
+    dahl_vector* expect_vec = vector_init_from(len, (dahl_fp*)&expect);
+
+    TASK_SUB_VALUE(in, out, 4.0F);
+
+    assert(vector_equals(expect_vec, out, false));
+
+    // Directly modifies in
+    TASK_SUB_VALUE_SELF(in, 4.0F);
+
+    assert(vector_equals(expect_vec, in, false));
+
+    vector_finalize(in);
+    vector_finalize(out);
+    vector_finalize(expect_vec);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -412,4 +462,6 @@ void test_tasks()
     test_vector_softmax();
     test_vector_dot_product();
     test_vector_diag();
+    test_add_value();
+    test_sub_value();
 }

@@ -47,7 +47,7 @@ void task_relu(dahl_any const in, dahl_any out);
 #define TASK_RELU(IN, OUT) task_relu(AS_ANY(IN), AS_ANY(OUT))
 #define TASK_RELU_SELF(SELF) task_relu(AS_ANY(SELF), AS_ANY(SELF))
 
-// Multiply each block value by the factor
+// Multiply each value by the factor
 void task_scal(dahl_any const in, dahl_any out, dahl_fp const factor);
 #define TASK_SCAL(IN, OUT, FACTOR) task_scal(AS_ANY(IN), AS_ANY(OUT), FACTOR)
 #define TASK_SCAL_SELF(SELF, FACTOR) task_scal(AS_ANY(SELF), AS_ANY(SELF), FACTOR)
@@ -75,5 +75,16 @@ void task_add(dahl_any const a, dahl_any const b, dahl_any c);
 // - `a_self` and `b` are dahl_any objects of the same shape
 // - `a_self` is modified by the function with the addition result
 #define TASK_ADD_SELF(A_SELF, B) task_add(AS_ANY(A_SELF), AS_ANY(B), AS_ANY(A_SELF))
+
+
+void task_add_value(dahl_any const in, dahl_any out, dahl_fp const value);
+#define TASK_ADD_VALUE(IN, OUT, VALUE) task_add_value(AS_ANY(IN), AS_ANY(OUT), VALUE)
+
+#define TASK_ADD_VALUE_SELF(SELF, VALUE) task_add_value(AS_ANY(SELF), AS_ANY(SELF), VALUE)
+
+void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value);
+#define TASK_SUB_VALUE(IN, OUT, VALUE) task_sub_value(AS_ANY(IN), AS_ANY(OUT), VALUE)
+
+#define TASK_SUB_VALUE_SELF(SELF, VALUE) task_sub_value(AS_ANY(SELF), AS_ANY(SELF), VALUE)
 
 #endif //!DAHL_TASKS_H
