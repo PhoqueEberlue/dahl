@@ -42,6 +42,50 @@ dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* c
 dahl_matrix* task_vector_diag(dahl_vector const* const in);
 
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
+// Helper to wrap a dahl data structure into a `dahl_any`.
+// Initialize a stack allocated `dahl_any` object from a `dahl_block*`, `dahl_matrix*` or `dahl_vector*`.
+#define AS_ANY(X) _Generic((X),                               \
+        dahl_block*:                                          \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .block = (dahl_block*)(X) },   \
+                .type = dahl_type_block                       \
+            },                                                \
+        dahl_matrix*:                                         \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .matrix = (dahl_matrix*)(X) }, \
+                .type = dahl_type_matrix                      \
+            },                                                \
+        dahl_vector*:                                         \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .vector = (dahl_vector*)(X) }, \
+                .type = dahl_type_vector                      \
+            }                                                 \
+    )   // TODO: is `default` required?
+
+// Helper to unwrap a `dahl_any`, to be used for functions that take and return the same 
+// dahl data structure types using `dahl_any` wrapper.
+// Gets `dahl_block*`, `dahl_matrix*` or `dahl_vector*` from `OUT` by reading `IN`'s type
+#define FROM_ANY(IN, OUT) _Generic((IN), \
+        dahl_block*:                     \
+            (dahl_block*)                \
+            {                            \
+                (OUT).structure.block    \
+            },                           \
+        dahl_matrix*:                    \
+            (dahl_matrix*)               \
+            {                            \
+                (OUT).structure.matrix   \
+            },                           \
+        dahl_vector*:                    \
+            (dahl_vector*)               \
+            {                            \
+                (OUT).structure.vector   \
+            }                            \
+    )   // TODO: is `default` required?
+
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)
 void task_relu(dahl_any const in, dahl_any out);
 #define TASK_RELU(IN, OUT) task_relu(AS_ANY(IN), AS_ANY(OUT))
@@ -76,15 +120,18 @@ void task_add(dahl_any const a, dahl_any const b, dahl_any c);
 // - `a_self` is modified by the function with the addition result
 #define TASK_ADD_SELF(A_SELF, B) task_add(AS_ANY(A_SELF), AS_ANY(B), AS_ANY(A_SELF))
 
-
+// Add `value` to every elements of `in` and put the result in `out`
 void task_add_value(dahl_any const in, dahl_any out, dahl_fp const value);
 #define TASK_ADD_VALUE(IN, OUT, VALUE) task_add_value(AS_ANY(IN), AS_ANY(OUT), VALUE)
 
+// Add `value` to every elements of `in` writing directly in the same buffer
 #define TASK_ADD_VALUE_SELF(SELF, VALUE) task_add_value(AS_ANY(SELF), AS_ANY(SELF), VALUE)
 
+// Substract `value` to every elements of `in` and put the result in `out`
 void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value);
 #define TASK_SUB_VALUE(IN, OUT, VALUE) task_sub_value(AS_ANY(IN), AS_ANY(OUT), VALUE)
 
+// Substract `value` to every elements of `in` writing directly in the same buffer
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) task_sub_value(AS_ANY(SELF), AS_ANY(SELF), VALUE)
 
 #endif //!DAHL_TASKS_H

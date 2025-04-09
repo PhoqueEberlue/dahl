@@ -267,7 +267,38 @@
     2. makes less writing for the user, the returned objected can be instanciated with the correct dimensions by the function.
     Yet the user shouldn't forget to free the memory.
     3. Also very useful when directly writing the result to the buffer a is not a problem.
-    For now, most of the tasks implement syntax 1 and 3 -> find a nice way to differentiate the 3 functions and add it in the doc
+    For now, most of the tasks implement syntax 1 and 3 
+    - Should I implement the three ways for every task? 
+    - Will it cost a lot to maintain or add too much complexity?
+    - find a nice way to differentiate the 3 functions and add it in the doc
+    -> however having a return value with the dahl_any macros would make the API a bit more messy?
+    ```c
+    // Infers `OUT`'s type at compile time by reading `IN`'s type
+    #define FROM_ANY(IN, OUT) _Generic((IN),                               \
+        dahl_block*:                                          \
+            (dahl_block*)                                        \
+            {                                                 \
+                (OUT).structure.block \
+            },                                                \
+        dahl_matrix*:                                         \
+            (dahl_matrix*)                                        \
+            {                                                 \
+                (OUT).structure.matrix \
+            },                                                \
+        dahl_vector*:                                         \
+            (dahl_vector*)                                        \
+            {                                                 \
+                (OUT).structure.vector \
+            }                                                 \
+    )   // TODO: is `default` required?
+
+    dahl_any task_dummy(dahl_any const in);
+    #define TASK_DUMMY(IN) FROM_ANY(AS_ANY(IN), task_dummy(AS_ANY(IN)))
+    ```
+    This is an idea, this version infer the return type based on the input type of a function.
+    This makes sense however it makes the syntax a bit more complex.
+    It would be nice to only take one parameter for `FROM_ANY`, but it seems not possible because return type has
+    to be knowned at compilation.
 
 -------------------------------------------------------------------------------
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...

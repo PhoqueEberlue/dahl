@@ -29,28 +29,6 @@ typedef struct
     } type;
 } dahl_any;
 
-// Initialize a stack allocated `dahl_any` object from a `dahl_block*`, `dahl_matrix*` or `dahl_vector*`.
-#define AS_ANY(x) _Generic((x),                               \
-        dahl_block*:                                          \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .block = (dahl_block*)(x) },   \
-                .type = dahl_type_block                       \
-            },                                                \
-        dahl_matrix*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .matrix = (dahl_matrix*)(x) }, \
-                .type = dahl_type_matrix                      \
-            },                                                \
-        dahl_vector*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .vector = (dahl_vector*)(x) }, \
-                .type = dahl_type_vector                      \
-            }                                                 \
-    )   // TODO: is `default` required?
-
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
