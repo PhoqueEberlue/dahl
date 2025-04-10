@@ -4,6 +4,7 @@
 #include "../include/dahl_types.h"
 #include <assert.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -462,5 +463,34 @@ void sub_value(void* buffers[2], void* cl_arg)
     for (int i = 0; i < in_nx*in_ny*in_nz; i++)
     {
         out[i] = in[i] - value;
+    }
+}
+
+void matrix_vector_product(void* buffers[3], void* cl_arg)
+{
+    // Input matrix
+    size_t const mat_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const mat_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const mat_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* const mat = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Input vector
+    size_t const vec_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp const* const vec = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // Output vector
+    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[2]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+
+    assert(mat_nx == vec_len);
+    assert(mat_ny == out_len);
+
+    // Loop through x,y of the matrix
+    for (size_t y = 0; y < mat_ny; y++)
+    {
+        for (size_t x = 0; x < mat_nx; x++)
+        {
+            out[y] += vec[x] * mat[(y * mat_ld) + x];
+        }
     }
 }

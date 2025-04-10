@@ -450,6 +450,28 @@ void test_sub_value()
     vector_finalize(expect_vec);
 }
 
+void test_matrix_vector_product()
+{
+    dahl_shape2d constexpr mat_shape = { .x = 3, .y = 2 };
+    dahl_fp mat[mat_shape.y][mat_shape.x] = {
+        { 1.0F, -1.0F, 2.0F },
+        { 0.0F, -3.0F, 1.0F }
+    };
+    dahl_matrix* in_mat = matrix_init_from(mat_shape, (dahl_fp*)&mat); 
+
+    size_t constexpr in_vec_len = mat_shape.x;
+    dahl_fp vec[in_vec_len] = { 2.0F, 1.0F, 0.0F };
+    dahl_vector* in_vec = vector_init_from(in_vec_len, (dahl_fp*)&vec);
+
+    size_t constexpr expect_vec_len = mat_shape.y;
+    dahl_fp expect[expect_vec_len] = { 1.0F, -3.0F };
+    dahl_vector* expect_vec = vector_init_from(expect_vec_len, (dahl_fp*)&expect);
+
+    dahl_vector* out_vec = task_matrix_vector_product(in_mat, in_vec);
+
+    assert(vector_equals(expect_vec, out_vec, false));
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -464,4 +486,5 @@ void test_tasks()
     test_vector_diag();
     test_add_value();
     test_sub_value();
+    test_matrix_vector_product();
 }

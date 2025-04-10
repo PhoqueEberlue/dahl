@@ -28,6 +28,8 @@ void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix c
 // Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
 void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size);
 
+dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec);
+
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
@@ -40,6 +42,8 @@ dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* c
 
 // Create and return a diagonal dahl_matrix of the input dahl_vector
 dahl_matrix* task_vector_diag(dahl_vector const* const in);
+
+dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in);
 
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
 // Helper to wrap a dahl data structure into a `dahl_any`.

@@ -1,9 +1,9 @@
 #include "codelets.h"
-#include "starpu_data.h"
 
 // Including data.h and not include/dahl_data.h so we have access to the private functions
 #include "data.h"
-#include "starpu_task.h"
+
+#include "../include/dahl_tasks.h"
 #include <stdio.h>
 
 void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix const* const kernel, dahl_matrix* const out)
@@ -160,4 +160,28 @@ void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value)
                              STARPU_R, any_get_handle(in),
                              STARPU_W, any_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+// TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
+dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in)
+{
+    dahl_matrix* result = task_vector_diag(in);
+    dahl_fp value = task_vector_dot_product(in, in);
+
+    TASK_SUB_VALUE_SELF(result, value);
+
+    return result;
+}
+
+dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec)
+{
+    dahl_shape2d mat_shape = matrix_get_shape(mat);
+    dahl_vector* out = vector_init(mat_shape.y);
+    int ret = starpu_task_insert(&cl_matrix_vector_product,
+                             STARPU_R, matrix_get_handle(mat),
+                             STARPU_R, vector_get_handle(vec),
+                             STARPU_W, vector_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
 }
