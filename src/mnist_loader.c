@@ -41,7 +41,7 @@ dahl_block* load_mnist_images(char const* filename)
             {
                 unsigned char buffer;
                 fread(&buffer, sizeof(unsigned char), 1, file);
-                images[(z*y)+x] = (dahl_fp)buffer;
+                images[(z * cols * rows ) + (y* rows) + x] = (dahl_fp)buffer;
             }
         }
     }
