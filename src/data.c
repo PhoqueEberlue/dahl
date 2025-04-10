@@ -177,6 +177,17 @@ size_t block_get_sub_matrix_nb(dahl_block const* const block)
     return starpu_data_get_nb_children(block->handle);
 }
 
+dahl_vector block_as_vector(dahl_block const* const block)
+{
+    dahl_vector res = {
+        .handle = block->handle,
+        .data = block->data,
+        .is_sub_matrix_data = false,
+    };
+
+    return res;
+}
+
 void block_print(dahl_block const* const block)
 {
     const dahl_shape3d shape = block_get_shape(block);
@@ -410,6 +421,37 @@ void matrix_print(dahl_matrix const* const matrix)
         for(size_t x = 0; x < shape.x; x++)
         {
             printf("%f ", matrix->data[(y*ld)+x]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+
+	starpu_data_release(matrix->handle);
+}
+
+void matrix_print_ascii(dahl_matrix const* const matrix)
+{
+    const dahl_shape2d shape = matrix_get_shape(matrix);
+
+    // block ldy is equal to matrix ld
+	size_t ld = starpu_block_get_local_ldy(matrix->handle);
+
+	starpu_data_acquire(matrix->handle, STARPU_R);
+
+    printf("matrix=%p nx=%zu ny=%zu ld=%zu\n", matrix->data, shape.x, shape.y, ld);
+
+    for(size_t y = 0; y < shape.y; y++)
+    {
+        for(size_t x = 0; x < shape.x; x++)
+        {
+            dahl_fp value = matrix->data[(y*ld)+x];
+
+            if (value < 85.0F)
+                printf(". ");
+            else if (value > 85.0F && value < 170.0F)
+                printf("x ");
+            else
+                printf("# ");
         }
         printf("\n");
     }
