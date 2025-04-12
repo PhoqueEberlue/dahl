@@ -1,4 +1,5 @@
 #include "tests.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 #define RANDOM_SEED 42
@@ -11,6 +12,7 @@ int main(int argc, char **argv)
 
     // test_dahl_convolution();
     test_tasks();
+    test_data();
 
     dahl_shutdown();
 

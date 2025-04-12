@@ -6,5 +6,6 @@
 
 void test_dahl_convolution();
 void test_tasks();
+void test_data();
 
 #endif //!DAHL_TESTS_H
