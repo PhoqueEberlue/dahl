@@ -361,6 +361,17 @@
     In this case I think it does not make much sense to group all of those functions in the same codelet thought
 
 -------------------------------------------------------------------------------
+- Building "flattened views": because data are contiguously stored for every types, we can see a block or a matrix as a vector without
+    changing anything in strapu. TODO: finish that 
+    [Update sam. 12 avril 2025 09:42:22 CEST]:
+    In Starpu you can resize NX, NY, and LD but only for matrices and vectors.
+    So instead I decided to create another handle for the vector and release the previous one, which means that we don't have a view
+    but an onwed object instead. Still fine, we don't perform data copy.
+
+-------------------------------------------------------------------------------
+- Building common functions (that are not tasks) for the data structures, probably using getter functions taking dahl_any and performing a switch inside
+- Improve asserts to show context messages when something crashes
+-  currently it is possible to call dahl_any macro with different types of data structures (e.g. TASK_ADD(vec, mat, block) ) -> avoid that
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
 - test backward pass
