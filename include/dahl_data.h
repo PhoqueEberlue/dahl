@@ -68,7 +68,8 @@ size_t block_get_sub_matrix_nb(dahl_block const* const block);
 // Get sub matrix at index
 dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index);
 
-dahl_vector block_as_vector(dahl_block const* const block);
+// Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
+dahl_vector* block_flatten(dahl_block* block);
 
 void block_print(dahl_block const* const);
 void block_finalize(dahl_block* block);

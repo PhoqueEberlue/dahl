@@ -177,17 +177,6 @@ size_t block_get_sub_matrix_nb(dahl_block const* const block)
     return starpu_data_get_nb_children(block->handle);
 }
 
-dahl_vector block_as_vector(dahl_block const* const block)
-{
-    dahl_vector res = {
-        .handle = block->handle,
-        .data = block->data,
-        .is_sub_matrix_data = false,
-    };
-
-    return res;
-}
-
 void block_print(dahl_block const* const block)
 {
     const dahl_shape3d shape = block_get_shape(block);
@@ -217,17 +206,18 @@ void block_print(dahl_block const* const block)
 	starpu_data_release(block->handle);
 }
 
-// We don't have to free block->data because it should be managed by the user
 void block_finalize(dahl_block* block)
 {
-    if (block->is_partitioned)
-    {
-        // Case where user forgot to unpartition data
-        starpu_data_unpartition(block->handle, STARPU_MAIN_RAM);
-    }
-
+    assert(!block->is_partitioned);
     starpu_data_unregister(block->handle);
     free(block->data);
+    free(block);
+}
+
+void block_finalize_without_data(dahl_block* block)
+{
+    assert(!block->is_partitioned);
+    starpu_data_unregister(block->handle);
     free(block);
 }
 
@@ -634,4 +624,17 @@ starpu_data_handle_t any_get_handle(dahl_any const any)
         case dahl_type_vector:
             return vector_get_handle(any.structure.vector);
     }
+}
+
+dahl_vector* block_flatten(dahl_block* block)
+{
+    dahl_fp* data = block_data_acquire(block);
+    dahl_shape3d shape = block_get_shape(block);
+
+    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
+
+    block_data_release(block);
+    block_finalize_without_data(block);
+
+    return res;
 }

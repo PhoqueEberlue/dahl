@@ -38,3 +38,6 @@ starpu_data_handle_t vector_get_handle(dahl_vector const* const vector);
 starpu_data_handle_t matrix_get_handle(dahl_matrix const* const matrix);
 starpu_data_handle_t block_get_handle(dahl_block const* const block);
 starpu_data_handle_t any_get_handle(dahl_any const any);
+
+// Finalize the block without freeing the pointed data
+void block_finalize_without_data(dahl_block* block);
