@@ -302,14 +302,14 @@ void add(void* buffers[3], void* cl_arg)
 
     size_t const b_nx = STARPU_BLOCK_GET_NX(buffers[1]);
     size_t const b_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const b_nz = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const b_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
     size_t const b_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
     size_t const b_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
     dahl_fp const* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
 
     size_t const c_nx = STARPU_BLOCK_GET_NX(buffers[2]);
     size_t const c_ny = STARPU_BLOCK_GET_NY(buffers[2]);
-    size_t const c_nz = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const c_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
     size_t const c_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
     size_t const c_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
     dahl_fp* const c = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
