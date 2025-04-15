@@ -470,6 +470,43 @@ void test_matrix_vector_product()
     dahl_vector* out_vec = task_matrix_vector_product(in_mat, in_vec);
 
     assert(vector_equals(expect_vec, out_vec, false));
+
+    matrix_finalize(in_mat);
+    vector_finalize(in_vec);
+    vector_finalize(out_vec);
+    vector_finalize(expect_vec);
+}
+
+void test_clip()
+{
+    size_t constexpr len = 10;
+    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
+
+    dahl_vector* out = vector_init(len);
+
+    dahl_fp expect[len] = { 2.0F, 2.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 7.0F, 7.0F };
+    dahl_vector* expect_vec = vector_init_from(len, (dahl_fp*)&expect);
+
+    TASK_CLIP(in, out, 2, 7);
+
+    assert(vector_equals(expect_vec, out, false));
+
+    dahl_fp data_2[len] = { 1e-8F, 1e-8F, 1e-8F, 1e-8F, 1e-8F, 1, 1e-8F, 1e-8F, 1e-8F, 1e-8F };
+    dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
+
+    dahl_fp expect_2[len] = { 1e-6F, 1e-6F, 1e-6F, 1e-6F, 1e-6F, 1 - 1e-6F, 1e-6F, 1e-6F, 1e-6F, 1e-6F };
+    dahl_vector* expect_vec_2 = vector_init_from(len, (dahl_fp*)&expect_2);
+
+    TASK_CLIP_SELF(in_2, 1e-6F, 1 - 1e-6F);
+
+    assert(vector_equals(expect_vec_2, in_2, false));
+
+    vector_finalize(in);
+    vector_finalize(out);
+    vector_finalize(expect_vec);
+    vector_finalize(in_2);
+    vector_finalize(expect_vec_2);
 }
 
 void test_tasks()
@@ -487,4 +524,5 @@ void test_tasks()
     test_add_value();
     test_sub_value();
     test_matrix_vector_product();
+    test_clip();
 }

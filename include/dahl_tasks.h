@@ -34,6 +34,9 @@ dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vecto
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
 
+// Performs the softmax function with `in` vector and returns the result.
+dahl_vector* task_vector_softmax_init(dahl_vector const* const in);
+
 // Performs `a`  `b`, where:
 // - `` is the dot product
 // - `a`, `b` are dahl_vector of the same length
@@ -137,5 +140,10 @@ void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value);
 
 // Substract `value` to every elements of `in` writing directly in the same buffer
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) task_sub_value(AS_ANY(SELF), AS_ANY(SELF), VALUE)
+
+void task_clip(dahl_any const in, dahl_any const out, dahl_fp const min, dahl_fp const max);
+#define TASK_CLIP(IN, OUT, MIN, MAX) task_clip(AS_ANY(IN), AS_ANY(OUT), MIN, MAX)
+
+#define TASK_CLIP_SELF(SELF, MIN, MAX) task_clip(AS_ANY(SELF), AS_ANY(SELF), MIN, MAX)
 
 #endif //!DAHL_TASKS_H

@@ -90,13 +90,26 @@ void task_add(dahl_any const a, dahl_any const b, dahl_any c)
 }
 
 // Note: do not implement a self function (in and out being the same buffers), as 
-// out buffer is used to stored partial computations this would mess the results.
+// out buffer is used to store partial computations this would mess the results.
 void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out)
 {
     int ret = starpu_task_insert(&cl_vector_softmax,
                                  STARPU_R, vector_get_handle(in),
                                  STARPU_W, vector_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_vector_softmax_init(dahl_vector const* const in)
+{
+    size_t len = vector_get_len(in);
+    dahl_vector* out = vector_init(len);
+
+    int ret = starpu_task_insert(&cl_vector_softmax,
+                                 STARPU_R, vector_get_handle(in),
+                                 STARPU_W, vector_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
 }
 
 dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* const b)
@@ -184,4 +197,14 @@ dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vecto
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 
     return out;
+}
+
+void task_clip(dahl_any const in, dahl_any const out, dahl_fp const min, dahl_fp const max)
+{
+    int ret = starpu_task_insert(&cl_clip,
+                             STARPU_VALUE, &min, sizeof(&min),
+                             STARPU_VALUE, &max, sizeof(&max),
+                             STARPU_R, any_get_handle(in),
+                             STARPU_W, any_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
