@@ -299,6 +299,10 @@
     This makes sense however it makes the syntax a bit more complex.
     It would be nice to only take one parameter for `FROM_ANY`, but it seems not possible because return type has
     to be knowned at compilation.
+    sam. 12 avril 2025 10:34:19 CEST
+    -> This would be very interesting not to allocate the same buffers over and over again: maybe try to reuse the buffers?
+    This is why it is important to have functions that take buffers pointers.
+
 
 -------------------------------------------------------------------------------
 - Should I make every operations as a task itself? Granularity problem
@@ -369,8 +373,10 @@
     but an onwed object instead. Still fine, we don't perform data copy.
 
 -------------------------------------------------------------------------------
+- Hide starpu_wait_for_all into my API -> is this even needed though?
 - Building common functions (that are not tasks) for the data structures, probably using getter functions taking dahl_any and performing a switch inside
-- Improve asserts to show context messages when something crashes
+- check memory leaks, don't forget to call the finalize() at some point :)
+- Improve asserts to show context messages when something crashes -> change the strings of the STARPU_CHECK_RETURN_VALUE()
 -  currently it is possible to call dahl_any macro with different types of data structures (e.g. TASK_ADD(vec, mat, block) ) -> avoid that
 - less important but print always the same numbers of character in pretty print e.g. "42.00", " 8.00"...
 - Should filter values be negative?
