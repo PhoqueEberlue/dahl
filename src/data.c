@@ -125,17 +125,6 @@ bool block_equals(dahl_block const* const block_a, dahl_block const* const block
     return res;
 }
 
-dahl_fp* block_data_acquire(dahl_block const* const block)
-{
-    starpu_data_acquire(block->handle, STARPU_R);
-    return block->data;
-}
-
-void block_data_release(dahl_block const* const block)
-{
-    starpu_data_release(block->handle);
-}
-
 void block_partition_along_z(dahl_block* const block)
 {
     dahl_shape3d const shape = block_get_shape(block);
@@ -548,8 +537,7 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
     size_t const len_a = vector_get_len(vector_a);
     size_t const len_b = vector_get_len(vector_b);
 
-    assert(len_a == len_b
-        && len_a == len_b);
+    assert(len_a == len_b);
 
     starpu_data_acquire(vector_a->handle, STARPU_R);
     starpu_data_acquire(vector_b->handle, STARPU_R);
@@ -599,6 +587,18 @@ void vector_print(dahl_vector const* const vector)
 	starpu_data_release(vector->handle);
 }
 
+void vector_finalize_without_data(dahl_vector* vector)
+{
+    if (vector->is_sub_matrix_data)
+    {
+        printf("ERROR: vector_finalize_without_data() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
+        abort();
+    }
+
+    starpu_data_unregister(vector->handle);
+    free(vector);
+}
+
 // We don't have to free matrix->data because it should be managed by the user
 void vector_finalize(dahl_vector* vector)
 {
@@ -626,15 +626,85 @@ starpu_data_handle_t any_get_handle(dahl_any const any)
     }
 }
 
-dahl_vector* block_flatten(dahl_block* block)
+dahl_fp* any_get_data(dahl_any const any)
 {
-    dahl_fp* data = block_data_acquire(block);
+    switch (any.type)
+    {
+        case dahl_type_block:
+            return any.structure.block->data;
+        case dahl_type_matrix:
+            return any.structure.matrix->data;
+        case dahl_type_vector:
+            return any.structure.vector->data;
+    }
+}
+
+dahl_fp* any_data_acquire(dahl_any const any)
+{
+    starpu_data_handle_t handle = any_get_handle(any);
+    starpu_data_acquire(handle, STARPU_RW);
+    return any_get_data(any);
+}
+
+void any_data_release(dahl_any const any)
+{
+    starpu_data_handle_t handle = any_get_handle(any);
+    starpu_data_release(handle);
+}
+
+dahl_vector* block_to_vector(dahl_block* block)
+{
+    dahl_fp* data = ANY_DATA_ACQUIRE(block);
     dahl_shape3d shape = block_get_shape(block);
 
     dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
 
-    block_data_release(block);
+    ANY_DATA_RELEASE(block);
     block_finalize_without_data(block);
+
+    return res;
+}
+
+dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape)
+{
+    size_t len = vector_get_len(vector);
+    dahl_fp* data = ANY_DATA_ACQUIRE(vector);
+
+    assert(shape.x * shape.y == len);
+
+    dahl_matrix* res = matrix_init_from_ptr(shape, data);
+
+    ANY_DATA_RELEASE(vector);
+    vector_finalize_without_data(vector);
+
+    return res;
+}
+
+dahl_matrix* vector_to_column_matrix(dahl_vector* vector)
+{
+    size_t len = vector_get_len(vector);
+    dahl_shape2d new_shape = { .x = 1, .y = len };
+    return vector_to_matrix(vector, new_shape);
+}
+
+dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
+{
+    size_t len = vector_get_len(vector);
+    dahl_shape2d new_shape = { .x = len, .y = 1 };
+    return vector_to_matrix(vector, new_shape);
+}
+
+dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
+{
+    size_t len = vector_get_len(vector);
+    dahl_fp* data = ANY_DATA_ACQUIRE(vector);
+
+    assert(shape.x * shape.y * shape.z == len);
+
+    dahl_block* res = block_init_from_ptr(shape, data);
+
+    ANY_DATA_RELEASE(vector);
+    vector_finalize_without_data(vector);
 
     return res;
 }

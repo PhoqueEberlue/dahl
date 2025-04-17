@@ -3,6 +3,15 @@
 
 #include "dahl_data.h"
 
+// Naming convention <task>_<type>_<name>_<mode>:
+// - `task` always mean that this function will be scheduled on GPU/CPU
+// - <type>: `block`, `matrix` or `vector` indicate the primary data structure used in the task
+// - <name>: name of the function
+// - <mode>: 
+//   - `` default implementation with separate buffers for input and output
+//   - `self` writes the result in the same buffer that is used for input (usually the argument named *_self)
+//   - `init` the function instanciates and returns the result buffer
+
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 dahl_matrix* task_block_sum_z_axis(dahl_block const* const in);
@@ -28,7 +37,12 @@ void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix c
 // Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
 void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size);
 
-dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec);
+// Performs matrix vector product. Tries to find the right dimension to perform the operation.
+void task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec, dahl_vector* const out);
+dahl_vector* task_matrix_vector_product_init(dahl_matrix const* const mat, dahl_vector const* const vec);
+
+void task_matrix_matrix_product(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c);
+dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* const a, dahl_matrix const* const b);
 
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
@@ -48,51 +62,11 @@ dahl_matrix* task_vector_diag(dahl_vector const* const in);
 
 dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in);
 
+dahl_fp task_vector_cross_entropy_loss(dahl_vector const* const predictions, dahl_vector const* const targets);
+
+dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const predictions, dahl_vector const* const targets);
+
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
-// Helper to wrap a dahl data structure into a `dahl_any`.
-// Initialize a stack allocated `dahl_any` object from a `dahl_block*`, `dahl_matrix*` or `dahl_vector*`.
-#define AS_ANY(X) _Generic((X),                               \
-        dahl_block*:                                          \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .block = (dahl_block*)(X) },   \
-                .type = dahl_type_block                       \
-            },                                                \
-        dahl_matrix*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .matrix = (dahl_matrix*)(X) }, \
-                .type = dahl_type_matrix                      \
-            },                                                \
-        dahl_vector*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .vector = (dahl_vector*)(X) }, \
-                .type = dahl_type_vector                      \
-            }                                                 \
-    )   // TODO: is `default` required?
-
-// Helper to unwrap a `dahl_any`, to be used for functions that take and return the same 
-// dahl data structure types using `dahl_any` wrapper.
-// Gets `dahl_block*`, `dahl_matrix*` or `dahl_vector*` from `OUT` by reading `IN`'s type
-#define FROM_ANY(IN, OUT) _Generic((IN), \
-        dahl_block*:                     \
-            (dahl_block*)                \
-            {                            \
-                (OUT).structure.block    \
-            },                           \
-        dahl_matrix*:                    \
-            (dahl_matrix*)               \
-            {                            \
-                (OUT).structure.matrix   \
-            },                           \
-        dahl_vector*:                    \
-            (dahl_vector*)               \
-            {                            \
-                (OUT).structure.vector   \
-            }                            \
-    )   // TODO: is `default` required?
-
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)
 void task_relu(dahl_any const in, dahl_any out);
 #define TASK_RELU(IN, OUT) task_relu(AS_ANY(IN), AS_ANY(OUT))

@@ -7,7 +7,7 @@ void test_block_partition()
 }
 
 
-void test_block_flatten()
+void test_block_to_vector()
 {
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
@@ -26,7 +26,7 @@ void test_block_flatten()
 
     dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
 
-    dahl_vector* vec = block_flatten(block);
+    dahl_vector* vec = block_to_vector(block);
 
     dahl_fp res = task_vector_dot_product(vec, vec);
 
@@ -40,5 +40,5 @@ void test_block_flatten()
 
 void test_data()
 {
-    test_block_flatten();
+    test_block_to_vector();
 }

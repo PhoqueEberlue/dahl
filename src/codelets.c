@@ -169,6 +169,43 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
     }
 }
 
+void matrix_matrix_product(void* buffers[3], void* cl_arg)
+{
+    size_t const a_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const a_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const a_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* const a = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const b_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const b_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const b_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
+    dahl_fp const* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    size_t const c_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    size_t const c_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const c_ld = STARPU_BLOCK_GET_LDY(buffers[2]);
+    dahl_fp* const c = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+
+    assert(a_nx == b_ny);
+    assert(c_ny == a_ny);
+    assert(c_nx == b_nx);
+
+    // Loop through (x,y) of c
+    for (size_t y = 0; y < c_ny; y++)
+    {
+        for (size_t x = 0; x < c_nx; x++)
+        {
+            for (size_t i = 0; i < a_nx; i++)
+            {
+                dahl_fp val_a = a[(y * a_ld) + i];
+                dahl_fp val_b = b[(i * b_ld) + x];
+
+                c[(y * c_ld) + x] += val_a * val_b;
+            }
+        }
+    }
+}
+
 void relu(void* buffers[2], void* cl_arg)
 {
     size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
@@ -375,7 +412,6 @@ void vector_dot_product(void* buffers[2], void* cl_arg)
 {
     dahl_fp *res_p;
     starpu_codelet_unpack_args(cl_arg, &res_p);
-    dahl_fp res = *res_p;
 
     size_t const a_len = STARPU_BLOCK_GET_NX(buffers[0]);
     dahl_fp const* const a = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
@@ -384,6 +420,8 @@ void vector_dot_product(void* buffers[2], void* cl_arg)
     dahl_fp const* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
 
     assert(a_len == b_len);
+
+    dahl_fp res = 0;
 
     for (size_t i = 0; i < a_len; i++)
     {
@@ -482,16 +520,37 @@ void matrix_vector_product(void* buffers[3], void* cl_arg)
     size_t const out_len = STARPU_BLOCK_GET_NX(buffers[2]);
     dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    assert(mat_nx == vec_len);
-    assert(mat_ny == out_len);
-
-    // Loop through x,y of the matrix
-    for (size_t y = 0; y < mat_ny; y++)
+    if (mat_nx == vec_len)
     {
+        assert(mat_ny == out_len);
+
+        // Loop through x,y of the matrix
+        for (size_t y = 0; y < mat_ny; y++)
+        {
+            for (size_t x = 0; x < mat_nx; x++)
+            {
+                out[y] += vec[x] * mat[(y * mat_ld) + x];
+            }
+        }
+    }
+    else if (mat_ny == vec_len)
+    {
+        assert(mat_nx == out_len);
+
+        // Loop through y,x of the matrix
         for (size_t x = 0; x < mat_nx; x++)
         {
-            out[y] += vec[x] * mat[(y * mat_ld) + x];
+            for (size_t y = 0; y < mat_ny; y++)
+            {
+                out[x] += vec[y] * mat[(y * mat_ld) + x];
+            }
         }
+    }
+    else
+    {
+        printf("The input matrix doesn't match any of the vector's dimension mat(%lu, %lu) vec(%lu)", 
+               mat_nx, mat_ny, vec_len);
+        abort();
     }
 }
 
@@ -529,5 +588,57 @@ void clip(void* buffers[2], void* cl_arg)
         {
             out[i] = in[i];
         }
+    }
+}
+
+void vector_cross_entropy_loss(void* buffers[2], void* cl_arg)
+{
+    dahl_fp *res_p;
+    starpu_codelet_unpack_args(cl_arg, &res_p);
+
+    // Predictions vector
+    size_t const pred_len = STARPU_BLOCK_GET_NX(buffers[0]);
+    dahl_fp const* const pred = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Targets vector
+    size_t const targ_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp const* const targ = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(pred_len == targ_len);
+
+    dahl_fp loss = 0;
+
+    for (size_t i = 0; i < pred_len; i++)
+    {
+        loss += (targ[i] * log(pred[i]));
+    }
+
+    // Divide by the number of classes and reverse the sign
+    loss = - (loss / (dahl_fp)pred_len);
+
+    // Pass return value as a pointer within the arguments of the codelet
+    *res_p = loss;
+}
+
+void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
+{
+    // Predictions vector
+    size_t const pred_len = STARPU_BLOCK_GET_NX(buffers[0]);
+    dahl_fp const* const pred = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Targets vector
+    size_t const targ_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp const* const targ = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // Output vector
+    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(pred_len == targ_len);
+    assert(pred_len == out_len);
+
+    for (size_t i = 0; i < out_len; i++)
+    {
+        out[i] = (-targ[i]) / (pred[i] + 1e-7F) / (dahl_fp)pred_len;
     }
 }

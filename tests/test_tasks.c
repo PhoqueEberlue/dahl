@@ -1,4 +1,5 @@
 #include "tests.h"
+#include <assert.h>
 #include <stdio.h>
 
 // Asserts that "a cross correlation b = expect"
@@ -467,14 +468,29 @@ void test_matrix_vector_product()
     dahl_fp expect[expect_vec_len] = { 1.0F, -3.0F };
     dahl_vector* expect_vec = vector_init_from(expect_vec_len, (dahl_fp*)&expect);
 
-    dahl_vector* out_vec = task_matrix_vector_product(in_mat, in_vec);
+    dahl_vector* out_vec = task_matrix_vector_product_init(in_mat, in_vec);
 
     assert(vector_equals(expect_vec, out_vec, false));
+
+    size_t constexpr in_vec_len_2 = mat_shape.y;
+    dahl_fp vec_2[in_vec_len_2] = { 2.0F, 4.0F };
+    dahl_vector* in_vec_2 = vector_init_from(in_vec_len_2, (dahl_fp*)&vec_2);
+
+    size_t constexpr expect_vec_len_2 = mat_shape.x;
+    dahl_fp expect_2[expect_vec_len_2] = { 2.0F, -14.0F, 8.0F };
+    dahl_vector* expect_vec_2 = vector_init_from(expect_vec_len_2, (dahl_fp*)&expect_2);
+
+    dahl_vector* out_vec_2 = task_matrix_vector_product_init(in_mat, in_vec_2);
+
+    assert(vector_equals(expect_vec_2, out_vec_2, false));
 
     matrix_finalize(in_mat);
     vector_finalize(in_vec);
     vector_finalize(out_vec);
     vector_finalize(expect_vec);
+    vector_finalize(in_vec_2);
+    vector_finalize(out_vec_2);
+    vector_finalize(expect_vec_2);
 }
 
 void test_clip()
@@ -509,6 +525,56 @@ void test_clip()
     vector_finalize(expect_vec_2);
 }
 
+void test_vector_cross_entropy_loss()
+{
+    size_t constexpr len = 10;
+    dahl_fp pred[len] = { 
+        1.69330994e-43F, 1.00000000e+00F, 1.46134680e-11F, 4.19037620e-45F, 2.11622997e-31F, 
+        7.47873538e-12F, 5.96985145e-26F, 2.43828226e-41F, 1.16977452e-31F, 1.15460362e-36F
+    };
+
+    dahl_vector* pred_vec = vector_init_from(len, (dahl_fp*)&pred);
+
+    dahl_fp targets[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F };
+
+    dahl_vector* target_vec = vector_init_from(len, (dahl_fp*)&targets);
+
+    dahl_fp res = task_vector_cross_entropy_loss(pred_vec, target_vec);
+
+    assert(res == 1.6118095639272222996396521921269595623016357421875);
+}
+
+void test_matrix_matrix_product()
+{
+    dahl_shape2d constexpr a_shape = { .x = 3, .y = 2 };
+    dahl_fp a[a_shape.y][a_shape.x] = {
+        { 1.0F, -1.0F, 2.0F },
+        { 0.0F, -3.0F, 1.0F }
+    };
+
+    dahl_shape2d constexpr b_shape = { .x = 2, .y = 3 };
+    dahl_fp b[b_shape.y][b_shape.x] = {
+        { 1.0F,  4.0F },
+        { 2.0F, -5.0F },
+        { 0.0F, -3.0F }
+    };
+
+    dahl_shape2d constexpr expect_shape = { .x = 2, .y = 2 };
+    dahl_fp expect[expect_shape.y][expect_shape.x] = {
+        {-1.0F,  3.0F },
+        {-6.0F, 12.0F }
+    };
+
+    dahl_matrix* a_vec = matrix_init_from(a_shape, (dahl_fp*)&a);
+    dahl_matrix* b_vec = matrix_init_from(b_shape, (dahl_fp*)&b);
+    dahl_matrix* c_vec = matrix_init(expect_shape);
+    dahl_matrix* expect_vec = matrix_init_from(expect_shape, (dahl_fp*)&expect);
+
+    task_matrix_matrix_product(a_vec, b_vec, c_vec);
+
+    assert(matrix_equals(expect_vec, c_vec));
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -525,4 +591,6 @@ void test_tasks()
     test_sub_value();
     test_matrix_vector_product();
     test_clip();
+    test_vector_cross_entropy_loss();
+    test_matrix_matrix_product();
 }
