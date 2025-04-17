@@ -69,7 +69,7 @@ size_t block_get_sub_matrix_nb(dahl_block const* const block);
 dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index);
 
 // Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
-dahl_vector* block_flatten(dahl_block* block);
+dahl_vector* block_to_vector(dahl_block* block);
 
 void block_print(dahl_block const* const);
 void block_finalize(dahl_block* block);
@@ -125,11 +125,74 @@ dahl_vector* vector_init_from(size_t const len, dahl_fp* const data);
 // Returns the vector len
 size_t vector_get_len(dahl_vector const *const vector);
 
+// Converts a vector to a matrix
+dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape);
+dahl_matrix* vector_to_column_matrix(dahl_vector* vector);
+dahl_matrix* vector_to_row_matrix(dahl_vector* vector);
+
+// Converts a vector to a block
+dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape);
+
 // Compares the two matrices value by value and returns wether or not they're equal.
 // Note: values are rounded in order to obtain valid comparisons.
 bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b, bool const rounding);
 
 void vector_print(dahl_vector const* const vector);
+void vector_finalize_without_data(dahl_vector* vector);
 void vector_finalize(dahl_vector* vector);
+
+// -------------------------------------------------- Any operations --------------------------------------------------
+// Helper to wrap a dahl data structure into a `dahl_any`.
+// Initialize a stack allocated `dahl_any` object from a `dahl_block*`, `dahl_matrix*` or `dahl_vector*`.
+#define AS_ANY(X) _Generic((X),                               \
+        dahl_block*:                                          \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .block = (dahl_block*)(X) },   \
+                .type = dahl_type_block                       \
+            },                                                \
+        dahl_matrix*:                                         \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .matrix = (dahl_matrix*)(X) }, \
+                .type = dahl_type_matrix                      \
+            },                                                \
+        dahl_vector*:                                         \
+            (dahl_any)                                        \
+            {                                                 \
+                .structure = { .vector = (dahl_vector*)(X) }, \
+                .type = dahl_type_vector                      \
+            }                                                 \
+    )   // TODO: is `default` required?
+
+// Helper to unwrap a `dahl_any`, to be used for functions that take and return the same 
+// dahl data structure types using `dahl_any` wrapper.
+// Gets `dahl_block*`, `dahl_matrix*` or `dahl_vector*` from `OUT` by reading `IN`'s type
+#define FROM_ANY(IN, OUT) _Generic((IN), \
+        dahl_block*:                     \
+            (dahl_block*)                \
+            {                            \
+                (OUT).structure.block    \
+            },                           \
+        dahl_matrix*:                    \
+            (dahl_matrix*)               \
+            {                            \
+                (OUT).structure.matrix   \
+            },                           \
+        dahl_vector*:                    \
+            (dahl_vector*)               \
+            {                            \
+                (OUT).structure.vector   \
+            }                            \
+    )   // TODO: is `default` required?
+
+dahl_fp* any_get_data(dahl_any const any);
+#define ANY_GET_DATA(X) any_get_data(AS_ANY(X))
+
+dahl_fp* any_data_acquire(dahl_any const any);
+#define ANY_DATA_ACQUIRE(X) any_data_acquire(AS_ANY(X))
+
+void any_data_release(dahl_any const any);
+#define ANY_DATA_RELEASE(X) any_data_release(AS_ANY(X))
 
 #endif //!DAHL_DATA_H

@@ -40,6 +40,28 @@ void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_mat
     task_matrix_backward_max_pooling(in, mask_self, mask_self, pool_size);
 }
 
+void task_matrix_matrix_product(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c)
+{
+    int ret = starpu_task_insert(&cl_matrix_matrix_product,
+                             STARPU_R, matrix_get_handle(a),
+                             STARPU_R, matrix_get_handle(b), 
+                             STARPU_W, matrix_get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* const a, dahl_matrix const* const b)
+{
+    dahl_shape2d a_shape = matrix_get_shape(a);
+    dahl_shape2d b_shape = matrix_get_shape(b);
+
+    dahl_shape2d c_shape = { .x = a_shape.x, .y = b_shape.y };
+    dahl_matrix* const c = matrix_init(c_shape);
+
+    task_matrix_matrix_product(a, b, c);
+
+    return c;
+}
+
 void task_relu(dahl_any const in, dahl_any out)
 {
     int ret = starpu_task_insert(&cl_relu, 
@@ -104,11 +126,7 @@ dahl_vector* task_vector_softmax_init(dahl_vector const* const in)
     size_t len = vector_get_len(in);
     dahl_vector* out = vector_init(len);
 
-    int ret = starpu_task_insert(&cl_vector_softmax,
-                                 STARPU_R, vector_get_handle(in),
-                                 STARPU_W, vector_get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
+    task_vector_softmax(in, out); 
     return out;
 }
 
@@ -186,15 +204,36 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in)
     return result;
 }
 
-dahl_vector* task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec)
+void task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec, dahl_vector* const out)
 {
-    dahl_shape2d mat_shape = matrix_get_shape(mat);
-    dahl_vector* out = vector_init(mat_shape.y);
     int ret = starpu_task_insert(&cl_matrix_vector_product,
                              STARPU_R, matrix_get_handle(mat),
                              STARPU_R, vector_get_handle(vec),
                              STARPU_W, vector_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_matrix_vector_product_init(dahl_matrix const* const mat, dahl_vector const* const vec)
+{
+    dahl_shape2d mat_shape = matrix_get_shape(mat);
+    size_t vec_len = vector_get_len(vec);
+    dahl_vector* out;
+    if (mat_shape.x == vec_len)
+    {
+        out = vector_init(mat_shape.y);
+    }
+    else if (mat_shape.y == vec_len)
+    {
+        out = vector_init(mat_shape.x);
+    }
+    else
+    {
+        printf("The input matrix doesn't match any of the vector's dimension mat(%lu, %lu) vec(%lu)", 
+               mat_shape.x, mat_shape.y, vec_len);
+        abort();
+    }
+
+    task_matrix_vector_product(mat, vec, out); 
 
     return out;
 }
@@ -207,4 +246,56 @@ void task_clip(dahl_any const in, dahl_any const out, dahl_fp const min, dahl_fp
                              STARPU_R, any_get_handle(in),
                              STARPU_W, any_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_fp task_vector_cross_entropy_loss(dahl_vector const* const predictions, dahl_vector const* const targets)
+{
+    dahl_fp const epsilon = 1e-7F;
+    size_t const n_classes = vector_get_len(predictions);
+
+    dahl_vector* tmp = vector_init(n_classes);
+
+    // TODO: '-- why do I need to cast here
+    TASK_CLIP((dahl_vector*)predictions, tmp, epsilon, 1 - epsilon);
+
+    dahl_fp res = 0;
+    dahl_fp* res_p = &res;
+
+    struct starpu_task* task = starpu_task_create();
+    task->cl = &cl_vector_cross_entropy_loss;
+
+    // Initialize argument buffer to obtain the return value with a pointer pointer
+    char *arg_buffer;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
+
+    task->cl_arg = arg_buffer;
+    task->cl_arg_size = arg_buffer_size;
+    task->nbuffers = 2;
+    task->handles[0] = vector_get_handle(tmp);
+    task->handles[1] = vector_get_handle(targets);
+    task->detach = 0;
+
+    int ret = starpu_task_submit(task); 
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    ret = starpu_task_wait(task);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return res;
+}
+
+dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const predictions, dahl_vector const* const targets)
+{
+    size_t len = vector_get_len(predictions);
+    dahl_vector* out = vector_init(len);
+
+    int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
+                             STARPU_R, vector_get_handle(predictions),
+                             STARPU_R, vector_get_handle(targets),
+                             STARPU_W, vector_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
 }
