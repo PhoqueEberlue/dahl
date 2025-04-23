@@ -53,7 +53,7 @@ dahl_block* block_add_padding_init(dahl_block const* const block, dahl_shape3d c
 dahl_shape3d block_get_shape(dahl_block const* const block);
 
 // Compares the two blocks value by value and returns wether or not they're equal.
-bool block_equals(dahl_block const* const a, dahl_block const* const b);
+bool block_equals(dahl_block const* const a, dahl_block const* const b, bool const rounding);
 
 dahl_fp* block_data_acquire(dahl_block const* const block);
 void block_data_release(dahl_block const* const block);
@@ -100,7 +100,7 @@ dahl_matrix* matrix_clone(dahl_matrix const* const matrix);
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
-bool matrix_equals(dahl_matrix const* const matrix_a, dahl_matrix const* const matrix_b);
+bool matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b, bool const rounding);
 
 void matrix_partition_along_y(dahl_matrix* const matrix);
 void matrix_unpartition(dahl_matrix* const matrix);
@@ -146,7 +146,7 @@ dahl_matrix* vector_as_categorical(dahl_vector* vector, size_t const num_classes
 
 // Compares the two matrices value by value and returns wether or not they're equal.
 // Note: values are rounded in order to obtain valid comparisons.
-bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b, bool const rounding);
+bool vector_equals(dahl_vector const* const a, dahl_vector const* const b, bool const rounding);
 
 void vector_print(dahl_vector const* const vector);
 void vector_finalize_without_data(dahl_vector* vector);

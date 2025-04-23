@@ -146,31 +146,31 @@ starpu_data_handle_t block_get_handle(dahl_block const* const block)
     return block->handle;
 }
 
-bool block_equals(dahl_block const* const block_a, dahl_block const* const block_b)
+bool block_equals(dahl_block const* const a, dahl_block const* const b, bool const rounding)
 {
-    dahl_shape3d shape_a = block_get_shape(block_a);
-    dahl_shape3d shape_b = block_get_shape(block_b);
+    dahl_shape3d shape_a = block_get_shape(a);
+    dahl_shape3d shape_b = block_get_shape(b);
 
     assert(shape_a.x == shape_b.x 
         && shape_a.y == shape_b.y 
         && shape_a.z == shape_b.z);
 
-    starpu_data_acquire(block_a->handle, STARPU_R);
-    starpu_data_acquire(block_b->handle, STARPU_R);
+    starpu_data_acquire(a->handle, STARPU_R);
+    starpu_data_acquire(b->handle, STARPU_R);
 
     bool res = true;
 
     for (int i = 0; i < (shape_a.x * shape_a.y * shape_a.z); i++)
     {
-        if (block_a->data[i] != block_b->data[i])
+        if (a->data[i] != b->data[i])
         {
             res = false;
             break;
         }
     }
 
-    starpu_data_release(block_a->handle);
-    starpu_data_release(block_b->handle);
+    starpu_data_release(a->handle);
+    starpu_data_release(b->handle);
 
     return res;
 }
@@ -367,30 +367,41 @@ starpu_data_handle_t matrix_get_handle(dahl_matrix const* const matrix)
     return matrix->handle;
 }
 
-bool matrix_equals(dahl_matrix const* const matrix_a, dahl_matrix const* const matrix_b)
+bool matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b, bool const rounding)
 {
-    dahl_shape2d const shape_a = matrix_get_shape(matrix_a);
-    dahl_shape2d const shape_b = matrix_get_shape(matrix_b);
+    dahl_shape2d const shape_a = matrix_get_shape(a);
+    dahl_shape2d const shape_b = matrix_get_shape(b);
 
     assert(shape_a.x == shape_b.x 
         && shape_a.y == shape_b.y);
 
-    starpu_data_acquire(matrix_a->handle, STARPU_R);
-    starpu_data_acquire(matrix_b->handle, STARPU_R);
+    starpu_data_acquire(a->handle, STARPU_R);
+    starpu_data_acquire(b->handle, STARPU_R);
 
     bool res = true;
 
     for (int i = 0; i < (shape_a.x * shape_a.y); i++)
     {
-        if (matrix_a->data[i] != matrix_b->data[i])
+        if (rounding)
         {
-            res = false;
-            break;
+            if (round(a->data[i]) != round(b->data[i]))
+            {
+                res = false;
+                break;
+            }
+        }
+        else 
+        {
+            if (a->data[i] != b->data[i])
+            {
+                res = false;
+                break;
+            }
         }
     }
 
-    starpu_data_release(matrix_a->handle);
-    starpu_data_release(matrix_b->handle);
+    starpu_data_release(a->handle);
+    starpu_data_release(b->handle);
 
     return res;
 }
@@ -605,15 +616,15 @@ starpu_data_handle_t vector_get_handle(dahl_vector const* const vector)
     return vector->handle;
 }
 
-bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const vector_b, bool const rounding)
+bool vector_equals(dahl_vector const* const a, dahl_vector const* const b, bool const rounding)
 {
-    size_t const len_a = vector_get_len(vector_a);
-    size_t const len_b = vector_get_len(vector_b);
+    size_t const len_a = vector_get_len(a);
+    size_t const len_b = vector_get_len(b);
 
     assert(len_a == len_b);
 
-    starpu_data_acquire(vector_a->handle, STARPU_R);
-    starpu_data_acquire(vector_b->handle, STARPU_R);
+    starpu_data_acquire(a->handle, STARPU_R);
+    starpu_data_acquire(b->handle, STARPU_R);
 
     bool res = true;
 
@@ -621,7 +632,7 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
     {
         if (rounding)
         {
-            if (round(vector_a->data[i]) != round(vector_b->data[i]))
+            if (round(a->data[i]) != round(b->data[i]))
             {
                 res = false;
                 break;
@@ -629,7 +640,7 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
         }
         else 
         {
-            if (vector_a->data[i] != vector_b->data[i])
+            if (a->data[i] != b->data[i])
             {
                 res = false;
                 break;
@@ -637,8 +648,8 @@ bool vector_equals(dahl_vector const* const vector_a, dahl_vector const* const v
         }
     }
 
-    starpu_data_release(vector_a->handle);
-    starpu_data_release(vector_b->handle);
+    starpu_data_release(a->handle);
+    starpu_data_release(b->handle);
 
     return res;
 }

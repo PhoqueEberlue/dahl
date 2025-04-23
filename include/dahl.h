@@ -7,6 +7,7 @@
 #include "dahl_pooling.h"
 #include "dahl_dense.h"
 #include "dahl_mnist_loader.h"
+#include "dahl_asserts.h"
 
 void dahl_init();
 void dahl_shutdown();

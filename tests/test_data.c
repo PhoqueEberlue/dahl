@@ -91,7 +91,7 @@ void test_block_add_padding()
 
     dahl_block* expect_block = block_init_from(padded_shape, (dahl_fp*)&expect);
 
-    assert(block_equals(expect_block, padded_block));
+    assert_block_equals(expect_block, padded_block, false);
 
     dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
     dahl_block* padded_block_2 = block_add_padding_init(block, padded_shape_2);
@@ -119,7 +119,7 @@ void test_block_add_padding()
 
     dahl_block* expect_block_2 = block_init_from(padded_shape_2, (dahl_fp*)&expect_2);
 
-    assert(block_equals(expect_block_2, padded_block_2));
+    assert_block_equals(expect_block_2, padded_block_2, false);
 }
 
 
