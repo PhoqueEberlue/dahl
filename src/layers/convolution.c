@@ -1,5 +1,8 @@
 #include "../../include/dahl_convolution.h"
+
+// TODO: remove this import and integrate the starpu_wait into my API?
 #include <starpu.h>
+#include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
@@ -72,8 +75,16 @@ dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* cons
 {
     // derivative loss
     dahl_matrix* dl_dinput = matrix_init(conv->input_shape);
-    dahl_block* dl_dfilters = block_init(conv->output_shape);
+    dahl_block* dl_dfilters = block_init(conv->filter_shape);
 
+    // Here we need padding on dl_dout
+    size_t padding = (conv->filter_size - 1) * 2;
+    dahl_shape3d padding_shape = block_get_shape(dl_dout);
+    padding_shape.x += padding;
+    padding_shape.y += padding;
+    dahl_block* dl_dout_padded = block_add_padding_init(dl_dout, padding_shape);
+
+    block_partition_along_z(dl_dout_padded);
     block_partition_along_z(dl_dout);
     block_partition_along_z(dl_dfilters);
     block_partition_along_z(conv->filters);
@@ -88,17 +99,20 @@ dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* cons
 
         task_matrix_cross_correlation(input, sub_dl_dout, sub_dl_dfilters);
 
-        // Next four lines
+        // Next lines
         // dL_dinput += correlate2d(dL_dout[i],self.filters[i], mode="full")
         dahl_matrix const* const sub_filters = block_get_sub_matrix(conv->filters, i);
         dahl_matrix* tmp = matrix_init(conv->input_shape);
-        
-        task_matrix_cross_correlation(sub_dl_dout, sub_filters, tmp);
+
+        dahl_matrix const* const sub_dl_dout_padded = block_get_sub_matrix(dl_dout_padded, i);
+
+        task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, tmp);
         TASK_ADD_SELF(dl_dinput, tmp);
     }
 
     starpu_task_wait_for_all();
 
+    block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
     block_unpartition(dl_dfilters);
     block_unpartition(conv->filters);
@@ -108,6 +122,7 @@ dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* cons
     // biases -= dl_dout * learning_rate
     TASK_SCAL_SELF(dl_dfilters, learning_rate);
     TASK_SCAL_SELF(dl_dout, learning_rate);
+
     TASK_SUB_SELF(conv->filters, dl_dfilters);
     TASK_SUB_SELF(conv->biases, dl_dout);
 

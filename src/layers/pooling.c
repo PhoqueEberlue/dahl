@@ -3,10 +3,17 @@
 #include <stdlib.h>
 
 // Not much to init because most of the other fields need to be computed depending on input data.
-dahl_pooling* pooling_init(size_t const pool_size)
+dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shape)
 {
     dahl_pooling* pool = malloc(sizeof(dahl_pooling));
     *(size_t*)&pool->pool_size = pool_size;
+    *(dahl_shape3d*)&pool->input_shape = input_shape;
+
+    // Image dimensions
+    *(size_t*)&pool->output_shape.x = pool->input_shape.x / pool->pool_size;
+    *(size_t*)&pool->output_shape.y = pool->input_shape.y / pool->pool_size;
+    // Channel dimension
+    *(size_t*)&pool->output_shape.z = pool->input_shape.z;
 
     return pool;
 }
@@ -14,11 +21,7 @@ dahl_pooling* pooling_init(size_t const pool_size)
 dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const input)
 {
     pool->input_data = input; // TODO: I mean, input value itself isn't changed? though how do we free the memory?
-    pool->input_shape = block_get_shape(input);
 
-    pool->output_shape.x = pool->input_shape.x / pool->pool_size;
-    pool->output_shape.y = pool->input_shape.y / pool->pool_size;
-    pool->output_shape.z = pool->input_shape.z;
     pool->output_data = block_init(pool->output_shape);
     
     pool->mask = block_init(pool->input_shape);

@@ -1,3 +1,6 @@
+#ifndef DAHL_H
+#define DAHL_H
+
 #include "dahl_data.h"
 #include "dahl_tasks.h"
 #include "dahl_convolution.h"
@@ -7,3 +10,5 @@
 
 void dahl_init();
 void dahl_shutdown();
+
+#endif //!DAHL_H

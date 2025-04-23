@@ -31,7 +31,7 @@ dahl_block* load_mnist_images(char const* filename)
     dahl_shape3d shape_image_block = { .x = rows, .y = cols, .z = num_images };
     dahl_block* image_block = block_init(shape_image_block);
 
-    dahl_fp* images = block_data_acquire(image_block);
+    dahl_fp* images = ANY_DATA_ACQUIRE(image_block);
 
     for (size_t z = 0; z < num_images; z++)
     {
@@ -41,19 +41,19 @@ dahl_block* load_mnist_images(char const* filename)
             {
                 unsigned char buffer;
                 fread(&buffer, sizeof(unsigned char), 1, file);
-                images[(z * cols * rows ) + (y* rows) + x] = (dahl_fp)buffer;
+                images[(z * cols * rows ) + (y* rows) + x] = (dahl_fp)buffer / 255.0F;
             }
         }
     }
 
-    block_data_release(image_block);
+    ANY_DATA_RELEASE(image_block);
 
     fclose(file);
     return image_block;
 }
 
 // Function to load MNIST labels
-unsigned char* load_mnist_labels(char const* filename)
+dahl_vector* load_mnist_labels(char const* filename)
 {
     FILE *file = fopen(filename, "rb");
     if (!file)
@@ -68,12 +68,20 @@ unsigned char* load_mnist_labels(char const* filename)
 
     printf("Loaded %lu labels from %s\n", num_labels, filename);
 
-    // Allocate memory
-    unsigned char *labels = (unsigned char*)malloc(num_labels * sizeof(unsigned char));
-    fread(labels, sizeof(unsigned char), num_labels, file);
+    dahl_vector* label_vec = vector_init(num_labels);
+    dahl_fp* labels = ANY_DATA_ACQUIRE(label_vec);
+
+    for (size_t i = 0; i < num_labels; i++)
+    {
+        unsigned char buffer;
+        fread(&buffer, sizeof(unsigned char), 1, file);
+        labels[i] = (dahl_fp)buffer;
+    }
 
     fclose(file);
-    return labels;
+    ANY_DATA_RELEASE(label_vec);
+
+    return label_vec;
 }
 
 dataset* load_mnist(char const* image_file, char const* label_file)
