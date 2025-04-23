@@ -5,19 +5,18 @@
   stdenv,
 
   # starpu dependencies
-  cudaPackages,
   hwloc,
   libuuid,
   libX11,
-  fftw, 
+  fftw,
   fftwFloat, # Same than previous but with float precision
   pkg-config,
   libtool,
   autoconf,
   automake,
-  simgrid ? null, # Can be null because Simgrid is optional
-  mpi ? null, # Can be null because MPI support is optional
-  cuda ? null, # Can be null because MPI support is optional
+  simgrid,
+  mpi,
+  cudaPackages,
 
   # Options
   enableSimgrid ? false,
@@ -25,7 +24,7 @@
   enableCUDA ? false,
 }:
 
-stdenv.mkDerivation (finalAttrs: rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "starpu";
   version = "1.4.7";
 
@@ -39,40 +38,56 @@ stdenv.mkDerivation (finalAttrs: rec {
   };
 
   # Runtime build dependencies
-  nativeBuildInputs = [
-    pkg-config
-    hwloc
-  ]
-  ++ lib.optional finalAttrs.enableSimgrid simgrid
-  ++ lib.optional finalAttrs.enableMPI mpi
-  ++ lib.optional finalAttrs.enableCUDA cuda;
+  nativeBuildInputs =
+    [
+      pkg-config
+      hwloc
+    ]
+    ++ lib.optional finalAttrs.enableSimgrid simgrid
+    ++ lib.optional finalAttrs.enableMPI mpi
+    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit;
 
   buildInputs =
-  [
-    libuuid
-    libX11
-    fftw
-    fftwFloat
-    pkg-config
-    libtool
-    autoconf
-    automake
-    hwloc
-  ]
-  ++ lib.optional finalAttrs.enableSimgrid simgrid
-  ++ lib.optional finalAttrs.enableMPI mpi
-  ++ lib.optional finalAttrs.enableCUDA cuda;
+    [
+      libuuid
+      libX11
+      fftw
+      fftwFloat
+      pkg-config
+      libtool
+      autoconf
+      automake
+      hwloc
+    ]
+    ++ lib.optional finalAttrs.enableSimgrid simgrid
+    ++ lib.optional finalAttrs.enableMPI mpi
+    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit;
 
-  configureFlags = [ ]
-  ++ lib.optional finalAttrs.enableSimgrid "--enable-simgrid"
-  ++ lib.optional finalAttrs.enableMPI [ "--enable-mpi" "--enable-mpi-check" "--disable-shared" ]; # Last arg enables static linking which is mandatory for smpi
+  configureFlags =
+    [
+      "--enable-quick-check"
+      "--disable-build-examples"
+    ]
+    ++ lib.optional finalAttrs.enableSimgrid "--enable-simgrid"
+    ++ lib.optional finalAttrs.enableMPI [
+      "--enable-mpi"
+      "--enable-mpi-check"
+      "--disable-shared"
+    ];
+  # Last arg enables static linking which is mandatory for smpi
   # No need to add flags for CUDA, it should be detected by ./configure
 
-  # Some installation scripts use /bin/bash which isn't available in nix
-  patches = [ ./starpu-nix-shebang.patch ];
+  postConfigure = ''
+    # Patch shebangs recursively because a lot of scripts are used
+    shopt -s globstar
+    patchShebangs --build **/*.sh
+
+    # this line removes a bug where value of $HOME is set to a non-writable /homeless-shelter dir
+    export HOME=$(pwd)
+  '';
 
   enableParallelBuilding = true;
-  # doCheck = true;
+  doCheck = true;
 
   meta = {
     homepage = "https://starpu.gitlabpages.inria.fr/index.html";
@@ -94,7 +109,6 @@ stdenv.mkDerivation (finalAttrs: rec {
       Rather than handling low-level issues, programmers can concentrate on algorithmic aspects!
     '';
     license = lib.licenses.lgpl21;
-    # TODO: add myself to the maintainers if publishing on nixpkgs (see https://github.com/NixOS/nixpkgs/tree/master/maintainers)
     maintainers = [ lib.maintainers.PhoqueEberlue ];
   };
 })

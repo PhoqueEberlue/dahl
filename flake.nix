@@ -20,6 +20,7 @@
           inherit system; 
           config = {
             allowUnfree = true; 
+            # Apparently valgrind is broken on MacOS so we need this
             allowBroken = true;
           };
         };
@@ -33,14 +34,14 @@
 
           # Only enable CUDA on linux
           enableCUDA = if system == "x86_64-linux" || system == "aarch64-linux" then true else false;
-          cuda = if enableCUDA then pkgs.cudaPackages.cudatoolkit else null;
+          cudaPackages = if enableCUDA then pkgs.cudaPackages else null;
           hwloc = pkgs.hwloc.override { enableCuda = enableCUDA; };
           # nixgl is only needed for cuda executions
           nixglhost = if enableCUDA then pkgs.callPackage "${nixglhost-src}/default.nix" { } else null;
 
           # Building from my local derivation of StarPU until it is available on nixpkgs
-          starpu = pkgs.callPackage ./starpu-nix/package.nix { 
-            cuda = cuda;
+          starpu = pkgs.callPackage ./starpu.nix { 
+            cudaPackages = cudaPackages;
             hwloc = hwloc;
             enableCUDA = enableCUDA;
           };
@@ -56,7 +57,7 @@
                 hwloc
                 czmq
               ] ++ (if enableCUDA then [
-                  cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cuda nixglhost] else []);
+                  cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
               nativeBuildInputs = with pkgs; [
                 cmake
