@@ -54,7 +54,7 @@ dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* const a, dahl_ma
     dahl_shape2d a_shape = matrix_get_shape(a);
     dahl_shape2d b_shape = matrix_get_shape(b);
 
-    dahl_shape2d c_shape = { .x = a_shape.x, .y = b_shape.y };
+    dahl_shape2d c_shape = { .x = b_shape.x, .y = a_shape.y };
     dahl_matrix* const c = matrix_init(c_shape);
 
     task_matrix_matrix_product(a, b, c);
@@ -197,9 +197,15 @@ void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value)
 dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in)
 {
     dahl_matrix* result = task_vector_diag(in);
-    dahl_fp value = task_vector_dot_product(in, in);
 
-    TASK_SUB_VALUE_SELF(result, value);
+    dahl_vector* in_clone = ANY_CLONE(in);
+
+    dahl_matrix* in_col = vector_to_column_matrix(in);
+    dahl_matrix* in_row = vector_to_row_matrix(in_clone);
+
+    dahl_matrix* tmp = task_matrix_matrix_product_init(in_col, in_row);
+
+    TASK_SUB_SELF(result, tmp);
 
     return result;
 }
@@ -217,21 +223,10 @@ dahl_vector* task_matrix_vector_product_init(dahl_matrix const* const mat, dahl_
 {
     dahl_shape2d mat_shape = matrix_get_shape(mat);
     size_t vec_len = vector_get_len(vec);
-    dahl_vector* out;
-    if (mat_shape.x == vec_len)
-    {
-        out = vector_init(mat_shape.y);
-    }
-    else if (mat_shape.y == vec_len)
-    {
-        out = vector_init(mat_shape.x);
-    }
-    else
-    {
-        printf("The input matrix doesn't match any of the vector's dimension mat(%lu, %lu) vec(%lu)", 
-               mat_shape.x, mat_shape.y, vec_len);
-        abort();
-    }
+    
+    assert(mat_shape.x == vec_len);
+
+    dahl_vector* out = vector_init(mat_shape.y);
 
     task_matrix_vector_product(mat, vec, out); 
 
@@ -296,6 +291,25 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const pr
                              STARPU_R, vector_get_handle(targets),
                              STARPU_W, vector_get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
+}
+
+void task_matrix_transpose(dahl_matrix const* const in, dahl_matrix* const out)
+{
+    int ret = starpu_task_insert(&cl_matrix_transpose,
+                             STARPU_R, matrix_get_handle(in),
+                             STARPU_W, matrix_get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_matrix* task_matrix_transpose_init(dahl_matrix const* const in)
+{
+    dahl_shape2d in_shape = matrix_get_shape(in);
+    dahl_shape2d out_shape = { .x = in_shape.y, .y = in_shape.x };
+    dahl_matrix* out = matrix_init(out_shape);
+
+    task_matrix_transpose(in, out);
 
     return out;
 }
