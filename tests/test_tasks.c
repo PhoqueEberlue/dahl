@@ -480,7 +480,9 @@ void test_matrix_vector_product()
     dahl_fp expect_2[expect_vec_len_2] = { 2.0F, -14.0F, 8.0F };
     dahl_vector* expect_vec_2 = vector_init_from(expect_vec_len_2, (dahl_fp*)&expect_2);
 
-    dahl_vector* out_vec_2 = task_matrix_vector_product_init(in_mat, in_vec_2);
+    // Here we need to transpose our matrix
+    dahl_matrix* in_mat_t = task_matrix_transpose_init(in_mat);
+    dahl_vector* out_vec_2 = task_matrix_vector_product_init(in_mat_t, in_vec_2);
 
     assert(vector_equals(expect_vec_2, out_vec_2, false));
 
@@ -488,6 +490,7 @@ void test_matrix_vector_product()
     vector_finalize(in_vec);
     vector_finalize(out_vec);
     vector_finalize(expect_vec);
+    matrix_finalize(in_mat_t);
     vector_finalize(in_vec_2);
     vector_finalize(out_vec_2);
     vector_finalize(expect_vec_2);
@@ -575,6 +578,27 @@ void test_matrix_matrix_product()
     assert(matrix_equals(expect_vec, c_vec));
 }
 
+void test_vector_cross_entropy_loss_gradient()
+{
+    // gradient [    -0.             -0.             -0.             -0.  -0.             -0.             -0.         -24841.28636854 -0.             -0.        ]
+    
+    size_t constexpr num_classes = 10;
+    dahl_fp targets[num_classes] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F };
+    dahl_fp predictions[num_classes] = { 
+        9.84501704e-1F, 3.43327192e-6F, 4.29544630e-4F, 3.57638159e-6F, 5.04458589e-9F, 
+        3.90385373e-5F, 9.91704419e-3F, 3.92555643e-6F, 3.66346782e-7F, 5.10136218e-3F 
+    };
+    dahl_fp expect[num_classes] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, -2.484128636854e4F, 0.0F, 0.0F };
+
+    dahl_vector* targets_vec = vector_init_from(num_classes, (dahl_fp*)&targets);
+    dahl_vector* predictions_vec = vector_init_from(num_classes, (dahl_fp*)&predictions);
+    dahl_vector* expect_vec = vector_init_from(num_classes, (dahl_fp*)&expect);
+
+    dahl_vector* gradient = task_vector_cross_entropy_loss_gradient(predictions_vec, targets_vec);
+
+    assert(vector_equals(expect_vec, gradient, true));
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -593,4 +617,5 @@ void test_tasks()
     test_clip();
     test_vector_cross_entropy_loss();
     test_matrix_matrix_product();
+    test_vector_cross_entropy_loss_gradient();
 }
