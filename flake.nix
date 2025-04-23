@@ -3,6 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+
+    # Required to run CUDA because of problems between cuda drivers (usually handled by the machine OS) and
+    # the runtime cuda dependencies, here handled by this nix flake.
     nixglhost-src = {
       url = "github:numtide/nix-gl-host/main";
       flake = false;
@@ -11,37 +14,55 @@
 
   outputs = { self, nixpkgs, nixglhost-src }: 
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs { system = system; config.allowUnfree = true; };
-
-      cuda = pkgs.cudaPackages.cudatoolkit;
-      hwloc = pkgs.hwloc.override { enableCuda = true; };
-      starpu = pkgs.callPackage ./starpu-nix/package.nix { 
-        cuda = cuda; 
-        hwloc = hwloc; 
-        enableCUDA = true; 
-      };
-      nixglhost = pkgs.callPackage "${nixglhost-src}/default.nix" { };
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
+        pkgs = import nixpkgs { 
+          inherit system; 
+          config = {
+            allowUnfree = true; 
+            allowBroken = true;
+          };
+        };
+      }); 
     in
       {
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          starpu
-          nixglhost
-          cudaPackages.cuda_cudart
-          cudaPackages.cuda_nvcc
-          cuda
-          clang
-          valgrind
-          hwloc
-          czmq
-        ];
+      # Generate a devShell for each platform
+      devShells = forEachSupportedSystem ({ pkgs }: 
+        let 
+          system = pkgs.system;
 
-        nativeBuildInputs = with pkgs; [
-          cmake
-          pkg-config
-        ];
-      };
+          # Only enable CUDA on linux
+          enableCUDA = if system == "x86_64-linux" || system == "aarch64-linux" then true else false;
+          cuda = if enableCUDA then pkgs.cudaPackages.cudatoolkit else null;
+          hwloc = pkgs.hwloc.override { enableCuda = enableCUDA; };
+          # nixgl is only needed for cuda executions
+          nixglhost = if enableCUDA then pkgs.callPackage "${nixglhost-src}/default.nix" { } else null;
+
+          # Building from my local derivation of StarPU until it is available on nixpkgs
+          starpu = pkgs.callPackage ./starpu-nix/package.nix { 
+            cuda = cuda;
+            hwloc = hwloc;
+            enableCUDA = enableCUDA;
+          };
+        in
+          {
+          # Actually defining the dev environment
+          default = pkgs.mkShell
+            {
+              packages = with pkgs; [
+                starpu 
+                clang
+                valgrind
+                hwloc
+                czmq
+              ] ++ (if enableCUDA then [
+                  cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cuda nixglhost] else []);
+
+              nativeBuildInputs = with pkgs; [
+                cmake
+                pkg-config
+              ];
+            };
+        });
     };
 }
-
