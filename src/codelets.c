@@ -296,14 +296,14 @@ void sub(void* buffers[3], void* cl_arg)
 
     size_t const b_nx = STARPU_BLOCK_GET_NX(buffers[1]);
     size_t const b_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const b_nz = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const b_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
     size_t const b_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
     size_t const b_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
     dahl_fp const* const b = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
 
     size_t const c_nx = STARPU_BLOCK_GET_NX(buffers[2]);
     size_t const c_ny = STARPU_BLOCK_GET_NY(buffers[2]);
-    size_t const c_nz = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const c_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
     size_t const c_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
     size_t const c_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
     dahl_fp* const c = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
@@ -520,37 +520,16 @@ void matrix_vector_product(void* buffers[3], void* cl_arg)
     size_t const out_len = STARPU_BLOCK_GET_NX(buffers[2]);
     dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    if (mat_nx == vec_len)
-    {
-        assert(mat_ny == out_len);
+    assert(vec_len == mat_nx);
+    assert(out_len == mat_ny);
 
-        // Loop through x,y of the matrix
-        for (size_t y = 0; y < mat_ny; y++)
-        {
-            for (size_t x = 0; x < mat_nx; x++)
-            {
-                out[y] += vec[x] * mat[(y * mat_ld) + x];
-            }
-        }
-    }
-    else if (mat_ny == vec_len)
+    // Loop through x,y of the matrix
+    for (size_t y = 0; y < mat_ny; y++)
     {
-        assert(mat_nx == out_len);
-
-        // Loop through y,x of the matrix
         for (size_t x = 0; x < mat_nx; x++)
         {
-            for (size_t y = 0; y < mat_ny; y++)
-            {
-                out[x] += vec[y] * mat[(y * mat_ld) + x];
-            }
+            out[y] += vec[x] * mat[(y * mat_ld) + x];
         }
-    }
-    else
-    {
-        printf("The input matrix doesn't match any of the vector's dimension mat(%lu, %lu) vec(%lu)", 
-               mat_nx, mat_ny, vec_len);
-        abort();
     }
 }
 
@@ -631,8 +610,8 @@ void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     dahl_fp const* const targ = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
 
     // Output vector
-    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[1]);
-    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[2]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
     assert(pred_len == targ_len);
     assert(pred_len == out_len);
@@ -640,5 +619,31 @@ void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     for (size_t i = 0; i < out_len; i++)
     {
         out[i] = (-targ[i]) / (pred[i] + 1e-7F) / (dahl_fp)pred_len;
+    }
+}
+
+void matrix_transpose(void* buffers[2], void* cl_arg)
+{
+    // Input matrix
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* const in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Output matrix
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const out_ld = STARPU_BLOCK_GET_LDY(buffers[1]);
+    dahl_fp* const out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(in_nx == out_ny);
+    assert(in_ny == out_nx);
+
+    for (size_t y = 0; y < in_ny; y++)
+    {
+        for (size_t x = 0; x < in_nx; x++)
+        {
+            out[(x * out_ld) + y] = in[(y * in_ld) + x];
+        }
     }
 }

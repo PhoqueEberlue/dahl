@@ -42,6 +42,7 @@ DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
 
 
 #endif //!DAHL_CODELETS_H
