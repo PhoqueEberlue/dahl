@@ -39,3 +39,11 @@ void assert_block_equals(dahl_block const* const a, dahl_block const* const b, b
         printf("\n");
     }
 }
+
+void assert_fp_equals(dahl_fp const a, dahl_fp const b)
+{
+    if (a != b)
+    {
+        printf("[DAHL][FAIL][%s:%d] Assert fp equals: %f != %f\n\n", __FILE__, __LINE__, a, b);
+    }
+}

@@ -30,7 +30,7 @@ void test_block_to_vector()
 
     dahl_fp res = task_vector_dot_product(vec, vec);
 
-    assert(res == 302.0F);
+    assert_fp_equals(res, 302.0F);
 
     vector_finalize(vec);
     // Here no need to finalize the block

@@ -326,7 +326,7 @@ void test_vector_softmax()
     task_vector_softmax(in, out);
 
     // Note that values are rounded up in order to compare
-    assert(vector_equals(expect_vec, out, true));
+    assert_vector_equals(expect_vec, out, true);
 
     dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6.0F, 3.7F, 6.1F, 3.2F };
     dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
@@ -356,7 +356,7 @@ void test_vector_dot_product()
 
     dahl_fp result = task_vector_dot_product(a, a);
 
-    assert(expect == result);
+    assert_fp_equals(expect, result);
 
     dahl_fp data_2[len] = { 9.0F, 8.0F, 7.0F, 6.0F, 5.0F, 4.0F, 3.0F, 2.0F, 1.0F, 0.0F };
     dahl_vector* b = vector_init_from(len, (dahl_fp*)&data_2);
@@ -365,7 +365,7 @@ void test_vector_dot_product()
 
     result = task_vector_dot_product(a, b);
 
-    assert(expect_2 == result);
+    assert_fp_equals(expect_2, result);
 
     vector_finalize(a);
     vector_finalize(b);
@@ -544,7 +544,7 @@ void test_vector_cross_entropy_loss()
 
     dahl_fp res = task_vector_cross_entropy_loss(pred_vec, target_vec);
 
-    assert(res == 1.6118095639272222996396521921269595623016357421875);
+    assert_fp_equals(res, 1.6118095639272222996396521921269595623016357421875);
 }
 
 void test_matrix_matrix_product()
