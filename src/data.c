@@ -1,4 +1,5 @@
 #include "data.h"
+#include "starpu_data_filters.h"
 #include "utils.h"
 #include <assert.h>
 #include <math.h>
@@ -8,7 +9,7 @@
 #ifdef DAHL_TESTS_H
 #define DAHL_MAX_RANDOM_VALUES 10
 #else
-#define DAHL_MAX_RANDOM_VALUES 1000
+#define DAHL_MAX_RANDOM_VALUES 4
 #endif
 
 // This function shouldn't be exposed in the header:
@@ -59,7 +60,7 @@ dahl_block* block_init_random(dahl_shape3d const shape)
 
     for (int i = 0; i < n_elems; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( rand() % DAHL_MAX_RANDOM_VALUES ) );
+        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
     }
 
     return block_init_from_ptr(shape, data);
@@ -76,6 +77,55 @@ dahl_block* block_init(dahl_shape3d const shape)
     }
 
     return block_init_from_ptr(shape, data);
+}
+
+dahl_block* block_clone(dahl_block const* const block)
+{
+    // FIX really annoying to have to cast -> AS_ANY should probably take const in fact?
+    dahl_fp* data = ANY_DATA_ACQUIRE((dahl_block*)block);
+    dahl_shape3d shape = block_get_shape(block);
+
+    dahl_block* res = block_init_from(shape, data);
+    ANY_DATA_RELEASE((dahl_block*)block);
+
+    return res;
+}
+
+dahl_block* block_add_padding_init(dahl_block const* const block, dahl_shape3d const new_shape)
+{
+    // FIX really annoying to have to cast -> AS_ANY should probably take const in fact?
+    dahl_fp* old_data = ANY_DATA_ACQUIRE((dahl_block*)block);
+    dahl_shape3d shape = block_get_shape(block);
+
+    assert(new_shape.x >= shape.x && new_shape.y >= shape.y && new_shape.z >= shape.z);
+
+    // FIX probably doesn't work with odd differences e.g padding 3 + 2 on both side of x axis
+    // -> in fact it puts the remaining padding at the end, which is okay I guess
+    size_t diff_z = (new_shape.z - shape.z) / 2;
+    size_t diff_y = (new_shape.y - shape.y) / 2;
+    size_t diff_x = (new_shape.x - shape.x) / 2;
+
+    dahl_block* res = block_init(new_shape);
+    dahl_fp* data = ANY_DATA_ACQUIRE((dahl_block*)res);
+
+    for (size_t z = 0; z < shape.z; z++)
+    {
+        for (size_t y = 0; y < shape.y; y++)
+        {
+            for (size_t x = 0; x < shape.x; x++)
+            {
+                dahl_fp old_value = old_data[(z * shape.x * shape.y) + (y * shape.x) + x];
+                // FIX PLEASE JUST DO AN ACCESSOR FUNCTION WITH X, Y, Z AS PARAMETERS SO WE CAN IGNORE LD
+                data[((z + diff_z) * new_shape.x * new_shape.y) + ((y + diff_y) * new_shape.x) + (x + diff_x)] = old_value;
+            }
+        }
+
+    }
+
+    ANY_DATA_RELEASE((dahl_block*)block);
+    ANY_DATA_RELEASE((dahl_block*)res);
+
+    return res;
 }
 
 dahl_shape3d block_get_shape(dahl_block const *const block)
@@ -271,7 +321,7 @@ dahl_matrix* matrix_init_random(dahl_shape2d const shape)
 
     for (int i = 0; i < n_elems; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( rand() % DAHL_MAX_RANDOM_VALUES ) );
+        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
     }
 
     return matrix_init_from(shape, data);
@@ -289,6 +339,18 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
     }
 
     return matrix_init_from_ptr(shape, data);
+}
+
+dahl_matrix* matrix_clone(dahl_matrix const* const matrix)
+{
+    // FIX really annoying to have to cast -> AS_ANY should probably take const in fact?
+    dahl_fp* data = ANY_DATA_ACQUIRE((dahl_matrix*)matrix);
+    dahl_shape2d shape = matrix_get_shape(matrix);
+
+    dahl_matrix* res = matrix_init_from(shape, data);
+    ANY_DATA_RELEASE((dahl_matrix*)matrix);
+
+    return res;
 }
 
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
@@ -339,7 +401,8 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 
     struct starpu_data_filter f =
 	{
-		.filter_func = starpu_matrix_filter_vertical_block,
+        // Reminder that our matrix are implemented using starpu_block with only one Z dimension
+		.filter_func = starpu_block_filter_vertical_block,
 		.nchildren = shape.y,
 	};
 
@@ -352,7 +415,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
     {
 		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
 
-        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_vector_handle);
+        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_vector_handle);
 
         matrix->sub_vectors[i].handle = sub_vector_handle;
         matrix->sub_vectors[i].data = data;
@@ -373,7 +436,7 @@ size_t matrix_get_sub_vector_nb(dahl_matrix const* const matrix)
     return starpu_data_get_nb_children(matrix->handle);
 }
 
-dahl_vector* matrix_get_sub_matrix(dahl_matrix const* const matrix, const size_t index)
+dahl_vector* matrix_get_sub_vector(dahl_matrix const* const matrix, const size_t index)
 {
     assert(matrix->is_partitioned 
         && matrix->sub_vectors != nullptr 
@@ -395,7 +458,7 @@ void matrix_print(dahl_matrix const* const matrix)
 
     for(size_t y = 0; y < shape.y; y++)
     {
-        printf("%s", space_offset(shape.y - y - 1));
+        // printf("%s", space_offset(shape.y - y - 1));
 
         for(size_t x = 0; x < shape.x; x++)
         {
@@ -408,7 +471,7 @@ void matrix_print(dahl_matrix const* const matrix)
 	starpu_data_release(matrix->handle);
 }
 
-void matrix_print_ascii(dahl_matrix const* const matrix)
+void matrix_print_ascii(dahl_matrix const* const matrix, dahl_fp const threshold)
 {
     const dahl_shape2d shape = matrix_get_shape(matrix);
 
@@ -425,10 +488,8 @@ void matrix_print_ascii(dahl_matrix const* const matrix)
         {
             dahl_fp value = matrix->data[(y*ld)+x];
 
-            if (value < 85.0F)
+            if (value < threshold)
                 printf(". ");
-            else if (value > 85.0F && value < 170.0F)
-                printf("x ");
             else
                 printf("# ");
         }
@@ -503,7 +564,7 @@ dahl_vector* vector_init_random(size_t const len)
 
     for (int i = 0; i < len; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( rand() % DAHL_MAX_RANDOM_VALUES ) );
+        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
     }
 
     return vector_init_from(len, data);
@@ -520,6 +581,18 @@ dahl_vector* vector_init(size_t const len)
     }
 
     return vector_init_from_ptr(len, data);
+}
+
+dahl_vector* vector_clone(dahl_vector const* const vector)
+{
+    // FIX really annoying to have to cast -> AS_ANY should probably take const in fact?
+    dahl_fp* data = ANY_DATA_ACQUIRE((dahl_vector*)vector);
+    size_t shape = vector_get_len(vector);
+
+    dahl_vector* res = vector_init_from(shape, data);
+    ANY_DATA_RELEASE((dahl_vector*)vector);
+
+    return res;
 }
 
 size_t vector_get_len(dahl_vector const *const vector)
@@ -580,7 +653,7 @@ void vector_print(dahl_vector const* const vector)
 
     for(size_t x = 0; x < len; x++)
     {
-        printf("%f ", vector->data[x]);
+        printf("%e ", vector->data[x]);
     }
     printf("\n");
 
@@ -636,6 +709,19 @@ dahl_fp* any_get_data(dahl_any const any)
             return any.structure.matrix->data;
         case dahl_type_vector:
             return any.structure.vector->data;
+    }
+}
+
+dahl_any any_clone(dahl_any const any)
+{
+    switch (any.type)
+    {
+        case dahl_type_block:
+            return AS_ANY(block_clone(any.structure.block));
+        case dahl_type_matrix:
+            return AS_ANY(matrix_clone(any.structure.matrix));
+        case dahl_type_vector:
+            return AS_ANY(vector_clone(any.structure.vector));
     }
 }
 
@@ -708,3 +794,27 @@ dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 
     return res;
 }
+
+// TODO: why wouldn't it be a codelet?
+dahl_matrix* vector_as_categorical(dahl_vector* vector, size_t const num_classes)
+{
+    dahl_fp* vec = ANY_DATA_ACQUIRE(vector);
+    size_t len = vector_get_len(vector);
+
+    dahl_shape2d shape = { .x = num_classes, .y = len };
+    dahl_matrix* res = matrix_init(shape);
+
+    dahl_fp* mat = ANY_DATA_ACQUIRE(res);
+
+    for (size_t i = 0; i < len; i++)
+    {
+        size_t class = (size_t)vec[i];
+        mat[(i * num_classes) + class] = 1;
+    }
+
+    ANY_DATA_RELEASE(vector);
+    ANY_DATA_RELEASE(res);
+
+    return res;
+}
+
