@@ -299,9 +299,11 @@
     This makes sense however it makes the syntax a bit more complex.
     It would be nice to only take one parameter for `FROM_ANY`, but it seems not possible because return type has
     to be knowned at compilation.
-    sam. 12 avril 2025 10:34:19 CEST
+    [sam. 12 avril 2025 10:34:19 CEST]
     -> This would be very interesting not to allocate the same buffers over and over again: maybe try to reuse the buffers?
     This is why it is important to have functions that take buffers pointers.
+    [jeu. 17 avril 2025 10:47:48 CEST]
+    -> "", "self", and "init" are good names to differentiate those three modes
 
 
 -------------------------------------------------------------------------------
@@ -374,6 +376,10 @@
 
 -------------------------------------------------------------------------------
 - Hide starpu_wait_for_all into my API -> is this even needed though?
+- Add dahl prefix to every public functions/macros
+- need to rethink the `vector_to_matrix` etc. functions -> should it be a view of the data? (-> implies refcount) should it take ownernship of the data? (easier to manage but implies more clones). I think we might need both actually? => MAKE SURE TO ADD `INIT` POST FIX TO EVERY FUNCTION THAT INSTANCIATE DATA THAT NEED TO BE FREED (And homogeneize init_from, init, clone etc. etc.)
+- Add consts to unmodified buffers in the layers.
+- Add compilation condition to enable/disable debugg asserts
 - Building common functions (that are not tasks) for the data structures, probably using getter functions taking dahl_any and performing a switch inside
 - check memory leaks, don't forget to call the finalize() at some point :)
 - Improve asserts to show context messages when something crashes -> change the strings of the STARPU_CHECK_RETURN_VALUE()
