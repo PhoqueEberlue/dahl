@@ -1,8 +1,35 @@
 #include "../include/dahl.h"
 #include <stdio.h>
 
-#define LEARNING_RATE 0.01F
+#define LEARNING_RATE 0.05F
 #define N_EPOCHS 200
+
+bool check_prediction(dahl_vector const* const predictions, dahl_vector const* const targets)
+{
+    dahl_fp* pred_data = ANY_DATA_ACQUIRE(predictions);
+    dahl_fp* targ_data = ANY_DATA_ACQUIRE(targets);
+
+    size_t num_classes = vector_get_len(predictions);
+
+    dahl_fp max_val = 0.0F;
+    size_t max_index = 0;
+
+    for (size_t i = 0; i < num_classes; i++)
+    {
+        if (pred_data[i] > max_val)
+        {
+            max_val = pred_data[i];
+            max_index = i;
+        }
+    }
+
+    bool res = (bool)(targ_data[max_index] == 1);
+
+    ANY_DATA_RELEASE(predictions);
+    ANY_DATA_RELEASE(targets);
+
+    return res;
+}
 
 void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense)
 {
@@ -20,7 +47,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
         printf("Epoch %lu\n", epoch);
 
         double total_loss = 0.0F;
-        int correct_predictions = 0;
+        float correct_predictions = 0;
 
         for (size_t i = 0; i < n_samples; i++)
         { 
@@ -31,9 +58,13 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
             dahl_block* pool_out = pooling_forward(pool, conv_out);
             dahl_vector* dense_out = dense_forward(dense, pool_out); // predictions
 
-
             dahl_fp loss = task_vector_cross_entropy_loss(dense_out, targets);
             total_loss += loss;
+
+            if (check_prediction(dense_out, targets))
+            {
+                correct_predictions += 1.0F;
+            }
 
             dahl_vector* gradient = task_vector_cross_entropy_loss_gradient(dense_out, targets);
 
@@ -44,7 +75,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
             // Why aren't we using bacward convolution result result?
         }
 
-        printf("Average loss: %f\n", total_loss / (dahl_fp)n_samples);
+        printf("Average loss: %f - Accuracy: %f\%\n", total_loss / (dahl_fp)n_samples, correct_predictions / (float)n_samples * 100.0F);
     }
 
     block_unpartition(image_block);
@@ -59,7 +90,7 @@ int main(int argc, char **argv)
 
     dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
 
-    size_t const num_channels = 1;
+    size_t const num_channels = 2;
     dahl_convolution* conv = convolution_init(input_shape, 6, num_channels);
     dahl_pooling* pool = pooling_init(2, conv->output_shape);
     dahl_dense* dense = dense_init(pool->output_shape, 10);
