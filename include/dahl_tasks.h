@@ -3,15 +3,14 @@
 
 #include "dahl_data.h"
 
-// TODO: replace buffer by a common name? data structure maybe?
 // Naming convention <task>_<type>_<name>_<mode>:
 // - `task` always mean that this function will be scheduled on GPU/CPU
 // - <type>: `block`, `matrix` or `vector` indicate the primary data structure used in the task
 // - <name>: name of the function
-// - <mode>: 
-//   - `` default implementation, the user should instanciate the input and output buffers itself
-//   - `self` writes the result in the same buffer that is used for input (usually the argument named *_self)
-//   - `init` the function instanciates and returns the result buffer
+// - <mode> defines how the result is returned:
+//   - `` default implementation, the user should instanciate the output data structure before calling the function
+//   - `self` writes the result in the same data structure that is used for input (usually the argument named *_self)
+//   - `init` the function instanciates and returns the result data structure
 
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
