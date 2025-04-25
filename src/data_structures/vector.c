@@ -1,7 +1,7 @@
 #include "data_structures.h"
 
 // See `block_init_from_ptr` for more information.
-dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* const data)
+dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
 {
     starpu_data_handle_t handle = nullptr;
 
@@ -26,7 +26,7 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* const data)
     return vector;
 }
 
-dahl_vector* vector_init_from(size_t const len, dahl_fp* const data)
+dahl_vector* vector_init_from(size_t const len, dahl_fp const* data)
 {
     dahl_fp* data_copy = malloc(len * sizeof(dahl_fp));
     
@@ -63,7 +63,7 @@ dahl_vector* vector_init(size_t const len)
     return vector_init_from_ptr(len, data);
 }
 
-dahl_vector* vector_clone(dahl_vector const* const vector)
+dahl_vector* vector_clone(dahl_vector const* vector)
 {
     dahl_fp* data = vector_data_acquire(vector);
     size_t shape = vector_get_len(vector);
@@ -79,18 +79,18 @@ size_t vector_get_len(dahl_vector const *const vector)
     return starpu_block_get_nx(vector->handle);
 }
 
-dahl_fp* vector_data_acquire(dahl_vector const* const vector)
+dahl_fp* vector_data_acquire(dahl_vector const* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);
     return vector->data;
 }
 
-void vector_data_release(dahl_vector const* const vector)
+void vector_data_release(dahl_vector const* vector)
 {
     starpu_data_release(vector->handle);
 }
 
-bool vector_equals(dahl_vector const* const a, dahl_vector const* const b, bool const rounding)
+bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding)
 {
     size_t const len_a = vector_get_len(a);
     size_t const len_b = vector_get_len(b);
@@ -128,7 +128,7 @@ bool vector_equals(dahl_vector const* const a, dahl_vector const* const b, bool 
     return res;
 }
 
-void vector_print(dahl_vector const* const vector)
+void vector_print(dahl_vector const* vector)
 {
     const size_t len = vector_get_len(vector);
 
@@ -216,7 +216,7 @@ dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 }
 
 // TODO: why wouldn't it be a codelet?
-dahl_matrix* vector_as_categorical(dahl_vector const* const vector, size_t const num_classes)
+dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes)
 {
     dahl_fp* vec = vector_data_acquire(vector);
     size_t len = vector_get_len(vector);

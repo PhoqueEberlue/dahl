@@ -1,7 +1,7 @@
 #include "data_structures.h"
 
 // See `block_init_from_ptr` for more information.
-dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* const data)
+dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
 {
     starpu_data_handle_t handle = nullptr;
 
@@ -28,7 +28,7 @@ dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* const data)
     return matrix;
 }
 
-dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp* const data)
+dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data)
 {
     size_t n_elems = shape.x * shape.y;
     dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
@@ -71,7 +71,7 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
     return matrix_init_from_ptr(shape, data);
 }
 
-dahl_matrix* matrix_clone(dahl_matrix const* const matrix)
+dahl_matrix* matrix_clone(dahl_matrix const* matrix)
 {
     dahl_fp* data = matrix_data_acquire(matrix);
     dahl_shape2d shape = matrix_get_shape(matrix);
@@ -91,18 +91,18 @@ dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
     return res;
 }
 
-dahl_fp* matrix_data_acquire(dahl_matrix const* const matrix)
+dahl_fp* matrix_data_acquire(dahl_matrix const* matrix)
 {
     starpu_data_acquire(matrix->handle, STARPU_RW);
     return matrix->data;
 }
 
-void matrix_data_release(dahl_matrix const* const matrix)
+void matrix_data_release(dahl_matrix const* matrix)
 {
     starpu_data_release(matrix->handle);
 }
 
-bool matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b, bool const rounding)
+bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding)
 {
     dahl_shape2d const shape_a = matrix_get_shape(a);
     dahl_shape2d const shape_b = matrix_get_shape(b);
@@ -177,12 +177,12 @@ void matrix_unpartition(dahl_matrix* const matrix)
     matrix->is_partitioned = false;
 }
 
-size_t matrix_get_sub_vector_nb(dahl_matrix const* const matrix)
+size_t matrix_get_sub_vector_nb(dahl_matrix const* matrix)
 {
     return starpu_data_get_nb_children(matrix->handle);
 }
 
-dahl_vector* matrix_get_sub_vector(dahl_matrix const* const matrix, const size_t index)
+dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, const size_t index)
 {
     assert(matrix->is_partitioned 
         && matrix->sub_vectors != nullptr 
@@ -191,7 +191,7 @@ dahl_vector* matrix_get_sub_vector(dahl_matrix const* const matrix, const size_t
     return &matrix->sub_vectors[index];
 }
 
-void matrix_print(dahl_matrix const* const matrix)
+void matrix_print(dahl_matrix const* matrix)
 {
     const dahl_shape2d shape = matrix_get_shape(matrix);
 
@@ -217,7 +217,7 @@ void matrix_print(dahl_matrix const* const matrix)
 	starpu_data_release(matrix->handle);
 }
 
-void matrix_print_ascii(dahl_matrix const* const matrix, dahl_fp const threshold)
+void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)
 {
     const dahl_shape2d shape = matrix_get_shape(matrix);
 

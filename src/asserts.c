@@ -1,7 +1,7 @@
 #include "../include/dahl_asserts.h"
 #include <stdio.h>
 
-void assert_vector_equals(dahl_vector const* const a, dahl_vector const* const b, bool const rounding)
+void assert_vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding)
 {
     if (!vector_equals(a, b, rounding))
     {
@@ -14,7 +14,7 @@ void assert_vector_equals(dahl_vector const* const a, dahl_vector const* const b
     }
 }
 
-void assert_matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b, bool const rounding)
+void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding)
 {
     if (!matrix_equals(a, b, rounding))
     {
@@ -27,7 +27,7 @@ void assert_matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b
     }
 }
 
-void assert_block_equals(dahl_block const* const a, dahl_block const* const b, bool const rounding)
+void assert_block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
 {
     if (!block_equals(a, b, rounding))
     {

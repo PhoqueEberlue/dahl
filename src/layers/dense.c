@@ -29,9 +29,9 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
     return dense->output;
 }
 
-dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* const dl_dout, dahl_fp const learning_rate)
+dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_fp const learning_rate)
 {
-    dahl_matrix const* const tmp = task_vector_softmax_derivative(dense->output);
+    dahl_matrix const* tmp = task_vector_softmax_derivative(dense->output);
 
     dahl_vector const* dl_dy = task_matrix_vector_product_init(tmp, dl_dout);
 

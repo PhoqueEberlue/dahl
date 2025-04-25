@@ -20,7 +20,7 @@ typedef struct
 } dahl_pooling;
 
 dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shape);
-dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const input);
+dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* input);
 dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block* const dl_dout);
 
 #endif //!DAHL_POOLING_H

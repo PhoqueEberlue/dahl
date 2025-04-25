@@ -18,7 +18,7 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shap
     return pool;
 }
 
-dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* const input)
+dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* input)
 {
     pool->input_data = input; // TODO: I mean, input value itself isn't changed? though how do we free the memory?
 

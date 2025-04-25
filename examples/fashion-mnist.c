@@ -4,7 +4,7 @@
 #define LEARNING_RATE 0.05F
 #define N_EPOCHS 200
 
-bool check_prediction(dahl_vector const* const predictions, dahl_vector const* const targets)
+bool check_prediction(dahl_vector const* predictions, dahl_vector const* targets)
 {
     dahl_fp* pred_data = vector_data_acquire(predictions);
     dahl_fp* targ_data = vector_data_acquire(targets);

@@ -14,7 +14,7 @@
 
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
-dahl_matrix* task_block_sum_z_axis(dahl_block const* const in);
+dahl_matrix* task_block_sum_z_axis(dahl_block const* in);
 
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
@@ -22,52 +22,52 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* const in);
 // - `in`, `kernel` and `out` are dahl_matrix objects
 // - the shape of `out` must respect: out_nx = in_nx - kernel_nx + 1 and out_ny = in_ny - kernel_ny + 1
 // - the shape of the `kernel` should be smaller than the shape of `in` 
-void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix const* const kernel, dahl_matrix* const out);
+void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* kernel, dahl_matrix* out);
 
 // Performs max dahl_pooling on `in`, write output on `out` and store mask of the max values indexes in `mask`
 // - `out` shape should be equal to `in` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `in` shape.
-void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out, dahl_matrix* const mask, size_t const pool_size);
+void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t const pool_size);
 
 // Performs a backward max dahl_pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
 // - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `out` shape.
-void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix const* const mask, dahl_matrix* const out, size_t const pool_size);
+void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t const pool_size);
 
 // Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
-void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_matrix* const mask_self, size_t const pool_size);
+void task_matrix_backward_max_pooling_self(dahl_matrix const* in, dahl_matrix* mask_self, size_t const pool_size);
 
 // Performs matrix vector product. Tries to find the right dimension to perform the operation.
-void task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec, dahl_vector* const out);
-dahl_vector* task_matrix_vector_product_init(dahl_matrix const* const mat, dahl_vector const* const vec);
+void task_matrix_vector_product(dahl_matrix const* mat, dahl_vector const* vec, dahl_vector* out);
+dahl_vector* task_matrix_vector_product_init(dahl_matrix const* mat, dahl_vector const* vec);
 
-void task_matrix_matrix_product(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c);
-dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* const a, dahl_matrix const* const b);
+void task_matrix_matrix_product(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
+dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix const* b);
 
-void task_matrix_transpose(dahl_matrix const* const in, dahl_matrix* const out);
-dahl_matrix* task_matrix_transpose_init(dahl_matrix const* const in);
+void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out);
+dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in);
 
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
-void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out);
+void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
 
 // Performs the softmax function with `in` vector and returns the result.
-dahl_vector* task_vector_softmax_init(dahl_vector const* const in);
+dahl_vector* task_vector_softmax_init(dahl_vector const* in);
 
 // Performs `a`  `b`, where:
 // - `` is the dot product
 // - `a`, `b` are dahl_vector of the same length
 // - returns the result as a dahl_fp
-dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* const b);
+dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b);
 
 // Create and return a diagonal dahl_matrix of the input dahl_vector
-dahl_matrix* task_vector_diag(dahl_vector const* const in);
+dahl_matrix* task_vector_diag(dahl_vector const* in);
 
-dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in);
+dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in);
 
-dahl_fp task_vector_cross_entropy_loss(dahl_vector const* const predictions, dahl_vector const* const targets);
+dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
 
-dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const predictions, dahl_vector const* const targets);
+dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets);
 
 // ------------------------------------ TASKS FOR DAHL_ANY TYPE ------------------------------------
 // Apply relu function on each element of the `dahl_any`, i.e. max(elem i, 0)

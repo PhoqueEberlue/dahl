@@ -5,7 +5,7 @@
 // The data parameter is an array that should be allocated before calling the function
 // but its memory will be managed by the same structure.
 // In other words, only dahl_block functions should call this constructor.
-dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* const data)
+dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* data)
 {
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
@@ -29,7 +29,7 @@ dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* const data)
     return block;
 }
 
-dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp* const data)
+dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
 {
     size_t const n_elems = shape.x * shape.y * shape.z;
     dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
@@ -68,7 +68,7 @@ dahl_block* block_init(dahl_shape3d const shape)
     return block_init_from_ptr(shape, data);
 }
 
-dahl_block* block_clone(dahl_block const* const block)
+dahl_block* block_clone(dahl_block const* block)
 {
     dahl_fp* data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
@@ -79,7 +79,7 @@ dahl_block* block_clone(dahl_block const* const block)
     return res;
 }
 
-dahl_block* block_add_padding_init(dahl_block const* const block, dahl_shape3d const new_shape)
+dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
 {
     dahl_fp* old_data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
@@ -113,7 +113,7 @@ dahl_block* block_add_padding_init(dahl_block const* const block, dahl_shape3d c
     return res;
 }
 
-dahl_shape3d block_get_shape(dahl_block const *const block)
+dahl_shape3d block_get_shape(dahl_block const* block)
 {
     // TODO: do I need to acquire data? maybe it updates the field, not so sure though because I would have to call the resize functions
     // So I think its fine like this.
@@ -126,18 +126,18 @@ dahl_shape3d block_get_shape(dahl_block const *const block)
     return res;
 }
 
-dahl_fp* block_data_acquire(dahl_block const* const block)
+dahl_fp* block_data_acquire(dahl_block const* block)
 {
     starpu_data_acquire(block->handle, STARPU_RW);
     return block->data;
 }
 
-void block_data_release(dahl_block const* const block)
+void block_data_release(dahl_block const* block)
 {
     starpu_data_release(block->handle);
 }
 
-bool block_equals(dahl_block const* const a, dahl_block const* const b, bool const rounding)
+bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
 {
     dahl_shape3d shape_a = block_get_shape(a);
     dahl_shape3d shape_b = block_get_shape(b);
@@ -166,7 +166,7 @@ bool block_equals(dahl_block const* const a, dahl_block const* const b, bool con
     return res;
 }
 
-void block_partition_along_z(dahl_block* const block)
+void block_partition_along_z(dahl_block* block)
 {
     dahl_shape3d const shape = block_get_shape(block);
 
@@ -194,7 +194,7 @@ void block_partition_along_z(dahl_block* const block)
     }
 }
 
-void block_unpartition(dahl_block* const block)
+void block_unpartition(dahl_block* block)
 {
     starpu_data_unpartition(block->handle, STARPU_MAIN_RAM);
     free(block->sub_matrices);
@@ -202,12 +202,12 @@ void block_unpartition(dahl_block* const block)
     block->is_partitioned = false;
 }
 
-size_t block_get_sub_matrix_nb(dahl_block const* const block)
+size_t block_get_sub_matrix_nb(dahl_block const* block)
 {
     return starpu_data_get_nb_children(block->handle);
 }
 
-void block_print(dahl_block const* const block)
+void block_print(dahl_block const* block)
 {
     const dahl_shape3d shape = block_get_shape(block);
 	const size_t ldy = starpu_block_get_local_ldy(block->handle);
@@ -251,7 +251,7 @@ void block_finalize_without_data(dahl_block* block)
     free(block);
 }
 
-dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t index)
+dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
 {
     assert(block->is_partitioned 
         && block->sub_matrices != nullptr 

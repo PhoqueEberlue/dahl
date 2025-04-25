@@ -36,7 +36,7 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     return conv;
 }
 
-dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const* const input)
+dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const* input)
 {
     // TODO: we may free data between each call of this function? (at each epoch?)
     // so maybe store and free the output from the previous call here?
@@ -71,7 +71,7 @@ dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const*
     return output;
 }
 
-dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* const input)
+dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* input)
 {
     // derivative loss
     dahl_matrix* dl_dinput = matrix_init(conv->input_shape);
@@ -94,17 +94,17 @@ dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* cons
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {
-        dahl_matrix const* const sub_dl_dout = block_get_sub_matrix(dl_dout, i);
+        dahl_matrix const* sub_dl_dout = block_get_sub_matrix(dl_dout, i);
         dahl_matrix* sub_dl_dfilters = block_get_sub_matrix(dl_dfilters, i);
 
         task_matrix_cross_correlation(input, sub_dl_dout, sub_dl_dfilters);
 
         // Next lines
         // dL_dinput += correlate2d(dL_dout[i],self.filters[i], mode="full")
-        dahl_matrix const* const sub_filters = block_get_sub_matrix(conv->filters, i);
+        dahl_matrix const* sub_filters = block_get_sub_matrix(conv->filters, i);
         dahl_matrix* tmp = matrix_init(conv->input_shape);
 
-        dahl_matrix const* const sub_dl_dout_padded = block_get_sub_matrix(dl_dout_padded, i);
+        dahl_matrix const* sub_dl_dout_padded = block_get_sub_matrix(dl_dout_padded, i);
 
         task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, tmp);
         TASK_ADD_SELF(dl_dinput, tmp);
