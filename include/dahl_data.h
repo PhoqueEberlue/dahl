@@ -47,6 +47,10 @@ dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp* const data);
 
 dahl_block* block_clone(dahl_block const* const block);
 
+// Returns a new block with added padding. 
+// The new_shape should be larger than the previous block.
+// If it is exactly the same, it just produces a copy of the bolck.
+// If the new padding is even, the remainder is placed at the end of the axis.
 dahl_block* block_add_padding_init(dahl_block const* const block, dahl_shape3d const new_shape);
 
 // Returns the block shape
@@ -76,6 +80,9 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* const block, const size_t in
 dahl_vector* block_to_vector(dahl_block* block);
 
 void block_print(dahl_block const* const);
+
+// Finalize the block without freeing the pointed data
+void block_finalize_without_data(dahl_block* block);
 void block_finalize(dahl_block* block);
 
 // Initialize a dahl_matrix with every values at 0.
@@ -98,6 +105,9 @@ dahl_matrix* matrix_clone(dahl_matrix const* const matrix);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix);
+
+dahl_fp* matrix_data_acquire(dahl_matrix const* const matrix);
+void matrix_data_release(dahl_matrix const* const matrix);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
 bool matrix_equals(dahl_matrix const* const a, dahl_matrix const* const b, bool const rounding);
@@ -133,6 +143,9 @@ dahl_vector* vector_clone(dahl_vector const* const vector);
 // Returns the vector len
 size_t vector_get_len(dahl_vector const *const vector);
 
+dahl_fp* vector_data_acquire(dahl_vector const* const vector);
+void vector_data_release(dahl_vector const* const vector);
+
 // Converts a vector to a matrix
 dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape);
 dahl_matrix* vector_to_column_matrix(dahl_vector* vector);
@@ -142,7 +155,7 @@ dahl_matrix* vector_to_row_matrix(dahl_vector* vector);
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape);
 
 // Clone the vector as a categorical matrix
-dahl_matrix* vector_as_categorical(dahl_vector* vector, size_t const num_classes);
+dahl_matrix* vector_as_categorical(dahl_vector const* const vector, size_t const num_classes);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
 // Note: values are rounded in order to obtain valid comparisons.
@@ -229,14 +242,5 @@ void vector_finalize(dahl_vector* vector);
                 (OUT).structure.vector   \
             }                            \
     )   // TODO: is `default` required?
-
-dahl_fp* any_data_acquire(dahl_any const any);
-#define ANY_DATA_ACQUIRE(X) any_data_acquire(AS_ANY(X))
-
-void any_data_release(dahl_any const any);
-#define ANY_DATA_RELEASE(X) any_data_release(AS_ANY(X))
-
-dahl_any any_clone(dahl_any const any);
-#define ANY_CLONE(X) FROM_ANY(X, any_clone(AS_ANY(X)))
 
 #endif //!DAHL_DATA_H

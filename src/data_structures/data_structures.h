@@ -1,6 +1,15 @@
-#include "../include/dahl_data.h"
+#ifndef DAHL_DATA_STRUCTURES_H
+#define DAHL_DATA_STRUCTURES_H
+
+#include "../../include/dahl_data.h"
 
 #include <starpu.h>
+
+#ifdef DAHL_TESTS_H
+#define DAHL_MAX_RANDOM_VALUES 10
+#else
+#define DAHL_MAX_RANDOM_VALUES 4
+#endif
 
 // Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
 // so their fields are not accessible from the public API.
@@ -33,14 +42,12 @@ typedef struct _dahl_block
     bool is_partitioned;
 } dahl_block;
 
-// Private functions
-starpu_data_handle_t vector_get_handle(dahl_vector const* const vector);
-starpu_data_handle_t matrix_get_handle(dahl_matrix const* const matrix);
-starpu_data_handle_t block_get_handle(dahl_block const* const block);
 starpu_data_handle_t any_get_handle(dahl_any const any);
 
-dahl_fp* any_get_data(dahl_any const any);
-#define ANY_GET_DATA(X) any_get_data(AS_ANY(X))
+// Those 3 functions are private because we don't want the user to instantiate our data structures
+// with data allocated from the outside.
+dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* const data);
+dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* const data);
+dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* const data);
 
-// Finalize the block without freeing the pointed data
-void block_finalize_without_data(dahl_block* block);
+#endif //!DAHL_DATA_STRUCTURES_H

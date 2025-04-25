@@ -1,17 +1,16 @@
+#include "../../include/dahl_tasks.h"
+
 #include "codelets.h"
 
 // Including data.h and not include/dahl_data.h so we have access to the private functions
-#include "data.h"
-
-#include "../include/dahl_tasks.h"
-#include <stdio.h>
+#include "../data_structures/data_structures.h"
 
 void task_matrix_cross_correlation(dahl_matrix const* const in, dahl_matrix const* const kernel, dahl_matrix* const out)
 {
     int ret = starpu_task_insert(&cl_matrix_cross_correlation,
-                                 STARPU_R, matrix_get_handle(in),
-                                 STARPU_R, matrix_get_handle(kernel),
-                                 STARPU_W, matrix_get_handle(out), 0);
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -19,9 +18,9 @@ void task_matrix_max_pooling(dahl_matrix const* const in, dahl_matrix* const out
 {
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
-                             STARPU_R, matrix_get_handle(in),
-                             STARPU_W, matrix_get_handle(out), 
-                             STARPU_W, matrix_get_handle(mask), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 
+                             STARPU_W, mask->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -29,9 +28,9 @@ void task_matrix_backward_max_pooling(dahl_matrix const* const in, dahl_matrix c
 {
     int ret = starpu_task_insert(&cl_matrix_backward_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
-                             STARPU_R, matrix_get_handle(in),
-                             STARPU_R, matrix_get_handle(mask), 
-                             STARPU_W, matrix_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_R, mask->handle, 
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -43,9 +42,9 @@ void task_matrix_backward_max_pooling_self(dahl_matrix const* const in, dahl_mat
 void task_matrix_matrix_product(dahl_matrix const* const a, dahl_matrix const* const b, dahl_matrix* const c)
 {
     int ret = starpu_task_insert(&cl_matrix_matrix_product,
-                             STARPU_R, matrix_get_handle(a),
-                             STARPU_R, matrix_get_handle(b), 
-                             STARPU_W, matrix_get_handle(c), 0);
+                             STARPU_R, a->handle,
+                             STARPU_R, b->handle, 
+                             STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -77,8 +76,8 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* const in)
     dahl_matrix* out = matrix_init(out_shape);
 
     int ret = starpu_task_insert(&cl_block_sum_z_axis,
-                                 STARPU_R, block_get_handle(in),
-                                 STARPU_W, matrix_get_handle(out), 0);
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 
     return out;
@@ -116,8 +115,8 @@ void task_add(dahl_any const a, dahl_any const b, dahl_any c)
 void task_vector_softmax(dahl_vector const* const in, dahl_vector* const out)
 {
     int ret = starpu_task_insert(&cl_vector_softmax,
-                                 STARPU_R, vector_get_handle(in),
-                                 STARPU_W, vector_get_handle(out), 0);
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -147,8 +146,8 @@ dahl_fp task_vector_dot_product(dahl_vector const* const a, dahl_vector const* c
     task->cl_arg = arg_buffer;
     task->cl_arg_size = arg_buffer_size;
     task->nbuffers = 2;
-    task->handles[0] = vector_get_handle(a);
-    task->handles[1] = vector_get_handle(b);
+    task->handles[0] = a->handle;
+    task->handles[1] = b->handle;
     task->detach = 0;
 
     int ret = starpu_task_submit(task); 
@@ -168,8 +167,8 @@ dahl_matrix* task_vector_diag(dahl_vector const* const in)
     dahl_matrix* out = matrix_init(out_shape);
 
     int ret = starpu_task_insert(&cl_vector_diag,
-                                 STARPU_R, vector_get_handle(in),
-                                 STARPU_W, matrix_get_handle(out), 0);
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 
     return out;
@@ -198,7 +197,7 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in)
 {
     dahl_matrix* result = task_vector_diag(in);
 
-    dahl_vector* in_clone = ANY_CLONE(in);
+    dahl_vector* in_clone = vector_clone(in);
 
     dahl_matrix* in_col = vector_to_column_matrix(in);
     dahl_matrix* in_row = vector_to_row_matrix(in_clone);
@@ -213,9 +212,9 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* const in)
 void task_matrix_vector_product(dahl_matrix const* const mat, dahl_vector const* const vec, dahl_vector* const out)
 {
     int ret = starpu_task_insert(&cl_matrix_vector_product,
-                             STARPU_R, matrix_get_handle(mat),
-                             STARPU_R, vector_get_handle(vec),
-                             STARPU_W, vector_get_handle(out), 0);
+                             STARPU_R, mat->handle,
+                             STARPU_R, vec->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -250,8 +249,7 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* const predictions, dah
 
     dahl_vector* tmp = vector_init(n_classes);
 
-    // TODO: '-- why do I need to cast here
-    TASK_CLIP((dahl_vector*)predictions, tmp, epsilon, 1 - epsilon);
+    TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
 
     dahl_fp res = 0;
     dahl_fp* res_p = &res;
@@ -268,8 +266,8 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* const predictions, dah
     task->cl_arg = arg_buffer;
     task->cl_arg_size = arg_buffer_size;
     task->nbuffers = 2;
-    task->handles[0] = vector_get_handle(tmp);
-    task->handles[1] = vector_get_handle(targets);
+    task->handles[0] = tmp->handle;
+    task->handles[1] = targets->handle;
     task->detach = 0;
 
     int ret = starpu_task_submit(task); 
@@ -287,9 +285,9 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const pr
     dahl_vector* out = vector_init(len);
 
     int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
-                             STARPU_R, vector_get_handle(predictions),
-                             STARPU_R, vector_get_handle(targets),
-                             STARPU_W, vector_get_handle(out), 0);
+                             STARPU_R, predictions->handle,
+                             STARPU_R, targets->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 
     return out;
@@ -298,8 +296,8 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* const pr
 void task_matrix_transpose(dahl_matrix const* const in, dahl_matrix* const out)
 {
     int ret = starpu_task_insert(&cl_matrix_transpose,
-                             STARPU_R, matrix_get_handle(in),
-                             STARPU_W, matrix_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 

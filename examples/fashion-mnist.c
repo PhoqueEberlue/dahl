@@ -6,8 +6,8 @@
 
 bool check_prediction(dahl_vector const* const predictions, dahl_vector const* const targets)
 {
-    dahl_fp* pred_data = ANY_DATA_ACQUIRE(predictions);
-    dahl_fp* targ_data = ANY_DATA_ACQUIRE(targets);
+    dahl_fp* pred_data = vector_data_acquire(predictions);
+    dahl_fp* targ_data = vector_data_acquire(targets);
 
     size_t num_classes = vector_get_len(predictions);
 
@@ -25,8 +25,8 @@ bool check_prediction(dahl_vector const* const predictions, dahl_vector const* c
 
     bool res = (bool)(targ_data[max_index] == 1);
 
-    ANY_DATA_RELEASE(predictions);
-    ANY_DATA_RELEASE(targets);
+    vector_data_release(predictions);
+    vector_data_release(targets);
 
     return res;
 }

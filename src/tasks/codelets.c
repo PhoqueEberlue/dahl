@@ -1,7 +1,7 @@
 #include "codelets.h"
 #include "starpu_data_interfaces.h"
 #include "starpu_task_util.h"
-#include "../include/dahl_types.h"
+#include "../../include/dahl_types.h"
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>

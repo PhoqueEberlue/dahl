@@ -31,11 +31,11 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 
 dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* const dl_dout, dahl_fp const learning_rate)
 {
-    dahl_matrix* tmp = task_vector_softmax_derivative(dense->output);
+    dahl_matrix const* const tmp = task_vector_softmax_derivative(dense->output);
 
     dahl_vector const* dl_dy = task_matrix_vector_product_init(tmp, dl_dout);
 
-    dahl_vector* dl_dy_clone = ANY_CLONE(dl_dy);
+    dahl_vector* dl_dy_clone = vector_clone(dl_dy);
 
     // We need to clone dl_dy because its dissapearing here
     dahl_matrix* dl_dy_mat = vector_to_column_matrix(dl_dy_clone);
