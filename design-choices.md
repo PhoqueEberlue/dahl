@@ -585,6 +585,9 @@ This way, the minimum amount of memory is now the max(MEM_MAX_FORWARD, MEM_MAX_B
 The memory granualarity can be chosen.
 Another solution could also consists of declaring context arenas, e.g. one for the forward, one for the backward, or even lower in granularity.
 
+Oh also the advantage of the arena is that it is then very obvious if a function actually allocate memory or not.
+It also forces the developper to think about the lifetime of its object (In which arena do I put this object?).
+
 Sadly, it is harder to do with starpu.
 Apparently I can override `starpu_malloc` (and free) with `starpu_malloc_set_hooks` like in this [example](https://gitlab.inria.fr/starpu/starpu/-/blob/master/examples/basic_examples/hooks.c?ref_type=heads).
 But it seems the data handles cannot be allocated freely wherever I want.
