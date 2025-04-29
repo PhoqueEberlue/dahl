@@ -18,37 +18,35 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shap
     return pool;
 }
 
-dahl_block* pooling_forward(dahl_pooling* const pool, dahl_block const* input)
+dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
 {
-    pool->input_data = input; // TODO: I mean, input value itself isn't changed? though how do we free the memory?
-
-    pool->output_data = block_init(pool->output_shape);
+    dahl_block* output_data = block_init(pool->output_shape);
     
     pool->mask = block_init(pool->input_shape);
 
-    block_partition_along_z(pool->input_data);
-    block_partition_along_z(pool->output_data);
+    block_partition_along_z(input_data);
+    block_partition_along_z(output_data);
     block_partition_along_z(pool->mask);
 
-    size_t sub_matrix_nb = block_get_sub_matrix_nb(pool->input_data);
+    size_t sub_matrix_nb = block_get_sub_matrix_nb(input_data);
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {
-        dahl_matrix* sub_input = block_get_sub_matrix(pool->input_data, i);
-        dahl_matrix* sub_output = block_get_sub_matrix(pool->output_data, i);
+        dahl_matrix* sub_input = block_get_sub_matrix(input_data, i);
+        dahl_matrix* sub_output = block_get_sub_matrix(output_data, i);
         dahl_matrix* sub_mask = block_get_sub_matrix(pool->mask, i);
 
         task_matrix_max_pooling(sub_input, sub_output, sub_mask, pool->pool_size);
     }
 
-    block_unpartition(pool->input_data);
-    block_unpartition(pool->output_data);
+    block_unpartition(input_data);
+    block_unpartition(output_data);
     block_unpartition(pool->mask);
 
-    return pool->output_data;
+    return output_data;
 }
 
-dahl_block* pooling_backward(dahl_pooling* const pool, dahl_block* const dl_dout)
+dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
 {
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);

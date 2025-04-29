@@ -18,6 +18,7 @@ dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
 
 dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 {
+    // TODO: here it deletes the original input_data pointer which makes it unavailable for the caller, not good right?
     dense->input_data_flattened = block_to_vector(input_data);
     dahl_vector* tmp = task_matrix_vector_product_init(dense->weights, dense->input_data_flattened);
     TASK_ADD_SELF(tmp, dense->biases);

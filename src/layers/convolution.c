@@ -36,7 +36,7 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     return conv;
 }
 
-dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const* input)
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input)
 {
     // TODO: we may free data between each call of this function? (at each epoch?)
     // so maybe store and free the output from the previous call here?
@@ -49,9 +49,9 @@ dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const*
     block_partition_along_z(conv->filters);
 
     // Every block should have the same number of sub matrices
-    size_t sub_matrix_nb = block_get_sub_matrix_nb(conv->filters);
+    size_t const n_channels = block_get_sub_matrix_nb(conv->filters);
 
-    for (int i = 0; i < sub_matrix_nb; i++)
+    for (int i = 0; i < n_channels; i++)
     {
         dahl_matrix* sub_output = block_get_sub_matrix(output, i);
         dahl_matrix* sub_filters = block_get_sub_matrix(conv->filters, i);
@@ -66,12 +66,10 @@ dahl_block* convolution_forward(dahl_convolution* const conv, dahl_matrix const*
 
     // TODO: Could be interesting to know if the relu task is really waiting for other tasks before starting?
     // It should be the case because of the data dependency and because it is working but we may verify that
-    starpu_task_wait_for_all();
-
     return output;
 }
 
-dahl_matrix* convolution_backward(dahl_convolution* const conv, dahl_block* const dl_dout, double const learning_rate, dahl_matrix const* input)
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
 {
     // derivative loss
     dahl_matrix* dl_dinput = matrix_init(conv->input_shape);
