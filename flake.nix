@@ -55,6 +55,7 @@
                 clang
                 valgrind
                 scc
+                flamegraph
                 hwloc
                 czmq
               ] ++ (if enableCUDA then [

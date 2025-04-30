@@ -19,6 +19,7 @@ Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to suppor
 - `include/` expose public headers of DAHL
 - `kernels/` CUDA kernels
 - `tests/` unit testing for DAHL
+- `design-talk/` here I discuss about the problems faced during the implementation
 - `flake.nix` Nix flake with every needed dependency for developping DAHL
 
 ## Building

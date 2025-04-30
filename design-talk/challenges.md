@@ -520,6 +520,12 @@ This is not good for multiple reasons:
 - furthermore, starpu work asynchronously so I should await the data to be available (i.e. all tasks related to it ended) in order to free it.
 - even if I manage to free my memory in the correct order, it would still be highly inneficient as the allocations require system calls.
 
+(
+mer. 30 avril 2025 15:07:50 CEST remark a posteriori:
+See the [flamegraph](./dahl-malloc-over-and-over.svg) of my program, a lot of time is spent in malloc + we have a lot of page faults
+because we are always changing our buffers.
+)
+
 What we could do instead, would be to reuse the buffers.
 At each epoch/sample iteration, we perform exactly the same operations, with exactly the same needs in terms of memory.
 So in theory, the maximal memory size can be known at compile time.
@@ -611,6 +617,11 @@ but also maximum memory of each processing unit (gpu, cpu).
 As a side note I think memory managment is also important to reduce for energy consumption.
 Also it should lead to better usage of the cache, thus speeding up the execution speed.
 
+-------------------------------------------------------------------------------
+The last point discuss solutions where starpu would be left to give me more control over the memory operations.
+
+This ask a real debate for the further direction of the thesis, first here are my first thought about pros and cons of leaving starpu:
+
 What do I lose from leaving starpu?
 - Asynchronous handling of tasks for threads and gpu executions (which is an enormous point -> ⚠️ mutex/semaphore ⚠️)
 - automatic perf models (which can be reimplemented pretty quickly I would say)
@@ -628,3 +639,8 @@ What do I gain?
 - I control my data structures myself, my three wrappers (block, matrix, vector) are no longer all pointing to a `starpu_block` just because the sub data of a block is a block. 
   I can specialize and decide how the data is stored. I can take every optimization in terms of data storing and use my sturctures cleanly
   in the codelets for cpu or CUDA.
+
+=> In fact StarPU is colliding with what I had in mind for the thesis.
+I want to make a software that statically optimizes a distributed workload and planify the best execution order.
+However starpu is a runtime scheduler, the execution will always be different because it will adapt dynamically.
+
