@@ -616,6 +616,7 @@ What do I lose from leaving starpu?
 - automatic perf models (which can be reimplemented pretty quickly I would say)
 - Auto-managment of memory between ram and GPU integrated memory (but the point is to manage it ourselves)
 - More work on developping with CUDA probably, however I think I still had to do most of stuff (other than  memory managment) with starpu.
+- Also data access and concurrency between threads!!!
 
 What do I gain?
 - I develop my own scheduler: I want to create an optimization software that takes a ML Model, a platform and return the theoritical optimum 

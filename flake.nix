@@ -54,6 +54,7 @@
                 starpu 
                 clang
                 valgrind
+                scc
                 hwloc
                 czmq
               ] ++ (if enableCUDA then [

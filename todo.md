@@ -7,10 +7,11 @@
     but an onwed object instead. Still fine, we don't perform data copy.
 
 -------------------------------------------------------------------------------
-- Hide starpu_wait_for_all into my API -> is this even needed though?
 - Add dahl prefix to every public functions/macros
 - need to rethink the `vector_to_matrix` etc. functions -> should it be a view of the data? (-> implies refcount) should it take ownernship of the data? (easier to manage but implies more clones). I think we might need both actually? => MAKE SURE TO ADD `INIT` POST FIX TO EVERY FUNCTION THAT INSTANCIATE DATA THAT NEED TO BE FREED (And homogeneize init_from, init, clone etc. etc.)
+
 - Add consts to unmodified buffers in the layers.
+
 - Add compilation condition to enable/disable debugg asserts
 - Building common functions (that are not tasks) for the data structures, probably using getter functions taking dahl_any and performing a switch inside
 - check memory leaks, don't forget to call the finalize() at some point :)
@@ -23,3 +24,5 @@
 
 - Investigate on that: if I partition a starpu block, and send tasks with the sub blocks on the GPU, does StarPU copies the whole block on the GPU, or
   every single sub block one by one?
+
+- Hide starpu_wait_for_all into my API -> is this even needed though?
