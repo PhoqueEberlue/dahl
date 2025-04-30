@@ -1,6 +1,7 @@
 #ifndef DAHL_H
 #define DAHL_H
 
+#include "dahl_arena.h"
 #include "dahl_data.h"
 #include "dahl_tasks.h"
 #include "dahl_convolution.h"
