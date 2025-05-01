@@ -1,88 +1,57 @@
-#include "data_structures.h"
+#include "../../include/dahl_data.h"
 #include "../utils.h"
+#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
-// This function shouldn't be exposed in the header:
-// The data parameter is an array that should be allocated before calling the function
-// but its memory will be managed by the same structure.
-// In other words, only dahl_block functions should call this constructor.
-dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* data)
+dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 {
-    starpu_data_handle_t handle = nullptr;
-    starpu_block_data_register(
-        &handle,
-        STARPU_MAIN_RAM,
-        (uintptr_t)data,
-        shape.x,
-        shape.x*shape.y,
-        shape.x,
-        shape.y,
-        shape.z,
-        sizeof(dahl_fp)
-    );
+    size_t n_elems = shape.x * shape.y * shape.z;
 
-    dahl_block* block = malloc(sizeof(dahl_block));
-    block->handle = handle;
+    // Arena returns 0 initialized data, no need to declare the elements of the block
+    dahl_fp* data = arena_put(arena, n_elems * sizeof(dahl_fp));
+    dahl_block* block = arena_put(arena, sizeof(dahl_block));
+
     block->data = data;
-    block->sub_matrices = nullptr;
+    block->shape = shape;
+    block->ldy = shape.x;
+    block->ldz = shape.x * shape.y;
     block->is_partitioned = false;
+    block->sub_matrices = nullptr;
 
     return block;
 }
 
-dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
+dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
 {
-    size_t const n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
+    dahl_block* block = block_init(arena, shape);
+    memcpy(block->data, data, shape.x * shape.y * shape.z);
+    return block;
+}
 
-    for (int i = 0; i < n_elems; i++)
+dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
+{
+    dahl_block* block = block_init(arena, shape);
+
+    for (int i = 0; i < shape.x * shape.y * shape.z; i += 1)
     {
-        data_copy[i] = data[i];
+        block->data[i] = (dahl_fp)( 
+            ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) 
+        );
     }
 
-    return block_init_from_ptr(shape, data_copy);
+    return block;
 }
 
-dahl_block* block_init_random(dahl_shape3d const shape)
+dahl_block* block_clone(dahl_arena* arena, dahl_block const* block)
 {
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
-
-    for (int i = 0; i < n_elems; i += 1)
-    {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
-    }
-
-    return block_init_from_ptr(shape, data);
+    return block_init_from(arena, block->shape, block->data);
 }
 
-dahl_block* block_init(dahl_shape3d const shape)
+dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape)
 {
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
-
-    for (int i = 0; i < n_elems; i += 1)
-    {
-        data[i] = 0;
-    }
-
-    return block_init_from_ptr(shape, data);
-}
-
-dahl_block* block_clone(dahl_block const* block)
-{
-    dahl_fp* data = block_data_acquire(block);
-    dahl_shape3d shape = block_get_shape(block);
-
-    dahl_block* res = block_init_from(shape, data);
-    block_data_release(block);
-
-    return res;
-}
-
-dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
-{
-    dahl_fp* old_data = block_data_acquire(block);
-    dahl_shape3d shape = block_get_shape(block);
+    dahl_shape3d shape = block->shape;
 
     assert(new_shape.x >= shape.x && new_shape.y >= shape.y && new_shape.z >= shape.z);
 
@@ -90,8 +59,7 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
     size_t diff_y = (new_shape.y - shape.y) / 2;
     size_t diff_x = (new_shape.x - shape.x) / 2;
 
-    dahl_block* res = block_init(new_shape);
-    dahl_fp* data = block_data_acquire(res);
+    dahl_block* new_block = block_init(arena, new_shape);
 
     for (size_t z = 0; z < shape.z; z++)
     {
@@ -99,59 +67,25 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
         {
             for (size_t x = 0; x < shape.x; x++)
             {
-                dahl_fp old_value = old_data[(z * shape.x * shape.y) + (y * shape.x) + x];
-                // FIX PLEASE JUST DO AN ACCESSOR FUNCTION WITH X, Y, Z AS PARAMETERS SO WE CAN IGNORE LD
-                data[((z + diff_z) * new_shape.x * new_shape.y) + ((y + diff_y) * new_shape.x) + (x + diff_x)] = old_value;
+                dahl_fp value = block->data[(z * block->ldz) + (y * block->ldy) + x];
+                new_block->data[((z + diff_z) * new_block->ldz) + ((y + diff_y) * new_block->ldy) + (x + diff_x)] = value;
             }
         }
 
     }
 
-    block_data_release(block);
-    block_data_release(res);
-
-    return res;
-}
-
-dahl_shape3d block_get_shape(dahl_block const* block)
-{
-    // TODO: do I need to acquire data? maybe it updates the field, not so sure though because I would have to call the resize functions
-    // So I think its fine like this.
-    starpu_data_handle_t handle = block->handle;
-    size_t nx = starpu_block_get_nx(handle);
-	size_t ny = starpu_block_get_ny(handle);
-	size_t nz = starpu_block_get_nz(handle);
-    dahl_shape3d res = { .x = nx, .y = ny, .z = nz };
-
-    return res;
-}
-
-dahl_fp* block_data_acquire(dahl_block const* block)
-{
-    starpu_data_acquire(block->handle, STARPU_RW);
-    return block->data;
-}
-
-void block_data_release(dahl_block const* block)
-{
-    starpu_data_release(block->handle);
+    return new_block;
 }
 
 bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
 {
-    dahl_shape3d shape_a = block_get_shape(a);
-    dahl_shape3d shape_b = block_get_shape(b);
-
-    assert(shape_a.x == shape_b.x 
-        && shape_a.y == shape_b.y 
-        && shape_a.z == shape_b.z);
-
-    starpu_data_acquire(a->handle, STARPU_R);
-    starpu_data_acquire(b->handle, STARPU_R);
+    assert(a->shape.x == b->shape.x 
+        && a->shape.y == b->shape.y 
+        && a->shape.z == b->shape.z);
 
     bool res = true;
 
-    for (int i = 0; i < (shape_a.x * shape_a.y * shape_a.z); i++)
+    for (int i = 0; i < (a->shape.x * a->shape.y * a->shape.z); i++)
     {
         if (a->data[i] != b->data[i])
         {
@@ -160,115 +94,72 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
         }
     }
 
-    starpu_data_release(a->handle);
-    starpu_data_release(b->handle);
-
     return res;
 }
 
-void block_partition_along_z(dahl_block* block)
+void block_partition_along_z(dahl_arena* arena, dahl_block* block)
 {
-    dahl_shape3d const shape = block_get_shape(block);
-
-    struct starpu_data_filter f =
-	{
-		.filter_func = starpu_block_filter_depth_block,
-		.nchildren = shape.z,
-	};
-
-	starpu_data_partition(block->handle, &f);
-    
     block->is_partitioned = true;
-    block->sub_matrices = malloc(shape.z * sizeof(dahl_matrix));
+    block->nb_sub_matrices = block->shape.z;
+    block->sub_matrices = arena_put(arena, block->shape.z * sizeof(dahl_matrix));
 
-    for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
+    for (int z = 0; z < block->shape.z; z++)
     {
-		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, 1, i);
-
-        //TODO: Check if the pointer is always valid?
-        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_matrix_handle);
-
-        block->sub_matrices[i].handle = sub_matrix_handle;
-        block->sub_matrices[i].data = data;
-        block->sub_matrices[i].is_sub_block_data = false;
+        block->sub_matrices[z].data = &block->data[(z * block->ldz)];
+        block->sub_matrices[z].is_sub_block_data = true;
+        block->sub_matrices[z].shape = (dahl_shape2d){ .x = block->shape.x, .y = block->shape.y };
+        block->sub_matrices[z].ld = block->shape.x;
+        block->sub_matrices[z].is_partitioned = false;
+        block->sub_matrices[z].sub_vectors = nullptr;
     }
 }
 
 void block_unpartition(dahl_block* block)
 {
-    starpu_data_unpartition(block->handle, STARPU_MAIN_RAM);
-    free(block->sub_matrices);
     block->sub_matrices = nullptr;
     block->is_partitioned = false;
-}
-
-size_t block_get_sub_matrix_nb(dahl_block const* block)
-{
-    return starpu_data_get_nb_children(block->handle);
-}
-
-void block_print(dahl_block const* block)
-{
-    const dahl_shape3d shape = block_get_shape(block);
-	const size_t ldy = starpu_block_get_local_ldy(block->handle);
-	const size_t ldz = starpu_block_get_local_ldz(block->handle);
-
-	starpu_data_acquire(block->handle, STARPU_R);
-
-    printf("block=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu\n", block->data, shape.x, shape.y, shape.z, ldy, ldz);
-
-	for(size_t z = 0; z < shape.z; z++)
-	{
-		for(size_t y = 0; y < shape.y; y++)
-		{
-            printf("%s", space_offset(shape.y - y - 1));
-
-			for(size_t x = 0; x < shape.x; x++)
-			{
-				printf("%f ", block->data[(z*ldz)+(y*ldy)+x]);
-			}
-			printf("\n");
-		}
-		printf("\n");
-	}
-	printf("\n");
-
-	starpu_data_release(block->handle);
-}
-
-void block_finalize(dahl_block* block)
-{
-    assert(!block->is_partitioned);
-    starpu_data_unregister(block->handle);
-    free(block->data);
-    free(block);
-}
-
-void block_finalize_without_data(dahl_block* block)
-{
-    assert(!block->is_partitioned);
-    starpu_data_unregister(block->handle);
-    free(block);
 }
 
 dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
 {
     assert(block->is_partitioned 
         && block->sub_matrices != nullptr 
-        && index < starpu_data_get_nb_children(block->handle));
+        && index < block->nb_sub_matrices);
 
     return &block->sub_matrices[index];
 }
 
-dahl_vector* block_to_vector(dahl_block* block)
+void block_print(dahl_block const* block)
 {
-    dahl_fp* data = block_data_acquire(block);
-    dahl_shape3d shape = block_get_shape(block);
+    printf("block=%p nx=%zu ny=%zu nz=%zu ldz=%zu ldy=%ldy\n", 
+           block->data, block->shape.x, block->shape.y, block->shape.z, block->ldz, block->ldy);
 
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
+	for(size_t z = 0; z < block->shape.z; z++)
+	{
+		for(size_t y = 0; y < block->shape.y; y++)
+		{
+            printf("%s", space_offset(block->shape.y - y - 1));
 
-    block_data_release(block);
-    block_finalize_without_data(block);
-
-    return res;
+			for(size_t x = 0; x < block->shape.x; x++)
+			{
+				printf("%f ", block->data[(z * block->ldz) + (y * block->ldy) + x]);
+			}
+			printf("\n");
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
+
+// dahl_vector* block_to_vector(dahl_block* block)
+// {
+//     dahl_fp* data = block_data_acquire(block);
+//     dahl_shape3d shape = block_get_shape(block);
+// 
+//     dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
+// 
+//     block_data_release(block);
+//     block_finalize_without_data(block);
+// 
+//     return res;
+// }

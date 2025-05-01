@@ -1,3 +1,6 @@
+#ifndef DAHL_ARENA_H
+#define DAHL_ARENA_H
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -13,3 +16,5 @@ dahl_arena* arena_new(size_t const size);
 void* arena_put(dahl_arena* arena, size_t size);
 void arena_reset(dahl_arena* arena);
 void arena_delete(dahl_arena* arena);
+
+#endif //!DAHL_ARENA_H

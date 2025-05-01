@@ -6,6 +6,6 @@
 
 void test_dahl_convolution();
 void test_tasks();
-void test_data();
+void test_data(dahl_arena* arena);
 
 #endif //!DAHL_TESTS_H

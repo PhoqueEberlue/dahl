@@ -38,20 +38,12 @@
           hwloc = pkgs.hwloc.override { enableCuda = enableCUDA; };
           # nixgl is only needed for cuda executions
           nixglhost = if enableCUDA then pkgs.callPackage "${nixglhost-src}/default.nix" { } else null;
-
-          # Building from my local derivation of StarPU until it is available on nixpkgs
-          starpu = pkgs.callPackage ./starpu.nix { 
-            cudaPackages = cudaPackages;
-            hwloc = hwloc;
-            enableCUDA = enableCUDA;
-          };
         in
           {
           # Actually defining the dev environment
           default = pkgs.mkShell
             {
               packages = with pkgs; [
-                starpu 
                 clang
                 valgrind
                 scc

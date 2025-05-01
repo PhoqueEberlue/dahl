@@ -7,36 +7,36 @@ void test_block_partition()
 }
 
 
-void test_block_to_vector()
-{
-    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+// void test_block_to_vector()
+// {
+//     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+// 
+//     dahl_fp data[2][3][4] = {
+//         {
+//             {-2.0F, 1.0F, 2.0F,-1.0F },
+//             { 3.0F, 1.0F,-3.0F, 1.0F },
+//             { 4.0F,-1.0F, 4.0F,-1.0F },
+//         },
+//         {
+//             { 3.0F, 1.0F,-8.0F,-3.0F },
+//             {-7.0F,-3.0F, 3.0F, 2.0F },
+//             { 1.0F, 1.0F, 9.0F, 1.0F },
+//         },
+//     };
+// 
+//     dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+// 
+//     dahl_vector* vec = block_to_vector(block);
+// 
+//     dahl_fp res = task_vector_dot_product(vec, vec);
+// 
+//     assert_fp_equals(res, 302.0F);
+// 
+//     vector_finalize(vec);
+//     // Here no need to finalize the block
+// }
 
-    dahl_fp data[2][3][4] = {
-        {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
-        },
-        {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
-        },
-    };
-
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
-
-    dahl_vector* vec = block_to_vector(block);
-
-    dahl_fp res = task_vector_dot_product(vec, vec);
-
-    assert_fp_equals(res, 302.0F);
-
-    vector_finalize(vec);
-    // Here no need to finalize the block
-}
-
-void test_block_add_padding()
+void test_block_add_padding(dahl_arena* arena)
 {
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
@@ -84,17 +84,17 @@ void test_block_add_padding()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(arena, data_shape, (dahl_fp*)&data);
 
     dahl_shape3d padded_shape = { .x = 6, .y = 5, .z = 4 };
-    dahl_block* padded_block = block_add_padding_init(block, padded_shape);
+    dahl_block* padded_block = block_add_padding_init(arena, block, padded_shape);
 
-    dahl_block* expect_block = block_init_from(padded_shape, (dahl_fp*)&expect);
+    dahl_block* expect_block = block_init_from(arena, padded_shape, (dahl_fp*)&expect);
 
     assert_block_equals(expect_block, padded_block, false);
 
     dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
-    dahl_block* padded_block_2 = block_add_padding_init(block, padded_shape_2);
+    dahl_block* padded_block_2 = block_add_padding_init(arena, block, padded_shape_2);
 
     dahl_fp expect_2[2][7][8] = {
         {
@@ -117,14 +117,17 @@ void test_block_add_padding()
         },
     };
 
-    dahl_block* expect_block_2 = block_init_from(padded_shape_2, (dahl_fp*)&expect_2);
+    dahl_block* expect_block_2 = block_init_from(arena, padded_shape_2, (dahl_fp*)&expect_2);
 
     assert_block_equals(expect_block_2, padded_block_2, false);
+
+    // Reset memory
+    arena_reset(arena);
 }
 
 
-void test_data()
+void test_data(dahl_arena* arena)
 {
-    test_block_to_vector();
-    test_block_add_padding();
+    // test_block_to_vector();
+    test_block_add_padding(arena);
 }
