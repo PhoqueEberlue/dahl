@@ -90,6 +90,7 @@ void test_block_add_padding(dahl_arena* arena)
     dahl_block* padded_block = block_add_padding_init(arena, block, padded_shape);
 
     dahl_block* expect_block = block_init_from(arena, padded_shape, (dahl_fp*)&expect);
+    block_print(expect_block);
 
     assert_block_equals(expect_block, padded_block, false);
 

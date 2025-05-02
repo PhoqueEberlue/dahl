@@ -26,7 +26,12 @@ dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
 {
     dahl_block* block = block_init(arena, shape);
-    memcpy(block->data, data, shape.x * shape.y * shape.z);
+
+    for (size_t i = 0; i < shape.x * shape.y * shape.z; i++)
+    {
+        block->data[i] = data[i];
+    }
+
     return block;
 }
 
@@ -89,6 +94,8 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
     {
         if (a->data[i] != b->data[i])
         {
+            dahl_fp a_d = a->data[i];
+            dahl_fp b_d = b->data[i];
             res = false;
             break;
         }
@@ -131,7 +138,7 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
 
 void block_print(dahl_block const* block)
 {
-    printf("block=%p nx=%zu ny=%zu nz=%zu ldz=%zu ldy=%ldy\n", 
+    printf("block=%p nx=%zu ny=%zu nz=%zu ldz=%zu ldy=%zu\n", 
            block->data, block->shape.x, block->shape.y, block->shape.z, block->ldz, block->ldy);
 
 	for(size_t z = 0; z < block->shape.z; z++)
