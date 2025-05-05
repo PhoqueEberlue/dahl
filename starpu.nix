@@ -67,6 +67,7 @@ stdenv.mkDerivation (finalAttrs: {
     [
       "--enable-quick-check"
       "--disable-build-examples"
+      "--enable-blocking-drivers"
     ]
     ++ lib.optional finalAttrs.enableSimgrid "--enable-simgrid"
     ++ lib.optional finalAttrs.enableMPI [
