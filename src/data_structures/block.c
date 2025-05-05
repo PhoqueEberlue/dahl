@@ -1,12 +1,14 @@
+#include "../arena.h"
 #include "data_structures.h"
 #include "../utils.h"
 
-// This function shouldn't be exposed in the header:
-// The data parameter is an array that should be allocated before calling the function
-// but its memory will be managed by the same structure.
-// In other words, only dahl_block functions should call this constructor.
-dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* data)
+dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 {
+    // TODO: potentially pin the data
+    size_t n_elems = shape.x * shape.y * shape.z;
+    // Arena always returns 0 initialized data, no need to fill it
+    dahl_fp* data = arena_put(arena, n_elems * sizeof(dahl_fp));
+
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
         &handle,
@@ -20,7 +22,9 @@ dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* data)
         sizeof(dahl_fp)
     );
 
-    dahl_block* block = malloc(sizeof(dahl_block));
+    arena_add_handle(arena, handle);
+
+    dahl_block* block = arena_put(arena, sizeof(dahl_block));
     block->handle = handle;
     block->data = data;
     block->sub_matrices = nullptr;
@@ -29,57 +33,47 @@ dahl_block* block_init_from_ptr(const dahl_shape3d shape, dahl_fp* data)
     return block;
 }
 
-dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
+dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
 {
+    dahl_block* block = block_init(arena, shape);
     size_t const n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
 
     for (int i = 0; i < n_elems; i++)
     {
-        data_copy[i] = data[i];
+        block->data[i] = data[i];
     }
 
-    return block_init_from_ptr(shape, data_copy);
+    return block;
 }
 
-dahl_block* block_init_random(dahl_shape3d const shape)
+dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
 {
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
+    dahl_block* block = block_init(arena, shape);
+    size_t const n_elems = shape.x * shape.y * shape.z;
 
     for (int i = 0; i < n_elems; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
+        block->data[i] = (dahl_fp)( 
+            ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) 
+        );
     }
 
-    return block_init_from_ptr(shape, data);
+    return block;
 }
 
-dahl_block* block_init(dahl_shape3d const shape)
-{
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
-
-    for (int i = 0; i < n_elems; i += 1)
-    {
-        data[i] = 0;
-    }
-
-    return block_init_from_ptr(shape, data);
-}
-
-dahl_block* block_clone(dahl_block const* block)
+dahl_block* block_clone(dahl_arena* arena, dahl_block const* block)
 {
     dahl_fp* data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
 
-    dahl_block* res = block_init_from(shape, data);
+    dahl_block* res = block_init_from(arena, shape, data);
+
     block_data_release(block);
 
     return res;
 }
 
-dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
+dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape)
 {
     dahl_fp* old_data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
@@ -90,7 +84,7 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
     size_t diff_y = (new_shape.y - shape.y) / 2;
     size_t diff_x = (new_shape.x - shape.x) / 2;
 
-    dahl_block* res = block_init(new_shape);
+    dahl_block* res = block_init(arena, new_shape);
     dahl_fp* data = block_data_acquire(res);
 
     for (size_t z = 0; z < shape.z; z++)

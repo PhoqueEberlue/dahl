@@ -1,9 +1,9 @@
 #include "../../include/dahl_dense.h"
 #include <stdlib.h>
 
-dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
+dahl_dense* dense_init(dahl_arena* arena, dahl_shape3d const input_shape, size_t const output_size)
 {
-    dahl_dense* dense = malloc(sizeof(dahl_dense));
+    dahl_dense* dense = arena_put(arena, sizeof(dahl_dense));
 
     *(dahl_shape3d*)&dense->input_shape = input_shape;
     *(size_t*)&dense->output_size = output_size;
@@ -16,7 +16,7 @@ dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
     return dense;
 }
 
-dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
+dahl_vector* dense_forward(dahl_dense* dense, dahl_arena* arena, dahl_block* input_data)
 {
     // TODO: here it deletes the original input_data pointer which makes it unavailable for the caller, not good right?
     dense->input_data_flattened = block_to_vector(input_data);
@@ -30,7 +30,7 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
     return dense->output;
 }
 
-dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_fp const learning_rate)
+dahl_block* dense_backward(dahl_dense* dense, dahl_arena* arena, dahl_vector const* dl_dout, dahl_fp const learning_rate)
 {
     dahl_matrix const* tmp = task_vector_softmax_derivative(dense->output);
 

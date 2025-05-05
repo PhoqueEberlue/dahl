@@ -9,6 +9,7 @@ void test_block_partition()
 
 void test_block_to_vector()
 {
+    dahl_arena* arena = arena_new(4*3*2* sizeof(dahl_fp) + sizeof(dahl_block));
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
     dahl_fp data[2][3][4] = {
@@ -24,7 +25,7 @@ void test_block_to_vector()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(arena, data_shape, (dahl_fp*)&data);
 
     dahl_vector* vec = block_to_vector(block);
 
@@ -32,8 +33,7 @@ void test_block_to_vector()
 
     assert_fp_equals(res, 302.0F);
 
-    vector_finalize(vec);
-    // Here no need to finalize the block
+    arena_delete(arena);
 }
 
 void test_block_add_padding()
