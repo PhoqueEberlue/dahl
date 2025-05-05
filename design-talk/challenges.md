@@ -522,7 +522,7 @@ This is not good for multiple reasons:
 
 (
 mer. 30 avril 2025 15:07:50 CEST remark a posteriori:
-See the [flamegraph](./dahl-malloc-over-and-over.svg) of my program, a lot of time is spent in malloc + we have a lot of page faults
+See the [flamegraph](../flamegraphs/dahl-malloc-over-and-over.svg) of my program, a lot of time is spent in malloc + we have a lot of page faults
 because we are always changing our buffers.
 )
 
