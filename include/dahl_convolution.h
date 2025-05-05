@@ -8,6 +8,8 @@
 
 typedef struct
 {
+    dahl_arena* arena;
+
     dahl_shape2d const input_shape;
     // Last input data
     dahl_matrix* input_data;
@@ -23,8 +25,8 @@ typedef struct
     dahl_block* biases;
 } dahl_convolution;
 
-dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters);
-dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input);
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input);
+dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape2d input_shape, size_t filter_size, size_t num_filters);
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_arena* arena, dahl_matrix const* input);
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_arena* arena, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input);
 
 #endif //!DAHL_CONVOLUTION_H

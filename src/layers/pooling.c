@@ -3,9 +3,9 @@
 #include <stdlib.h>
 
 // Not much to init because most of the other fields need to be computed depending on input data.
-dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shape)
+dahl_pooling* pooling_init(dahl_arena* arena, size_t const pool_size, dahl_shape3d const input_shape)
 {
-    dahl_pooling* pool = malloc(sizeof(dahl_pooling));
+    dahl_pooling* pool = arena_put(arena, sizeof(dahl_pooling));
     *(size_t*)&pool->pool_size = pool_size;
     *(dahl_shape3d*)&pool->input_shape = input_shape;
 
@@ -18,11 +18,11 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shap
     return pool;
 }
 
-dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
+dahl_block* pooling_forward(dahl_pooling* pool, dahl_arena* arena, dahl_block* input_data)
 {
-    dahl_block* output_data = block_init(pool->output_shape);
+    dahl_block* output_data = block_init(arena, pool->output_shape);
     
-    pool->mask = block_init(pool->input_shape);
+    pool->mask = block_init(arena, pool->input_shape);
 
     block_partition_along_z(input_data);
     block_partition_along_z(output_data);
@@ -46,7 +46,7 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
     return output_data;
 }
 
-dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
+dahl_block* pooling_backward(dahl_pooling* pool, dahl_arena* arena, dahl_block* dl_dout)
 {
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);

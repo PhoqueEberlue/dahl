@@ -49,7 +49,6 @@ starpu_data_handle_t any_get_handle(dahl_any const any);
 
 // Those 3 functions are private because we don't want the user to instantiate our data structures
 // with data allocated from the outside.
-dahl_block* block_init_from_ptr(dahl_shape3d const shape, dahl_fp* data);
 dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data);
 dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data);
 
