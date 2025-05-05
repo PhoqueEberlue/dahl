@@ -11,6 +11,7 @@
 - need to rethink the `vector_to_matrix` etc. functions -> should it be a view of the data? (-> implies refcount) should it take ownernship of the data? (easier to manage but implies more clones). I think we might need both actually? => MAKE SURE TO ADD `INIT` POST FIX TO EVERY FUNCTION THAT INSTANCIATE DATA THAT NEED TO BE FREED (And homogeneize init_from, init, clone etc. etc.)
 
 - Add consts to unmodified buffers in the layers.
+- FORGOT TO ADD BIASES IN THE CONVOLUTION FORWARD
 
 - Add compilation condition to enable/disable debugg asserts
 - Building common functions (that are not tasks) for the data structures, probably using getter functions taking dahl_any and performing a switch inside
