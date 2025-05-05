@@ -1,7 +1,7 @@
 #include "../../include/dahl_convolution.h"
 #include <stdio.h>
 
-dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
+dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
     dahl_shape3d filter_shape = {
         .x = filter_size,
@@ -9,7 +9,7 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
         .z = num_filters,
     };
     
-    dahl_block* filters = block_init_random(filter_shape);
+    dahl_block* filters = block_init_random(arena, filter_shape);
 
     dahl_shape3d output_shape = {
         .x = input_shape.x - filter_size + 1,
@@ -17,9 +17,9 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
         .z = num_filters,
     };
 
-    dahl_block* biases = block_init_random(output_shape);
+    dahl_block* biases = block_init_random(arena, output_shape);
 
-    dahl_convolution* conv = malloc(sizeof(dahl_convolution));
+    dahl_convolution* conv = arena_put(arena, sizeof(dahl_convolution));
 
     // Little trick to initialize const fields dynamically
     *(dahl_shape2d*)&conv->input_shape = input_shape;
@@ -33,14 +33,14 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     return conv;
 }
 
-dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input)
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_arena* arena, dahl_matrix const* input)
 {
     // TODO: we may free data between each call of this function? (at each epoch?)
     // so maybe store and free the output from the previous call here?
     // or it should be freed in dahl_pooling_forward_pass which should be the last one to use it, 
     // but it seems like a bad idea.
     
-    dahl_block* output = block_init(conv->output_shape);
+    dahl_block* output = block_init(arena, conv->output_shape);
 
     block_partition_along_z(output);
     block_partition_along_z(conv->filters);
@@ -61,23 +61,24 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
 
     TASK_ADD_SELF(output, conv->biases);
     TASK_RELU_SELF(output);
+    // TODO: Forgot to add biases?
 
     return output;
 }
 
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_arena* arena, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
 {
     dahl_shape3d tmp_shape = { .x = conv->input_shape.x, .y = conv->input_shape.y, .z = conv->num_filters };
-    dahl_block* dl_dinput_tmp = block_init(tmp_shape);
+    dahl_block* dl_dinput_tmp = block_init(arena, tmp_shape);
 
-    dahl_block* dl_dfilters = block_init(conv->filter_shape);
+    dahl_block* dl_dfilters = block_init(arena, conv->filter_shape);
 
     // Here we need padding on dl_dout
     size_t padding = (conv->filter_size - 1) * 2;
     dahl_shape3d padding_shape = block_get_shape(dl_dout);
     padding_shape.x += padding;
     padding_shape.y += padding;
-    dahl_block* dl_dout_padded = block_add_padding_init(dl_dout, padding_shape);
+    dahl_block* dl_dout_padded = block_add_padding_init(arena, dl_dout, padding_shape);
 
     block_partition_along_z(dl_dout_padded);
     block_partition_along_z(dl_dout);
