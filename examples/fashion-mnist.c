@@ -85,6 +85,8 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 
     block_unpartition(image_block);
     matrix_unpartition(y_categorical);
+
+    arena_delete(epoch_arena);
 }
 
 int main(int argc, char **argv)
@@ -108,6 +110,8 @@ int main(int argc, char **argv)
     dahl_dense* dense = dense_init(network_arena, pool->output_shape, num_classes);
     
     train_network(set, conv, pool, dense);
+
+    arena_delete(network_arena);
 
     dahl_shutdown();
     return 0;
