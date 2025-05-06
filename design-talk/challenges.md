@@ -644,3 +644,26 @@ What do I gain?
 I want to make a software that statically optimizes a distributed workload and planify the best execution order.
 However starpu is a runtime scheduler, the execution will always be different because it will adapt dynamically.
 
+[mar. 06 mai 2025 11:35:09 CEST] Update, hybrid aproach?
+
+We could chose an in-between, static workload/data distribution inter-node, and runtime scheduled tasks for intra-node.
+In fact for inter-node distribution, we would have an idea of the computation power for each node (+ the data transfer cost/time) and based on that
+we would split the workloads so that for every synchronization point, everyone involved "almost" finishes at the same time.
+
+From the intra-node point of view, it would receive a partition (ordered tasks graph to accomplish, computation or data sending) and based on that the scheduler tries to do his best
+to execute it fast. Or we could also imagine using an energy-based scheduler.
+
+One problem is that we could estimate that a machine will perform some task very fast thanks to the GPU, however the scheduler could decide not to use it, leading to huge slow downs.
+Here the gap between estimations and reality could make our partition very bad. 
+However we could have similar problems with a "fully static" approach, if we meticulously assign a task to a core/gpu in particular we could end up having problems or simply under-use our nodes.
+
+-------------------------------------------------------------------------------
+In following to the idea of a partition, we will have to implement that in our code.
+Right now, I can write a CNN by calling the tasks functions defined in my API in a specific order, then compile and train the model.
+Obviously we won't write the optimal code and compile it for each node.
+So our program should be able to "read" partitions and schedule the operations while respecting the data dependencies etc (starpu should handle that correctly by default).
+
+I want to access the codelets metadata from my partition optimizer: because a codelet for a functionnality is a data structure, I can access it's "metadata", it could be great to add info of how much memory this operation will take for example.
+but another problem, if we take the hybrid approach, it is more difficult to estimate which operation will be concurrent or not, thus the memory limit
+is harder to estimate.
+We could estimate a "theoritical maximum memory usage" which would be the memory used by every functions that can be ran concurrently on the node.

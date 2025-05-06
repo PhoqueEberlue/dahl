@@ -40,3 +40,6 @@ build/
 
 # Mnist dataset
 fashion-mnist/
+
+# ------ Draw.io ------
+*.drawio.bkp
