@@ -12,7 +12,7 @@ typedef struct
     size_t offset;
 } dahl_arena;
 
-dahl_arena* arena_new(size_t const size);
+dahl_arena* arena_new(size_t const capacity);
 void* arena_put(dahl_arena* arena, size_t size);
 void arena_reset(dahl_arena* arena);
 void arena_delete(dahl_arena* arena);

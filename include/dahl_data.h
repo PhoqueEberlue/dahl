@@ -108,9 +108,8 @@ void block_unpartition(dahl_block* block);
 // Get sub matrix at index
 dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index);
 
-//TODO
 // // Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
-// dahl_vector* block_to_vector(dahl_block* block);
+dahl_vector* block_to_vector(dahl_arena* arena, dahl_block* block);
 
 void block_print(dahl_block const* block);
 

@@ -7,34 +7,33 @@ void test_block_partition()
 }
 
 
-// void test_block_to_vector()
-// {
-//     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
-// 
-//     dahl_fp data[2][3][4] = {
-//         {
-//             {-2.0F, 1.0F, 2.0F,-1.0F },
-//             { 3.0F, 1.0F,-3.0F, 1.0F },
-//             { 4.0F,-1.0F, 4.0F,-1.0F },
-//         },
-//         {
-//             { 3.0F, 1.0F,-8.0F,-3.0F },
-//             {-7.0F,-3.0F, 3.0F, 2.0F },
-//             { 1.0F, 1.0F, 9.0F, 1.0F },
-//         },
-//     };
-// 
-//     dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
-// 
-//     dahl_vector* vec = block_to_vector(block);
-// 
-//     dahl_fp res = task_vector_dot_product(vec, vec);
-// 
-//     assert_fp_equals(res, 302.0F);
-// 
-//     vector_finalize(vec);
-//     // Here no need to finalize the block
-// }
+void test_block_to_vector(dahl_arena* arena)
+{
+    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp data[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_block* block = block_init_from(arena, data_shape, (dahl_fp*)&data);
+
+    dahl_vector* vec = block_to_vector(arena, block);
+
+    dahl_fp res = task_vector_dot_product(vec, vec);
+
+    assert_fp_equals(res, 302.0F);
+
+    arena_reset(arena);
+}
 
 void test_block_add_padding(dahl_arena* arena)
 {
@@ -90,7 +89,6 @@ void test_block_add_padding(dahl_arena* arena)
     dahl_block* padded_block = block_add_padding_init(arena, block, padded_shape);
 
     dahl_block* expect_block = block_init_from(arena, padded_shape, (dahl_fp*)&expect);
-    block_print(expect_block);
 
     assert_block_equals(expect_block, padded_block, false);
 
@@ -129,6 +127,6 @@ void test_block_add_padding(dahl_arena* arena)
 
 void test_data(dahl_arena* arena)
 {
-    // test_block_to_vector();
+    test_block_to_vector(arena);
     test_block_add_padding(arena);
 }

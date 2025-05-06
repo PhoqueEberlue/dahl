@@ -1,6 +1,10 @@
 #ifndef DAHL_CODELETS_H
 #define DAHL_CODELETS_H
 
+typedef struct
+{
+
+} codelet;
 
 // // Helper macro to generate the three essentials codelets definitions:
 // // - The actual codelet function signature which is always the same, `void(void**, void*)`

@@ -158,15 +158,8 @@ void block_print(dahl_block const* block)
 	printf("\n");
 }
 
-// dahl_vector* block_to_vector(dahl_block* block)
-// {
-//     dahl_fp* data = block_data_acquire(block);
-//     dahl_shape3d shape = block_get_shape(block);
-// 
-//     dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
-// 
-//     block_data_release(block);
-//     block_finalize_without_data(block);
-// 
-//     return res;
-// }
+dahl_vector* block_to_vector(dahl_arena* arena, dahl_block* block)
+{
+    dahl_shape3d shape = block->shape;
+    return vector_init_from(arena, shape.x * shape.y * shape.z, block->data);
+}

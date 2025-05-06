@@ -4,12 +4,12 @@
 #include <malloc.h>
 #include <string.h>
 
-dahl_arena* arena_new(size_t const size)
+dahl_arena* arena_new(size_t const capacity)
 {
     dahl_arena* res = malloc(sizeof(dahl_arena));
 
-    res->buffer = malloc(size);
-    res->buffer_size = size;
+    res->buffer = malloc(capacity * sizeof(uintptr_t));
+    res->buffer_size = capacity;
     res->offset = 0;
 
     return res;
