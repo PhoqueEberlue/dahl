@@ -43,3 +43,4 @@ fashion-mnist/
 
 # ------ Draw.io ------
 *.drawio.bkp
+*.dtmp

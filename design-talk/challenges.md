@@ -549,7 +549,7 @@ I could use my arena in multiple ways:
 create my arena with MEM_MAX bytes, actual memory allocation by calling malloc, nmap, windows virtual memory whatever.
 
 for epoch in epochs
-    for sample in sample
+    for sample in samples
         allocate using the arena -> O(1)
         forward pass
         backward pass
@@ -562,7 +562,7 @@ delete my arena, actual memory deallocation
 create my arena with max(MEM_MAX_FORWARD, MEM_MAX_BACKWARD) bytes.
 
 for epoch in epochs
-    for sample in sample
+    for sample in samples
         allocate using the arena
         forward pass
 
