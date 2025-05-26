@@ -8,10 +8,10 @@ typedef struct
     dahl_shape3d const input_shape;
     size_t const output_size;
 
-    dahl_vector* input_data_flattened;
+    dahl_block* input_data;
     dahl_vector* output;
 
-    dahl_matrix* weights;
+    dahl_block* weights;
     dahl_vector* biases;
 } dahl_dense;
 

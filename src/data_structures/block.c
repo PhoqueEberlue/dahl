@@ -272,3 +272,15 @@ dahl_vector* block_to_vector(dahl_block* block)
 
     return res;
 }
+
+dahl_vector* block_as_vector(dahl_block const* block)
+{
+    dahl_fp* data = block_data_acquire(block);
+    dahl_shape3d shape = block_get_shape(block);
+
+    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
+
+    block_data_release(block);
+
+    return res;
+}

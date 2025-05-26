@@ -262,3 +262,16 @@ void matrix_finalize(dahl_matrix* matrix)
     free(matrix->data);
     free(matrix);
 }
+
+dahl_vector* matrix_as_vector(dahl_matrix const* matrix)
+{
+    dahl_fp* data = matrix_data_acquire(matrix);
+    dahl_shape2d shape = matrix_get_shape(matrix);
+
+    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y, data);
+
+    matrix_data_release(matrix);
+    // Here it returns a "view", bc it points to the same data as the matrix, but the handle will treat it as a vector.
+    // Later we should be careful to manage this memory problem
+    return res;
+}
