@@ -156,6 +156,30 @@ void test_block_sum_z_axis()
     matrix_finalize(result_matrix);
 }
 
+void test_matrix_sum_y_axis()
+{
+    dahl_shape2d a_shape = { .x = 4, .y = 3 };
+    size_t expect_len = 4;
+
+    dahl_fp a[3][4] = {
+        {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-1.0F, 4.0F,-1.0F },
+    };
+
+    dahl_fp expect[4] = { 5.0F, 1.0F, 3.0F,-1.0F };
+
+    dahl_matrix* a_matrix = matrix_init_from(a_shape, (dahl_fp*)&a);
+    dahl_vector* expect_vector = vector_init_from(expect_len, (dahl_fp*)&expect);
+
+    dahl_vector* result_vector = task_matrix_sum_y_axis(a_matrix);
+
+    assert_vector_equals(expect_vector, result_vector, false);
+    matrix_finalize(a_matrix);
+    vector_finalize(expect_vector);
+    vector_finalize(result_vector);
+}
+
 void test_scal()
 {
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
@@ -605,6 +629,7 @@ void test_tasks()
     test_matrix_cross_correlation_2();
     test_relu();
     test_block_sum_z_axis();
+    test_matrix_sum_y_axis();
     test_scal();
     test_sub();
     test_add();
