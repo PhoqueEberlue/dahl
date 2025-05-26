@@ -77,6 +77,7 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index);
 
 // Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
 dahl_vector* block_to_vector(dahl_block* block);
+dahl_vector* block_as_vector(dahl_block const* block);
 
 void block_print(dahl_block const* block);
 
@@ -150,8 +151,15 @@ dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape);
 dahl_matrix* vector_to_column_matrix(dahl_vector* vector);
 dahl_matrix* vector_to_row_matrix(dahl_vector* vector);
 
+dahl_matrix* vector_as_matrix(dahl_vector const* vector, dahl_shape2d shape);
+dahl_matrix* vector_as_column_matrix(dahl_vector const* vector);
+dahl_matrix* vector_as_row_matrix(dahl_vector const* vector);
+
 // Converts a vector to a block
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape);
+
+// Creates a "view" to the matrix as a vector.
+dahl_vector* matrix_as_vector(dahl_matrix const* matrix);
 
 // Clone the vector as a categorical matrix
 dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes);

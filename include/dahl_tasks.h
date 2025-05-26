@@ -35,6 +35,8 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 // - `mask` shape should be the same as `in` shape.
 void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t const pool_size);
 
+dahl_vector* task_matrix_sum_y_axis(dahl_matrix const* in);
+
 // Performs a backward max dahl_pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
 // - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `out` shape.

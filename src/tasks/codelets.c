@@ -288,12 +288,35 @@ void block_sum_z_axis(void* buffers[2], void* cl_arg)
         {
             for (int x = 0; x < in_nx; x++)
             {
+                // FIX ME
                 out[(y * out_ld) + x] += in[(z * in_ldz) + (y * in_ldy) + x];
             }
         }
     }
 }
 
+void matrix_sum_y_axis(void* buffers[2], void* cl_arg)
+{
+    // input matrix
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // output vector
+    size_t const out_len = STARPU_BLOCK_GET_NX(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(in_nx == out_len);
+
+    for (int x = 0; x < in_nx; x++)
+    {
+        for (int y = 0; y < in_ny; y++)
+        {
+            out[x] += in[(y * in_ld) + x];
+        }
+    }
+}
 
 void scal(dahl_fp const* in, dahl_fp* out, size_t const start, size_t const end, dahl_fp const factor)
 {

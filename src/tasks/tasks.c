@@ -99,6 +99,19 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* in)
     return out;
 }
 
+dahl_vector* task_matrix_sum_y_axis(dahl_matrix const* in)
+{
+    dahl_shape2d in_shape = matrix_get_shape(in);
+    dahl_vector* out = vector_init(in_shape.x);
+
+    int ret = starpu_task_insert(&cl_matrix_sum_y_axis,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return out;
+}
+
 void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp const factor)
 {
     int ret = starpu_task_insert(&cl_block_scal,
