@@ -14,7 +14,7 @@ void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
 
     task_matrix_cross_correlation(a_matrix, b_matrix, c_matrix);
 
-    assert_matrix_equals(expect_matrix, c_matrix, false);
+    ASSERT_MATRIX_EQUALS(expect_matrix, c_matrix, false);
 
     matrix_finalize(a_matrix);
     matrix_finalize(b_matrix);
@@ -116,7 +116,7 @@ void test_relu()
 
     TASK_RELU_SELF(a_block);
 
-    assert_block_equals(expect_block, a_block, false);
+    ASSERT_BLOCK_EQUALS(expect_block, a_block, false);
     block_finalize(a_block);
     block_finalize(expect_block);
 }
@@ -150,7 +150,7 @@ void test_block_sum_z_axis()
 
     dahl_matrix* result_matrix = task_block_sum_z_axis(a_block);
 
-    assert_matrix_equals(expect_matrix, result_matrix, false);
+    ASSERT_MATRIX_EQUALS(expect_matrix, result_matrix, false);
     block_finalize(a_block);
     matrix_finalize(expect_matrix);
     matrix_finalize(result_matrix);
@@ -192,7 +192,7 @@ void test_scal()
 
     TASK_SCAL_SELF(a_block, 2);
 
-    assert_block_equals(expect_block, a_block, false);
+    ASSERT_BLOCK_EQUALS(expect_block, a_block, false);
     block_finalize(a_block);
     block_finalize(expect_block);
 }
@@ -243,11 +243,11 @@ void test_sub()
     dahl_block* result_block = block_init(a_shape);
     TASK_SUB(a_block, b_block, result_block);
 
-    assert_block_equals(expect_block, result_block, false); 
+    ASSERT_BLOCK_EQUALS(expect_block, result_block, false); 
 
     // here it modifies `a` instead of returning the result
     TASK_SUB_SELF(a_block, b_block);
-    assert_block_equals(expect_block, a_block, false);
+    ASSERT_BLOCK_EQUALS(expect_block, a_block, false);
 
     block_finalize(a_block);
     block_finalize(b_block);
@@ -301,11 +301,11 @@ void test_add()
     dahl_block* result_block = block_init(a_shape);
     TASK_ADD(a_block, b_block, result_block);
 
-    assert_block_equals(expect_block, result_block, false); 
+    ASSERT_BLOCK_EQUALS(expect_block, result_block, false); 
 
     // here it modifies a instead of returning the result
     TASK_ADD_SELF(a_block, b_block);
-    assert_block_equals(expect_block, a_block, false);
+    ASSERT_BLOCK_EQUALS(expect_block, a_block, false);
 
     block_finalize(a_block);
     block_finalize(b_block);
@@ -326,7 +326,7 @@ void test_vector_softmax()
     task_vector_softmax(in, out);
 
     // Note that values are rounded up in order to compare
-    assert_vector_equals(expect_vec, out, true);
+    ASSERT_VECTOR_EQUALS(expect_vec, out, true);
 
     dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6.0F, 3.7F, 6.1F, 3.2F };
     dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
@@ -337,7 +337,7 @@ void test_vector_softmax()
 
     task_vector_softmax(in_2, out);
 
-    assert_vector_equals(expect_vec_2, out, true);
+    ASSERT_VECTOR_EQUALS(expect_vec_2, out, true);
 
     vector_finalize(in);
     vector_finalize(out);
@@ -356,7 +356,7 @@ void test_vector_dot_product()
 
     dahl_fp result = task_vector_dot_product(a, a);
 
-    assert_fp_equals(expect, result);
+    ASSERT_FP_EQUALS(expect, result);
 
     dahl_fp data_2[len] = { 9.0F, 8.0F, 7.0F, 6.0F, 5.0F, 4.0F, 3.0F, 2.0F, 1.0F, 0.0F };
     dahl_vector* b = vector_init_from(len, (dahl_fp*)&data_2);
@@ -365,7 +365,7 @@ void test_vector_dot_product()
 
     result = task_vector_dot_product(a, b);
 
-    assert_fp_equals(expect_2, result);
+    ASSERT_FP_EQUALS(expect_2, result);
 
     vector_finalize(a);
     vector_finalize(b);
@@ -394,7 +394,7 @@ void test_vector_diag()
 
     dahl_matrix* result = task_vector_diag(a);
 
-    assert_matrix_equals(expect_matrix, result, false);
+    ASSERT_MATRIX_EQUALS(expect_matrix, result, false);
 
     vector_finalize(a);
     matrix_finalize(expect_matrix);
@@ -414,12 +414,12 @@ void test_add_value()
 
     TASK_ADD_VALUE(in, out, 4.0F);
 
-    assert_vector_equals(expect_vec, out, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, out, false);
 
     // Directly modifies in
     TASK_ADD_VALUE_SELF(in, 4.0F);
 
-    assert_vector_equals(expect_vec, in, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, in, false);
 
     vector_finalize(in);
     vector_finalize(out);
@@ -439,12 +439,12 @@ void test_sub_value()
 
     TASK_SUB_VALUE(in, out, 4.0F);
 
-    assert_vector_equals(expect_vec, out, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, out, false);
 
     // Directly modifies in
     TASK_SUB_VALUE_SELF(in, 4.0F);
 
-    assert_vector_equals(expect_vec, in, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, in, false);
 
     vector_finalize(in);
     vector_finalize(out);
@@ -470,7 +470,7 @@ void test_matrix_vector_product()
 
     dahl_vector* out_vec = task_matrix_vector_product_init(in_mat, in_vec);
 
-    assert_vector_equals(expect_vec, out_vec, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, out_vec, false);
 
     size_t constexpr in_vec_len_2 = mat_shape.y;
     dahl_fp vec_2[in_vec_len_2] = { 2.0F, 4.0F };
@@ -484,7 +484,7 @@ void test_matrix_vector_product()
     dahl_matrix* in_mat_t = task_matrix_transpose_init(in_mat);
     dahl_vector* out_vec_2 = task_matrix_vector_product_init(in_mat_t, in_vec_2);
 
-    assert_vector_equals(expect_vec_2, out_vec_2, false);
+    ASSERT_VECTOR_EQUALS(expect_vec_2, out_vec_2, false);
 
     matrix_finalize(in_mat);
     vector_finalize(in_vec);
@@ -509,7 +509,7 @@ void test_clip()
 
     TASK_CLIP(in, out, 2, 7);
 
-    assert_vector_equals(expect_vec, out, false);
+    ASSERT_VECTOR_EQUALS(expect_vec, out, false);
 
     dahl_fp data_2[len] = { 1e-8F, 1e-8F, 1e-8F, 1e-8F, 1e-8F, 1, 1e-8F, 1e-8F, 1e-8F, 1e-8F };
     dahl_vector* in_2 = vector_init_from(len, (dahl_fp*)&data_2);
@@ -519,7 +519,7 @@ void test_clip()
 
     TASK_CLIP_SELF(in_2, 1e-6F, 1 - 1e-6F);
 
-    assert_vector_equals(expect_vec_2, in_2, false);
+    ASSERT_VECTOR_EQUALS(expect_vec_2, in_2, false);
 
     vector_finalize(in);
     vector_finalize(out);
@@ -544,7 +544,7 @@ void test_vector_cross_entropy_loss()
 
     dahl_fp res = task_vector_cross_entropy_loss(pred_vec, target_vec);
 
-    assert_fp_equals(res, 1.6118095639272222996396521921269595623016357421875);
+    ASSERT_FP_EQUALS(res, 1.6118095639272222996396521921269595623016357421875);
 }
 
 void test_matrix_matrix_product()
@@ -575,7 +575,7 @@ void test_matrix_matrix_product()
 
     task_matrix_matrix_product(a_vec, b_vec, c_vec);
 
-    assert_matrix_equals(expect_vec, c_vec, false);
+    ASSERT_MATRIX_EQUALS(expect_vec, c_vec, false);
 }
 
 void test_vector_cross_entropy_loss_gradient()
@@ -596,7 +596,7 @@ void test_vector_cross_entropy_loss_gradient()
 
     dahl_vector* gradient = task_vector_cross_entropy_loss_gradient(predictions_vec, targets_vec);
 
-    assert_vector_equals(expect_vec, gradient, true);
+    ASSERT_VECTOR_EQUALS(expect_vec, gradient, true);
 }
 
 void test_tasks()
