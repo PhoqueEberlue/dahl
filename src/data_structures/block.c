@@ -1,5 +1,7 @@
 #include "data_structures.h"
 #include "../utils.h"
+#include "starpu_data_filters.h"
+#include "starpu_data_interfaces.h"
 
 // This function shouldn't be exposed in the header:
 // The data parameter is an array that should be allocated before calling the function
@@ -172,7 +174,7 @@ void block_partition_along_z(dahl_block* block)
 
     struct starpu_data_filter f =
 	{
-		.filter_func = starpu_block_filter_depth_block,
+		.filter_func = starpu_block_filter_pick_matrix_z,
 		.nchildren = shape.z,
 	};
 
@@ -186,7 +188,7 @@ void block_partition_along_z(dahl_block* block)
 		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
         //TODO: Check if the pointer is always valid?
-        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_matrix_handle);
+        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
 
         block->sub_matrices[i].handle = sub_matrix_handle;
         block->sub_matrices[i].data = data;

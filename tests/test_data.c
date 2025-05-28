@@ -1,9 +1,39 @@
 #include "tests.h"
 #include <stdio.h>
 
-void test_block_partition()
+void test_block_partition_along_z()
 {
+    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
+    dahl_fp data[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+
+    dahl_shape2d expect_shape = { .x = 4, .y = 3 };
+
+    block_partition_along_z(block);
+
+    for (size_t i = 0; i < block_get_sub_matrix_nb(block); i++)
+    {
+        dahl_matrix* sub_matrix = block_get_sub_matrix(block, i);
+        dahl_shape2d shape = matrix_get_shape(sub_matrix);
+        assert_shape2d_equals(expect_shape, shape);
+    }
+
+    block_unpartition(block);
+
+    block_finalize(block);
 }
 
 
@@ -125,6 +155,7 @@ void test_block_add_padding()
 
 void test_data()
 {
+    test_block_partition_along_z();
     test_block_to_vector();
     test_block_add_padding();
 }
