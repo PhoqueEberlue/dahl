@@ -64,10 +64,169 @@ the user don't have to mind with implementations details, yet it gives my librar
 For example implementing a flatten function for matrices (or blocks) is as simple as changing the dimensions of the data, the memory isn't touched
 as it is contiguously stored anyways.
 
-
+[later]
 Going back on the first topic of this choice, a get function would be possible and it would work on CUDA, however it does'nt make a lot of sense to send
 our wrapper objects on CPU/GPU. We should keep the level low as we go down on the layers.
 However the get functions could be defined to be accesed directly by the user (without calling a codelet).
+
+[Tue May 27 04:03:10 PM CEST 2025]
+
+Ok, I finally found a way!
+Instead of using the builtin partitionning function, in can simply create other handles pointing to the same data.
+I just need to make sure to guarantee coherency. This could be done in the actual wrapper functions, so it wouldn't
+change the user API, however it would make clearer codelet code with buffers having the correct type and not always starpu block.
+```c
+void relu_matrix(void* buffers[1], void* cl_arg)
+{
+    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    float* buf = (float*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    for (int i = 0; i < in_nx*in_ny; i++)
+    {
+        if (buf[i] < 0.0F)
+        {
+            buf[i] = 0.0F;
+        }
+    }
+}
+
+static struct starpu_codelet cl_relu_matrix = {
+    .cpu_funcs = { relu_matrix },
+    .nbuffers = 1,
+    .modes = { STARPU_RW },
+};
+
+void relu_vector(void* buffers[1], void* cl_arg)
+{
+    size_t const in_nx = STARPU_VECTOR_GET_NX(buffers[0]);
+    float* buf = (float*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    for (int i = 0; i < in_nx; i++)
+    {
+        if (buf[i] < 0.0F)
+        {
+            buf[i] = 0.0F;
+        }
+    }
+}
+
+static struct starpu_codelet cl_relu_vector = {
+    .cpu_funcs = { relu_vector },
+    .nbuffers = 1,
+    .modes = { STARPU_RW },
+};
+
+struct starpu_codelet cl_switch =
+{
+	.where = STARPU_NOWHERE,
+	.nbuffers = STARPU_VARIABLE_NBUFFERS,
+};
+
+// See: https://files.inria.fr/starpu/doc/html/AdvancedDataManagement.html#ManualPartitioning
+int main(int argc, char **argv)
+{
+    int ret = starpu_init(nullptr);
+    if (ret != 0)
+    {
+        return 1;
+    }
+
+    // This seems mandatory
+    cl_switch.specific_nodes = 1;
+	for (int i = 0; i < STARPU_NMAXBUFS; i++)
+		cl_switch.nodes[i] = STARPU_MAIN_RAM;
+
+    float mat[3][3] = {
+        { 1, -2, 3 },
+        { 4, -5, 6 },
+        { -7, 8, -9 },
+    };
+
+    // Initialize the "main" handle to the previously defined matrix
+    starpu_data_handle_t mat_handle;
+    starpu_matrix_data_register(&mat_handle, STARPU_MAIN_RAM, (uintptr_t)&mat, 3, 3, 3, sizeof(float));
+
+    matrix_print(mat_handle);
+
+    // Initialize vectors handle, views of the matrix: 
+    // manual partitionning -> this way we can define vector data (contrary to the builtin partitionning system that keeps the same type as the parent interface).
+    starpu_data_handle_t vectors[3];
+    for (size_t i = 0; i < 3; i++)
+    {
+        starpu_vector_data_register(&vectors[i], STARPU_MAIN_RAM, (uintptr_t)&mat[i], 3, sizeof(float));
+        // (optional) Instantly invalidate the vector if it isn't directly used after
+		starpu_data_invalidate(vectors[i]);
+    }
+
+	struct starpu_data_descr vectors_descr[3];
+    for (size_t i = 0; i < 3; i++)
+    {
+        vectors_descr[i].handle = vectors[i];
+        vectors_descr[i].mode = STARPU_W;
+    }
+
+    // This function refreshes the vectors data so they become valid again
+    // STARPU_W -> enables data
+    // STARPU_RW -> does not enable data it seems
+    // So here all the vectors in vectors_descr are enabled again
+	ret = starpu_task_insert(&cl_switch, STARPU_RW, mat_handle, STARPU_DATA_MODE_ARRAY, vectors_descr, 3, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+
+    // Invalidate the main handle to prevent concurrent data accesses
+	starpu_data_invalidate_submit(mat_handle);
+
+    for (size_t i = 0; i < 3; i++)
+    {
+        // We can actually call a codelet that takes a vector and not a matrix thanks to our view
+        ret = starpu_task_insert(&cl_relu_vector, STARPU_RW, vectors[i], 0);
+        STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+    }
+
+    // Refresh the main handle
+	ret = starpu_task_insert(&cl_switch, STARPU_W, mat_handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+ 
+    // Print the result
+    matrix_print(mat_handle);
+
+    // Also works with the matrix type
+    ret = starpu_task_insert(&cl_relu_matrix, STARPU_RW, mat_handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+
+	/* terminate StarPU, no task can be submitted after */
+	starpu_shutdown();
+
+    return 0;
+}
+```
+
+Pros:
+- Should better transition to higher dimensions data structures
+- Cleaner codelet code with the right types
+- Leaves us the opportunity to implement a view mechanism based on the same principle, whereas with the previous implem I would
+  have to define two separate mechanisms. However it means I have to pay attention to coherency?
+Cons:
+- Data should be contiguous for the views to work -> for now I didn't need it because I wisely used my data structures knowing
+  how they would be accessed after.
+- This also means I will have to do data partitionning myself (or reuse the builtin system and lose the "type changing" ability)
+
+[Wed May 28 11:49:42 AM CEST 2025]
+Ok, there's a way to actually do it from the StarPU API... Which makes sense but wow how do I missed that.
+
+Since the beginning I'm partitionning my data structures with options like: `starpu_block_filter_depth_block` but there also exist
+`starpu_block_filter_pick_matrix_z` that returns a matrix interface...
+
+Pros:
+- Should better transition to higher dimensions data structures -> still valid
+- Cleaner codelet code with the right types -> still valid
+- ~~Leaves us the opportunity to implement a view mechanism based on the same principle, whereas with the previous implem I would
+  have to define two separate mechanisms. However it means I have to pay attention to coherency?~~
+  -> the view system will have to be implemented with the manual partitionning I think. I did not find a way to do it directly in StarPU.
+Cons:
+- ~~Data should be contiguous for the views to work -> for now I didn't need it because I wisely used my data structures knowing
+  how they would be accessed after.~~
+- ~~This also means I will have to do data partitionning myself (or reuse the builtin system and lose the "type changing" ability)~~
 
 -------------------------------------------------------------------------------
 Make dahl_matrix / dahl_block generic? they could use the type we want? -> seems hard, need to think about it.
