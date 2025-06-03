@@ -87,6 +87,8 @@ stdenv.mkDerivation (finalAttrs: {
     export HOME=$(pwd)
   '';
 
+  patches = [ ./vector_pick_y.patch ];
+
   enableParallelBuilding = true;
   doCheck = true;
 
