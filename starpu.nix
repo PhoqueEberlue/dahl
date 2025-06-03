@@ -1,7 +1,8 @@
 {
   # derivation dependencies
   lib,
-  fetchzip,
+  # fetchzip,
+  fetchgit,
   stdenv,
 
   # starpu dependencies
@@ -26,15 +27,21 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "starpu";
-  version = "1.4.7";
+  version = "master";
 
   inherit enableSimgrid;
   inherit enableMPI;
   inherit enableCUDA;
 
-  src = fetchzip {
-    url = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/starpu-${finalAttrs.version}.tar.gz";
-    hash = "sha256-6AjQr+2nSJ/uYjJ6II4vJgxj5nHuvlsLvPGZZv/cU8M=";
+  # src = fetchzip {
+  #   url = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/starpu-${finalAttrs.version}.tar.gz";
+  #   hash = "sha256-6AjQr+2nSJ/uYjJ6II4vJgxj5nHuvlsLvPGZZv/cU8M=";
+  # };
+
+  src = fetchgit {
+    url = "https://gitlab.inria.fr/starpu/starpu.git";
+    rev = "bdaf1ea9b55099d8163be086743fec8327475629";
+    hash = "sha256-BgUUEps3nLi4nPRoTBYmztO2bLwtJw2Bp5ZKurccG+4=";
   };
 
   # Runtime build dependencies
@@ -65,6 +72,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   configureFlags =
     [
+      "--enable-debug"
       "--enable-quick-check"
       "--disable-build-examples"
       "--enable-blocking-drivers"
@@ -78,6 +86,10 @@ stdenv.mkDerivation (finalAttrs: {
   # Last arg enables static linking which is mandatory for smpi
   # No need to add flags for CUDA, it should be detected by ./configure
 
+  preConfigure = ''
+    ./autogen.sh
+  '';
+
   postConfigure = ''
     # Patch shebangs recursively because a lot of scripts are used
     shopt -s globstar
@@ -85,9 +97,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     # this line removes a bug where value of $HOME is set to a non-writable /homeless-shelter dir
     export HOME=$(pwd)
-  '';
-
-  patches = [ ./vector_pick_y.patch ];
+    '';
 
   enableParallelBuilding = true;
   doCheck = true;
