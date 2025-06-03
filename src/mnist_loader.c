@@ -97,6 +97,5 @@ dataset* load_mnist(char const* image_file, char const* label_file)
 void free_dataset(dataset* set)
 {
     block_finalize(set->train_images);
-    free(set->train_images);
-    free(set->train_labels);
+    vector_finalize(set->train_labels);
 }

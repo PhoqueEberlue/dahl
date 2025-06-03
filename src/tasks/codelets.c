@@ -756,10 +756,10 @@ void vector_sub_value(void* buffers[2], void* cl_arg)
 void matrix_vector_product(void* buffers[3], void* cl_arg)
 {
     // Input matrix
-    size_t const mat_nx = STARPU_BLOCK_GET_NX(buffers[0]);
-    size_t const mat_ny = STARPU_BLOCK_GET_NY(buffers[0]);
-    size_t const mat_ld = STARPU_BLOCK_GET_LDY(buffers[0]);
-    dahl_fp const* mat = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+    size_t const mat_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const mat_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const mat_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* mat = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
 
     // Input vector
     size_t const vec_len = STARPU_VECTOR_GET_NX(buffers[1]);

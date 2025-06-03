@@ -2,6 +2,7 @@
 #include "../utils.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"
+#include <stdint.h>
 
 // This function shouldn't be exposed in the header:
 // The data parameter is an array that should be allocated before calling the function
@@ -176,6 +177,7 @@ void block_partition_along_z(dahl_block* block)
 	{
 		.filter_func = starpu_block_filter_pick_matrix_z,
 		.nchildren = shape.z,
+		.get_child_ops = starpu_block_filter_pick_matrix_child_ops
 	};
 
 	starpu_data_partition(block->handle, &f);

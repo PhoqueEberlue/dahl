@@ -147,6 +147,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 	{
 		.filter_func = starpu_matrix_filter_pick_vector_y,
 		.nchildren = shape.y,
+		.get_child_ops = starpu_matrix_filter_pick_vector_child_ops
 	};
 
 	starpu_data_partition(matrix->handle, &f);
