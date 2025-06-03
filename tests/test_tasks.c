@@ -119,6 +119,8 @@ void test_relu()
     ASSERT_BLOCK_EQUALS(expect_block, a_block, false);
     block_finalize(a_block);
     block_finalize(expect_block);
+
+    // TODO: add test for other types and task relu without self
 }
 
 void test_block_sum_z_axis()

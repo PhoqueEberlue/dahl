@@ -61,12 +61,28 @@ dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix c
     return c;
 }
 
-void task_relu(dahl_any const in, dahl_any out)
+void task_block_relu(const dahl_block *in, dahl_block *out)
 {
-    int ret = starpu_task_insert(&cl_relu, 
-                                 STARPU_R, any_get_handle(in), 
-                                 STARPU_W, any_get_handle(out), 0);
+    int ret = starpu_task_insert(&cl_block_relu,
+                                 STARPU_R, in->handle, 
+                                 STARPU_W, out->handle, 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_relu(const dahl_matrix *in, dahl_matrix *out)
+{
+    int ret = starpu_task_insert(&cl_matrix_relu,
+                                 STARPU_R, in->handle, 
+                                 STARPU_W, out->handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_relu(const dahl_vector *in, dahl_vector *out)
+{
+    int ret = starpu_task_insert(&cl_vector_relu,
+                                 STARPU_R, in->handle, 
+                                 STARPU_W, out->handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
 dahl_matrix* task_block_sum_z_axis(dahl_block const* in)
@@ -83,31 +99,85 @@ dahl_matrix* task_block_sum_z_axis(dahl_block const* in)
     return out;
 }
 
-void task_scal(dahl_any const in, dahl_any out, dahl_fp const factor)
+void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp const factor)
 {
-    int ret = starpu_task_insert(&cl_scal,
+    int ret = starpu_task_insert(&cl_block_scal,
                              STARPU_VALUE, &factor, sizeof(&factor),
-                             STARPU_R, any_get_handle(in),
-                             STARPU_W, any_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_sub(dahl_any const a, dahl_any const b, dahl_any c)
+void task_matrix_scal(dahl_matrix const* in, dahl_matrix* out, dahl_fp const factor)
+{
+    int ret = starpu_task_insert(&cl_matrix_scal,
+                             STARPU_VALUE, &factor, sizeof(&factor),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_scal(dahl_vector const* in, dahl_vector* out, dahl_fp const factor)
+{
+    int ret = starpu_task_insert(&cl_vector_scal,
+                             STARPU_VALUE, &factor, sizeof(&factor),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
+}
+
+void task_block_sub(dahl_block const* a, dahl_block const* b, dahl_block* c)
 { 
-    int ret = starpu_task_insert(&cl_sub,
-                                 STARPU_R, any_get_handle(a),
-                                 STARPU_R, any_get_handle(b),
-                                 STARPU_W, any_get_handle(c), 0);
+    int ret = starpu_task_insert(&cl_block_sub,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_add(dahl_any const a, dahl_any const b, dahl_any c)
+void task_matrix_sub(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c)
 { 
-    int ret = starpu_task_insert(&cl_add,
-                                 STARPU_R, any_get_handle(a),
-                                 STARPU_R, any_get_handle(b),
-                                 STARPU_W, any_get_handle(c), 0);
+    int ret = starpu_task_insert(&cl_matrix_sub,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_sub(dahl_vector const* a, dahl_vector const* b, dahl_vector* c)
+{ 
+    int ret = starpu_task_insert(&cl_vector_sub,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
+}
+
+void task_block_add(dahl_block const* a, dahl_block const* b, dahl_block* c)
+{ 
+    int ret = starpu_task_insert(&cl_block_add,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_add(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c)
+{ 
+    int ret = starpu_task_insert(&cl_matrix_add,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c)
+{ 
+    int ret = starpu_task_insert(&cl_vector_add,
+                                 STARPU_R, a->handle,
+                                 STARPU_R, b->handle,
+                                 STARPU_W, c->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
 // Note: do not implement a self function (in and out being the same buffers), as 
@@ -174,22 +244,58 @@ dahl_matrix* task_vector_diag(dahl_vector const* in)
     return out;
 }
 
-void task_add_value(dahl_any const in, dahl_any out, dahl_fp const value)
+void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp const value)
 {
-    int ret = starpu_task_insert(&cl_add_value,
+    int ret = starpu_task_insert(&cl_block_add_value,
                              STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, any_get_handle(in),
-                             STARPU_W, any_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_sub_value(dahl_any const in, dahl_any out, dahl_fp const value)
+void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value)
 {
-    int ret = starpu_task_insert(&cl_sub_value,
+    int ret = starpu_task_insert(&cl_matrix_add_value,
                              STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, any_get_handle(in),
-                             STARPU_W, any_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value)
+{
+    int ret = starpu_task_insert(&cl_vector_add_value,
+                             STARPU_VALUE, &value, sizeof(&value),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
+}
+
+void task_block_sub_value(dahl_block const* in, dahl_block* out, dahl_fp const value)
+{
+    int ret = starpu_task_insert(&cl_block_sub_value,
+                             STARPU_VALUE, &value, sizeof(&value),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_sub_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value)
+{
+    int ret = starpu_task_insert(&cl_matrix_sub_value,
+                             STARPU_VALUE, &value, sizeof(&value),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_sub_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value)
+{
+    int ret = starpu_task_insert(&cl_vector_sub_value,
+                             STARPU_VALUE, &value, sizeof(&value),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
 // TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
@@ -232,14 +338,34 @@ dahl_vector* task_matrix_vector_product_init(dahl_matrix const* mat, dahl_vector
     return out;
 }
 
-void task_clip(dahl_any const in, dahl_any const out, dahl_fp const min, dahl_fp const max)
+void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp const min, dahl_fp const max)
 {
-    int ret = starpu_task_insert(&cl_clip,
+    int ret = starpu_task_insert(&cl_block_clip,
                              STARPU_VALUE, &min, sizeof(&min),
                              STARPU_VALUE, &max, sizeof(&max),
-                             STARPU_R, any_get_handle(in),
-                             STARPU_W, any_get_handle(out), 0);
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp const min, dahl_fp const max)
+{
+    int ret = starpu_task_insert(&cl_matrix_clip,
+                             STARPU_VALUE, &min, sizeof(&min),
+                             STARPU_VALUE, &max, sizeof(&max),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp const min, dahl_fp const max)
+{
+    int ret = starpu_task_insert(&cl_vector_clip,
+                             STARPU_VALUE, &min, sizeof(&min),
+                             STARPU_VALUE, &max, sizeof(&max),
+                             STARPU_R, in->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets)

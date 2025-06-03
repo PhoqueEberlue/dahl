@@ -22,26 +22,48 @@ void test_block_partition_along_z()
 
     dahl_shape2d expect_shape = { .x = 4, .y = 3 };
 
+    dahl_fp expect_0[3][4] = {
+        {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-1.0F, 4.0F,-1.0F },
+    };
+
+    dahl_fp expect_1[3][4] = {
+        { 3.0F, 1.0F,-8.0F,-3.0F },
+        {-7.0F,-3.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    };
+
+    dahl_matrix* expect_matrix_0 = matrix_init_from(expect_shape, (dahl_fp*)&expect_0);
+    dahl_matrix* expect_matrix_1 = matrix_init_from(expect_shape, (dahl_fp*)&expect_1);
+
     block_partition_along_z(block);
 
-    for (size_t i = 0; i < block_get_sub_matrix_nb(block); i++)
-    {
-        dahl_matrix* sub_matrix = block_get_sub_matrix(block, i);
-        dahl_shape2d shape = matrix_get_shape(sub_matrix);
-        ASSERT_SHAPE2D_EQUALS(expect_shape, shape);
-    }
+    dahl_matrix* sub_matrix_0 = block_get_sub_matrix(block, 0);
+    dahl_shape2d shape_0 = matrix_get_shape(sub_matrix_0);
+    ASSERT_SHAPE2D_EQUALS(expect_shape, shape_0);
+    ASSERT_MATRIX_EQUALS(expect_matrix_0, sub_matrix_0, false);
+
+    dahl_matrix* sub_matrix_1 = block_get_sub_matrix(block, 1);
+    dahl_shape2d shape_1 = matrix_get_shape(sub_matrix_1);
+    ASSERT_SHAPE2D_EQUALS(expect_shape, shape_1);
+    ASSERT_MATRIX_EQUALS(expect_matrix_1, sub_matrix_1, false);
 
     block_unpartition(block);
 
     block_finalize(block);
+    matrix_finalize(expect_matrix_0);
+    matrix_finalize(expect_matrix_1);
 }
 
 void test_matrix_partition_along_y()
 {
-    dahl_shape2d data_shape = { .x = 4, .y = 3 };
+    dahl_shape2d data_shape = { .x = 4, .y = 5 };
 
-    dahl_fp data[3][4] = {
+    dahl_fp data[5][4] = {
         {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-1.0F, 4.0F,-1.0F },
         { 3.0F, 1.0F,-3.0F, 1.0F },
         { 4.0F,-1.0F, 4.0F,-1.0F },
     };

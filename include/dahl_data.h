@@ -3,7 +3,6 @@
 
 #include "dahl_types.h"
 
-
 typedef struct _dahl_vector dahl_vector;
 typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_block dahl_block;
@@ -164,83 +163,5 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
 void vector_print(dahl_vector const* vector);
 void vector_finalize_without_data(dahl_vector* vector);
 void vector_finalize(dahl_vector* vector);
-
-// -------------------------------------------------- Any operations --------------------------------------------------
-// Helper to wrap a dahl data structure into a `dahl_any`.
-// Initialize a stack allocated `dahl_any` object from a `dahl_block*`, `dahl_matrix*` or `dahl_vector*`.
-#define AS_ANY(X) _Generic((X),                               \
-        dahl_block*:                                          \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .block = (dahl_block*)(X) },   \
-                .type = dahl_type_block                       \
-            },                                                \
-        dahl_matrix*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .matrix = (dahl_matrix*)(X) }, \
-                .type = dahl_type_matrix                      \
-            },                                                \
-        dahl_vector*:                                         \
-            (dahl_any)                                        \
-            {                                                 \
-                .structure = { .vector = (dahl_vector*)(X) }, \
-                .type = dahl_type_vector                      \
-            },                                                \
-        dahl_block const*:                              \
-            (dahl_any const)                                  \
-            {                                                 \
-                .structure = { .block = (dahl_block*)(X) },   \
-                .type = dahl_type_block                       \
-            },                                                \
-        dahl_matrix const*:                             \
-            (dahl_any const)                                  \
-            {                                                 \
-                .structure = { .matrix = (dahl_matrix*)(X) }, \
-                .type = dahl_type_matrix                      \
-            },                                                \
-        dahl_vector const*:                             \
-            (dahl_any const)                                  \
-            {                                                 \
-                .structure = { .vector = (dahl_vector*)(X) }, \
-                .type = dahl_type_vector                      \
-            }                                                 \
-    )   // TODO: is `default` required?
-
-// Helper to unwrap a `dahl_any`, to be used for functions that take and return the same 
-// dahl data structure types using `dahl_any` wrapper.
-// Gets `dahl_block*`, `dahl_matrix*` or `dahl_vector*` from `OUT` by reading `IN`'s type
-#define FROM_ANY(IN, OUT) _Generic((IN), \
-        dahl_block*:                     \
-            (dahl_block*)                \
-            {                            \
-                (OUT).structure.block    \
-            },                           \
-        dahl_matrix*:                    \
-            (dahl_matrix*)               \
-            {                            \
-                (OUT).structure.matrix   \
-            },                           \
-        dahl_vector*:                    \
-            (dahl_vector*)               \
-            {                            \
-                (OUT).structure.vector   \
-            },                           \
-        dahl_block const*:               \
-            (dahl_block*)                \
-            {                            \
-                (OUT).structure.block    \
-            },                           \
-        dahl_matrix const*:              \
-            (dahl_matrix*)               \
-            {                            \
-                (OUT).structure.matrix   \
-            },                           \
-        dahl_vector const*:              \
-            (dahl_vector*)               \
-            {                            \
-                (OUT).structure.vector   \
-            }                            \
-    )   // TODO: is `default` required?
 
 #endif //!DAHL_DATA_H

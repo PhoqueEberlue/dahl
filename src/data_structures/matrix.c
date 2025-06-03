@@ -1,20 +1,18 @@
 #include "data_structures.h"
+#include "starpu_data_filters.h"
 
 // See `block_init_from_ptr` for more information.
 dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
 {
     starpu_data_handle_t handle = nullptr;
 
-    // Under the hood, dahl_matrix is in fact a starpu_block with only 1 z dimension
-    starpu_block_data_register(
+    starpu_matrix_data_register(
         &handle,
         STARPU_MAIN_RAM,
         (uintptr_t)data,
         shape.x,
-        shape.x*shape.y,
         shape.x,
         shape.y,
-        1,
         sizeof(dahl_fp)
     );
 
@@ -57,7 +55,7 @@ dahl_matrix* matrix_init_random(dahl_shape2d const shape)
     return matrix_init_from(shape, data);
 }
 
-// Initialize a starpu block at 0 and return its handle
+// Initialize a starpu matrix at 0 and return its handle
 dahl_matrix* matrix_init(dahl_shape2d const shape)
 {
     size_t n_elems = shape.x * shape.y;
@@ -84,8 +82,8 @@ dahl_matrix* matrix_clone(dahl_matrix const* matrix)
 
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
 {
-    size_t nx = starpu_block_get_nx(matrix->handle);
-    size_t ny = starpu_block_get_ny(matrix->handle);
+    size_t nx = starpu_matrix_get_nx(matrix->handle);
+    size_t ny = starpu_matrix_get_ny(matrix->handle);
     
     dahl_shape2d res = { .x = nx, .y = ny };
     return res;
@@ -147,25 +145,24 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 
     struct starpu_data_filter f =
 	{
-        // Reminder that our matrix are implemented using starpu_block with only one Z dimension
-		.filter_func = starpu_block_filter_vertical_block,
+		.filter_func = starpu_matrix_filter_pick_vector_y,
 		.nchildren = shape.y,
 	};
 
 	starpu_data_partition(matrix->handle, &f);
     
     matrix->is_partitioned = true;
-    matrix->sub_vectors = malloc(shape.y * sizeof(dahl_matrix));
+    matrix->sub_vectors = malloc(shape.y * sizeof(dahl_vector));
 
     for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
     {
 		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
 
-        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_vector_handle);
+        dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
 
         matrix->sub_vectors[i].handle = sub_vector_handle;
         matrix->sub_vectors[i].data = data;
-        matrix->sub_vectors[i].is_sub_matrix_data = false;
+        matrix->sub_vectors[i].is_sub_matrix_data = true;
     }
 }
 
@@ -195,8 +192,7 @@ void matrix_print(dahl_matrix const* matrix)
 {
     const dahl_shape2d shape = matrix_get_shape(matrix);
 
-    // block ldy is equal to matrix ld
-	size_t ld = starpu_block_get_local_ldy(matrix->handle);
+	size_t ld = starpu_matrix_get_local_ld(matrix->handle);
 
 	starpu_data_acquire(matrix->handle, STARPU_R);
 
@@ -221,8 +217,7 @@ void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)
 {
     const dahl_shape2d shape = matrix_get_shape(matrix);
 
-    // block ldy is equal to matrix ld
-	size_t ld = starpu_block_get_local_ldy(matrix->handle);
+	size_t ld = starpu_matrix_get_local_ld(matrix->handle);
 
 	starpu_data_acquire(matrix->handle, STARPU_R);
 
@@ -243,7 +238,6 @@ void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)
 	starpu_data_release(matrix->handle);
 }
 
-// We don't have to free matrix->data because it should be managed by the user
 void matrix_finalize(dahl_matrix* matrix)
 {
     if (matrix->is_partitioned)

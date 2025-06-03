@@ -5,16 +5,11 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
 {
     starpu_data_handle_t handle = nullptr;
 
-    // Under the hood, dahl_vector is in fact a starpu_block with only 1 y and z dimensions
-    starpu_block_data_register(
+    starpu_vector_data_register(
         &handle,
         STARPU_MAIN_RAM,
         (uintptr_t)data,
-        len,   // TODO: is it the len?
-        len,   // TODO: is it the len?
-        len, // nx
-        1,   // ny
-        1,   // nz
+        len,
         sizeof(dahl_fp)
     );
 
@@ -50,7 +45,7 @@ dahl_vector* vector_init_random(size_t const len)
     return vector_init_from(len, data);
 }
 
-// Initialize a starpu block at 0 and return its handle
+// Initialize a starpu vector at 0 and return its handle
 dahl_vector* vector_init(size_t const len)
 {
     dahl_fp* data = malloc(len * sizeof(dahl_fp));
@@ -76,7 +71,7 @@ dahl_vector* vector_clone(dahl_vector const* vector)
 
 size_t vector_get_len(dahl_vector const *const vector)
 {
-    return starpu_block_get_nx(vector->handle);
+    return starpu_vector_get_nx(vector->handle);
 }
 
 dahl_fp* vector_data_acquire(dahl_vector const* vector)
@@ -157,7 +152,6 @@ void vector_finalize_without_data(dahl_vector* vector)
     free(vector);
 }
 
-// We don't have to free matrix->data because it should be managed by the user
 void vector_finalize(dahl_vector* vector)
 {
     if (vector->is_sub_matrix_data)

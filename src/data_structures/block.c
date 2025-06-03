@@ -192,7 +192,8 @@ void block_partition_along_z(dahl_block* block)
 
         block->sub_matrices[i].handle = sub_matrix_handle;
         block->sub_matrices[i].data = data;
-        block->sub_matrices[i].is_sub_block_data = false;
+        block->sub_matrices[i].is_sub_block_data = true;
+        block->sub_matrices[i].is_partitioned = false;
     }
 }
 

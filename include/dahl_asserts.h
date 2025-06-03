@@ -15,7 +15,6 @@ void assert_shape3d_equals(dahl_shape3d const a, dahl_shape3d const b,
                            char const* file, int const line,
                            char const* a_expr, char const* b_expr);
 
-
 void assert_fp_equals(dahl_fp const a, dahl_fp const b,
                           char const* file, int const line,
                           char const* a_expr, char const* b_expr);
