@@ -1,4 +1,5 @@
 #include "../include/dahl.h"
+#include "stdlib.h"
 #include <stdio.h>
 
 #define LEARNING_RATE 0.05F
@@ -88,12 +89,15 @@ int main(int argc, char **argv)
 
     dataset* set = load_mnist(argv[1], argv[2]);
 
-    dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
-
+    dahl_shape2d constexpr img_shape = { .x = 28, .y = 28 };
     size_t const num_channels = 2;
-    dahl_convolution* conv = convolution_init(input_shape, 6, num_channels);
-    dahl_pooling* pool = pooling_init(2, conv->output_shape);
-    dahl_dense* dense = dense_init(pool->output_shape, 10);
+    size_t const num_classes = 10;
+    size_t const filter_size = 6;
+    size_t const pool_size = 2;
+
+    dahl_convolution* conv = convolution_init(img_shape, filter_size, num_channels);
+    dahl_pooling* pool = pooling_init(pool_size, conv->output_shape);
+    dahl_dense* dense = dense_init(pool->output_shape, num_classes);
     
     train_network(set, conv, pool, dense);
 

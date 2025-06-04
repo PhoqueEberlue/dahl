@@ -32,7 +32,7 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {
-        dahl_matrix* sub_input = block_get_sub_matrix(input_data, i);
+        dahl_matrix const* sub_input = block_get_sub_matrix(input_data, i);
         dahl_matrix* sub_output = block_get_sub_matrix(output_data, i);
         dahl_matrix* sub_mask = block_get_sub_matrix(pool->mask, i);
 

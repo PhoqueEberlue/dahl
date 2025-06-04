@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
     dahl_init();
 
-    test_convolution();
+    test_layers();
     test_tasks();
     test_data();
 

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "../include/dahl.h"
 
-void test_convolution();
+void test_layers();
 void test_tasks();
 void test_data();
 

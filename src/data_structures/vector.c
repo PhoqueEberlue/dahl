@@ -134,7 +134,7 @@ void vector_print(dahl_vector const* vector)
 
     for(size_t x = 0; x < len; x++)
     {
-        printf("%e ", vector->data[x]);
+        printf("%f ", vector->data[x]);
     }
     printf("\n");
 
