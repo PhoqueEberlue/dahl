@@ -176,7 +176,7 @@ void test_matrix_sum_y_axis()
 
     dahl_vector* result_vector = task_matrix_sum_y_axis(a_matrix);
 
-    ASSERT_VECTOR_EQUALS(expect_vector, result_vector, false);
+    ASSERT_VECTOR_EQUALS(expect_vector, result_vector);
     matrix_finalize(a_matrix);
     vector_finalize(expect_vector);
     vector_finalize(result_vector);
