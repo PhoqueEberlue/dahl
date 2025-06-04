@@ -2,11 +2,12 @@
 #include <assert.h>
 #include <stdio.h>
 
-void assert_vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding,
+void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
+                          bool const rounding, u_int8_t const precision,
                           char const* file, int const line,
                           char const* a_expr, char const* b_expr)
 {
-    if (!vector_equals(a, b, rounding))
+    if (!vector_equals(a, b, rounding, precision))
     {
         printf("[DAHL][FAIL][%s:%d] Assert vector equals: %s != %s\n", file, line, a_expr, b_expr);
         printf("%s: ", a_expr);
@@ -17,11 +18,12 @@ void assert_vector_equals(dahl_vector const* a, dahl_vector const* b, bool const
     }
 }
 
-void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding,
+void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
+                          bool const rounding, u_int8_t const precision,
                           char const* file, int const line,
                           char const* a_expr, char const* b_expr)
 {
-    if (!matrix_equals(a, b, rounding))
+    if (!matrix_equals(a, b, rounding, precision))
     {
         printf("[DAHL][FAIL][%s:%d] Assert matrix equals: %s != %s\n", file, line, a_expr, b_expr);
         printf("%s: ", a_expr);
@@ -32,11 +34,12 @@ void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const
     }
 }
 
-void assert_block_equals(dahl_block const* a, dahl_block const* b, bool const rounding,
+void assert_block_equals(dahl_block const* a, dahl_block const* b,
+                          bool const rounding, u_int8_t const precision,
                           char const* file, int const line,
                           char const* a_expr, char const* b_expr)
 {
-    if (!block_equals(a, b, rounding))
+    if (!block_equals(a, b, rounding, precision))
     {
         printf("[DAHL][FAIL][%s:%d] Assert block equals: %s != %s\n", file, line, a_expr, b_expr);
         printf("%s: ", a_expr);

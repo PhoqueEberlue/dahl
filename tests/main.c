@@ -10,8 +10,8 @@ int main(int argc, char **argv)
 
     dahl_init();
 
-    // test_dahl_convolution();
-    // test_tasks();
+    test_convolution();
+    test_tasks();
     test_data();
 
     dahl_shutdown();

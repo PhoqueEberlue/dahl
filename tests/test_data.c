@@ -42,12 +42,12 @@ void test_block_partition_along_z()
     dahl_matrix* sub_matrix_0 = block_get_sub_matrix(block, 0);
     dahl_shape2d shape_0 = matrix_get_shape(sub_matrix_0);
     ASSERT_SHAPE2D_EQUALS(expect_shape, shape_0);
-    ASSERT_MATRIX_EQUALS(expect_matrix_0, sub_matrix_0, false);
+    ASSERT_MATRIX_EQUALS(expect_matrix_0, sub_matrix_0);
 
     dahl_matrix* sub_matrix_1 = block_get_sub_matrix(block, 1);
     dahl_shape2d shape_1 = matrix_get_shape(sub_matrix_1);
     ASSERT_SHAPE2D_EQUALS(expect_shape, shape_1);
-    ASSERT_MATRIX_EQUALS(expect_matrix_1, sub_matrix_1, false);
+    ASSERT_MATRIX_EQUALS(expect_matrix_1, sub_matrix_1);
 
     block_unpartition(block);
 
@@ -171,7 +171,7 @@ void test_block_add_padding()
 
     dahl_block* expect_block = block_init_from(padded_shape, (dahl_fp*)&expect);
 
-    ASSERT_BLOCK_EQUALS(expect_block, padded_block, false);
+    ASSERT_BLOCK_EQUALS(expect_block, padded_block);
 
     dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
     dahl_block* padded_block_2 = block_add_padding_init(block, padded_shape_2);
@@ -199,7 +199,7 @@ void test_block_add_padding()
 
     dahl_block* expect_block_2 = block_init_from(padded_shape_2, (dahl_fp*)&expect_2);
 
-    ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2, false);
+    ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
 }
 
 

@@ -2,7 +2,9 @@
 #include "../utils.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"
+#include "sys/types.h"
 #include <stdint.h>
+#include <stdio.h>
 
 // This function shouldn't be exposed in the header:
 // The data parameter is an array that should be allocated before calling the function
@@ -140,7 +142,7 @@ void block_data_release(dahl_block const* block)
     starpu_data_release(block->handle);
 }
 
-bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
+bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding, u_int8_t const precision)
 {
     dahl_shape3d shape_a = block_get_shape(a);
     dahl_shape3d shape_b = block_get_shape(b);
@@ -156,10 +158,21 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding)
 
     for (int i = 0; i < (shape_a.x * shape_a.y * shape_a.z); i++)
     {
-        if (a->data[i] != b->data[i])
+        if (rounding)
         {
-            res = false;
-            break;
+            if (fp_round(a->data[i], precision) != fp_round(b->data[i], precision))
+            {
+                res = false;
+                break;
+            }
+        }
+        else 
+        {
+            if (a->data[i] != b->data[i])
+            {
+                res = false;
+                break;
+            }
         }
     }
 
@@ -226,7 +239,7 @@ void block_print(dahl_block const* block)
 	{
 		for(size_t y = 0; y < shape.y; y++)
 		{
-            printf("%s", space_offset(shape.y - y - 1));
+            // printf("%s", space_offset(shape.y - y - 1));
 
 			for(size_t x = 0; x < shape.x; x++)
 			{

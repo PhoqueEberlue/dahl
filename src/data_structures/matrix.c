@@ -1,5 +1,7 @@
 #include "data_structures.h"
 #include "starpu_data_filters.h"
+#include "sys/types.h"
+#include <math.h>
 
 // See `block_init_from_ptr` for more information.
 dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
@@ -100,7 +102,7 @@ void matrix_data_release(dahl_matrix const* matrix)
     starpu_data_release(matrix->handle);
 }
 
-bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding)
+bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding, u_int8_t const precision)
 {
     dahl_shape2d const shape_a = matrix_get_shape(a);
     dahl_shape2d const shape_b = matrix_get_shape(b);
@@ -117,7 +119,7 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const roundi
     {
         if (rounding)
         {
-            if (round(a->data[i]) != round(b->data[i]))
+            if (fp_round(a->data[i], precision) != fp_round(b->data[i], precision))
             {
                 res = false;
                 break;

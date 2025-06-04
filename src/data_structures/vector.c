@@ -1,4 +1,5 @@
 #include "data_structures.h"
+#include <math.h>
 
 // See `block_init_from_ptr` for more information.
 dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
@@ -85,7 +86,7 @@ void vector_data_release(dahl_vector const* vector)
     starpu_data_release(vector->handle);
 }
 
-bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding)
+bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding, u_int8_t const precision)
 {
     size_t const len_a = vector_get_len(a);
     size_t const len_b = vector_get_len(b);
@@ -101,7 +102,7 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
     {
         if (rounding)
         {
-            if (round(a->data[i]) != round(b->data[i]))
+            if (fp_round(a->data[i], precision) != fp_round(b->data[i], precision))
             {
                 res = false;
                 break;
