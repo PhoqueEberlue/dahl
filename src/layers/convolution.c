@@ -1,7 +1,4 @@
 #include "../../include/dahl_convolution.h"
-
-// TODO: remove this import and integrate the starpu_wait into my API?
-#include <starpu.h>
 #include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
@@ -62,10 +59,9 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
     block_unpartition(output);
     block_unpartition(conv->filters);
 
+    TASK_ADD_SELF(output, conv->biases);
     TASK_RELU_SELF(output);
 
-    // TODO: Could be interesting to know if the relu task is really waiting for other tasks before starting?
-    // It should be the case because of the data dependency and because it is working but we may verify that
     return output;
 }
 
@@ -108,8 +104,6 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
         TASK_ADD_SELF(dl_dinput, tmp);
     }
 
-    starpu_task_wait_for_all();
-
     block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
     block_unpartition(dl_dfilters);
@@ -123,8 +117,6 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
 
     TASK_SUB_SELF(conv->filters, dl_dfilters);
     TASK_SUB_SELF(conv->biases, dl_dout);
-
-    starpu_task_wait_for_all();
 
     block_finalize(dl_dfilters);
 

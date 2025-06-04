@@ -5,10 +5,11 @@
 
 #include <starpu.h>
 
+// In case we want to fix the value for the tests
 #ifdef DAHL_TESTS_H
-#define DAHL_MAX_RANDOM_VALUES 10
+#define DAHL_MAX_RANDOM_VALUES 1
 #else
-#define DAHL_MAX_RANDOM_VALUES 4
+#define DAHL_MAX_RANDOM_VALUES 1
 #endif
 
 // Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
