@@ -26,4 +26,7 @@
 - Investigate on that: if I partition a starpu block, and send tasks with the sub blocks on the GPU, does StarPU copies the whole block on the GPU, or
   every single sub block one by one?
 
+- propagate precision passed in the asserts to the block/matirx/vector prints
+- make the partition function work with const data?? -> obviously lead to problems bc we need to create the views and change some values to toggle the partition boolean.
+
 - Hide starpu_wait_for_all into my API -> is this even needed though?
