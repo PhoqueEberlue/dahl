@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.1.1 Chrome/134.0.6998.205 Electron/35.3.0 Safari/537.36" version="26.1.1">
   <diagram name="Page-1" id="DBsuCK_kuaazY-CVKZba">
-    <mxGraphModel dx="2754" dy="2264" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2437" dy="2203" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -3353,7 +3353,7 @@
             <mxPoint x="44" y="-19" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="UhLKY6kFtHj8MyvYQrDF-51" target="S0F9j79lc6jPb9hruzFB-5">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="UhLKY6kFtHj8MyvYQrDF-51" target="S0F9j79lc6jPb9hruzFB-5" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="180" y="4600" as="targetPoint" />
           </mxGeometry>
@@ -3385,8 +3385,8 @@
         <mxCell id="UhLKY6kFtHj8MyvYQrDF-56" value="Foreach(Z)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
           <mxGeometry x="120" y="3600" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="UhLKY6kFtHj8MyvYQrDF-59" value="The weights are supposed to be a&amp;nbsp;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Matrix( ((n-fs+1)/pool_size) * ((m-fs+1)/pool_size) *c , n_classes),&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;however we need to parallelize the Matrix Vector product by the&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;channel dimension, so we can move C in Z axis. Then we will&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;sum the vectors into a single one to obtain the prediction.&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;Note that if we actually don&#39;t parallelize this step on multiple nodes,&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;it would be inefficient to perform the loop+the sum, and instead&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;we should do the matrix vector mult in one step. However it means&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;that the weights should be stored as a matrix and not a block.&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;So the parallelization scheme will influence the data types.&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="440" y="3630" width="330" height="150" as="geometry" />
+        <mxCell id="UhLKY6kFtHj8MyvYQrDF-59" value="The weights are supposed to be a&amp;nbsp;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Matrix( ((n-fs+1)/pool_size) * ((m-fs+1)/pool_size) *c , n_classes),&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;however we need to parallelize the Matrix Vector product by the&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;channel dimension, so we can move C in Z axis. Then we will&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;sum the vectors into a single one to obtain the prediction.&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;&lt;strike&gt;Note that if we actually don&#39;t parallelize this step on multiple nodes,&lt;/strike&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;&lt;strike&gt;it would be inefficient to perform the loop+the sum, and instead&lt;/strike&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;&lt;strike&gt;we should do the matrix vector mult in one step. However it means&lt;/strike&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;&lt;strike&gt;that the weights should be stored as a matrix and not a block.&lt;/strike&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;&lt;strike&gt;So the parallelization scheme will influence the data types.&lt;/strike&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;-&amp;gt; As long as it is parallelized on a thread/node it is valid to store it&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;as a block.&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="455" y="3640" width="380" height="200" as="geometry" />
         </mxCell>
         <mxCell id="UhLKY6kFtHj8MyvYQrDF-69" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="UhLKY6kFtHj8MyvYQrDF-65" target="UhLKY6kFtHj8MyvYQrDF-68" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -3421,7 +3421,7 @@
         <mxCell id="UhLKY6kFtHj8MyvYQrDF-73" value="Also I forgot to add bias in the convolution phase" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="-105" y="2110" width="102.5" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="UhLKY6kFtHj8MyvYQrDF-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="UhLKY6kFtHj8MyvYQrDF-74" edge="1" target="S0F9j79lc6jPb9hruzFB-7">
+        <mxCell id="UhLKY6kFtHj8MyvYQrDF-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="UhLKY6kFtHj8MyvYQrDF-74" target="S0F9j79lc6jPb9hruzFB-7" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="265" y="4560" as="targetPoint" />
           </mxGeometry>
@@ -3434,67 +3434,67 @@
         <mxCell id="UhLKY6kFtHj8MyvYQrDF-74" value="CrossEntropy&lt;div&gt;LossGradient&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
           <mxGeometry x="205" y="4440" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="UhLKY6kFtHj8MyvYQrDF-86" target="S0F9j79lc6jPb9hruzFB-1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="UhLKY6kFtHj8MyvYQrDF-86" target="S0F9j79lc6jPb9hruzFB-1" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="UhLKY6kFtHj8MyvYQrDF-86" value="My idea here would be to be able to parallelize my algorithm into&lt;div&gt;&quot;pipelines&quot; that could be assignated to given devices.&lt;/div&gt;&lt;div&gt;A device could receive multiple pipelines in order to balance the workload&lt;/div&gt;&lt;div&gt;and adjust the synchronization times.&lt;/div&gt;&lt;div&gt;Another way would be to play on the other parallelism dimensions such&lt;/div&gt;&lt;div&gt;as the Attribute dimension, as I will divide the required work to do in the&lt;/div&gt;&lt;div&gt;pipeline.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Note that this idea is also constrained to StarPU/Taskflow limitations: they need to take a STF for each node, so I can&#39;t have the software to optimize the whole distributed graph by itself.&amp;nbsp;&lt;/div&gt;&lt;div&gt;In theory StarPU can with MPI (but it does it in a on-line way, and do I have the hand on that?).&lt;/div&gt;&lt;div&gt;Also m&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;aybe take a look at Legion?&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="455" y="4400" width="395" height="210" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-1" value="Further talk concerning the pipelines.&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Actually it looks like the best thing to do,&lt;/span&gt;&lt;div&gt;and it has been done in the SOTA (Cannikin, GPipe, PipeDream), compared to task-based programming that is basically absent for AI.&lt;/div&gt;&lt;div&gt;However what&#39;s the point of using StarPU/Taskflow anymore?&lt;/div&gt;&lt;div&gt;Here, every loop is trivialy parallelizable, so there is actually no need for a STF representation. I could even use OpenMP in fact.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;And if the loops were not, it would mean that I have to manually check for data dependencies to estimate how much parallelism can occur in order to predict the runtime/energy. This basically means reimplementing the scheduling algorithms in StarPU/Taskflow, OR doing higher grains estimations that could be really bad.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Even if I want to do fault tolerance, I talked about how Taskflow is better because of in-graph computations compared to StarPU that has to wait and block everything else. But In my workload, there almost nothing that I can do &quot;in the back&quot; if I&#39;m already waiting for something coming from another machine. In any ways these fault tolerance checks will be performs at each synchronization steps.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Actually maybe this could be an advantage if multiple pipelines were running simultaneously on a single machine. Maybe one of the pipeline would have to sync and not the other? In this use case it works, and it means that the pipelines should be defined in the same task graph.&lt;/div&gt;&lt;div&gt;Nevertheless I don&#39;t see it being useful.&lt;/div&gt;&lt;div&gt;=&amp;gt; If there is no point in using STF in should replace my for loops with parallel notations. In fact I&#39;m getting closer to OpenMP and farther from TGCS&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-1" value="Further talk concerning the pipelines.&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Actually it looks like the best thing to do,&lt;/span&gt;&lt;div&gt;and it has been done in the SOTA (Cannikin, GPipe, PipeDream), compared to task-based programming that is basically absent for AI.&lt;/div&gt;&lt;div&gt;However what&#39;s the point of using StarPU/Taskflow anymore?&lt;/div&gt;&lt;div&gt;Here, every loop is trivialy parallelizable, so there is actually no need for a STF representation. I could even use OpenMP in fact.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;And if the loops were not, it would mean that I have to manually check for data dependencies to estimate how much parallelism can occur in order to predict the runtime/energy. This basically means reimplementing the scheduling algorithms in StarPU/Taskflow, OR doing higher grains estimations that could be really bad.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Even if I want to do fault tolerance, I talked about how Taskflow is better because of in-graph computations compared to StarPU that has to wait and block everything else. But In my workload, there almost nothing that I can do &quot;in the back&quot; if I&#39;m already waiting for something coming from another machine. In any ways these fault tolerance checks will be performs at each synchronization steps.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Actually maybe this could be an advantage if multiple pipelines were running simultaneously on a single machine. Maybe one of the pipeline would have to sync and not the other? In this use case it works, and it means that the pipelines should be defined in the same task graph.&lt;/div&gt;&lt;div&gt;Nevertheless I don&#39;t see it being useful.&lt;/div&gt;&lt;div&gt;=&amp;gt; If there is no point in using STF in should replace my for loops with parallel notations. In fact I&#39;m getting closer to OpenMP and farther from TGCS&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="437.5" y="4660" width="430" height="400" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-2" value="&lt;font style=&quot;font-size: 50px;&quot;&gt;Dense forward&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;rotation=-90;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-2" value="&lt;font style=&quot;font-size: 50px;&quot;&gt;Dense forward&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;rotation=-90;" parent="1" vertex="1">
           <mxGeometry x="-340" y="4820" width="525" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-3" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-3" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="-140" y="4560" as="sourcePoint" />
             <mxPoint x="420" y="4560" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="S0F9j79lc6jPb9hruzFB-5" target="S0F9j79lc6jPb9hruzFB-7">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="S0F9j79lc6jPb9hruzFB-5" target="S0F9j79lc6jPb9hruzFB-7" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-11" value="Matrix(n_classes,n_classes)&lt;div&gt;tmp&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="S0F9j79lc6jPb9hruzFB-8">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-11" value="Matrix(n_classes,n_classes)&lt;div&gt;tmp&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="S0F9j79lc6jPb9hruzFB-8" vertex="1" connectable="0">
           <mxGeometry x="-0.025" y="-3" relative="1" as="geometry">
             <mxPoint x="-77" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-5" value="SoftmaxDerivative" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-5" value="SoftmaxDerivative" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
           <mxGeometry x="120" y="4600" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="S0F9j79lc6jPb9hruzFB-7" target="S0F9j79lc6jPb9hruzFB-9">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="S0F9j79lc6jPb9hruzFB-7" target="S0F9j79lc6jPb9hruzFB-9" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-12" value="Vector(n_classes)&lt;div&gt;dl_dy&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="S0F9j79lc6jPb9hruzFB-10">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-12" value="Vector(n_classes)&lt;div&gt;dl_dy&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="S0F9j79lc6jPb9hruzFB-10" vertex="1" connectable="0">
           <mxGeometry x="-0.0667" y="-2" relative="1" as="geometry">
             <mxPoint x="-68" y="2" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-7" value="MatrixVectorProduct" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-7" value="MatrixVectorProduct" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
           <mxGeometry x="120" y="4720" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="S0F9j79lc6jPb9hruzFB-9">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="S0F9j79lc6jPb9hruzFB-9" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="180" y="4990" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-14" value="Matrix(1,n_classes)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="S0F9j79lc6jPb9hruzFB-13">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-14" value="Matrix(1,n_classes)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="S0F9j79lc6jPb9hruzFB-13" vertex="1" connectable="0">
           <mxGeometry x="-0.1868" y="2" relative="1" as="geometry">
             <mxPoint x="-62" y="2" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-9" value="ToColumnMatrix" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-9" value="ToColumnMatrix" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
           <mxGeometry x="120" y="4840" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-15" value="Actually we could keep using STF may be useful because of the heterogeneity on individual machines?&lt;div&gt;Because we can launch some computations on CPU/GPU?&lt;/div&gt;&lt;div&gt;=&amp;gt; need to dig on that&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-15" value="Actually we could keep using STF may be useful because of the heterogeneity on individual machines?&lt;div&gt;Because we can launch some computations on CPU/GPU?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;=&amp;gt; Yes STF is perfectly valid and its fine to do higher grain estimations during the off-line optimization. Implementing fault tolerance will help to temper that. Moreover it&#39;s not a big deal to have &quot;if&quot; out of the graph (i.e. not using taskflow) because the computation graph is mostly a pipeline. Even when doing CPU/GPU work. StarPU is perfectly fine for our problem&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="493.75" y="5080" width="317.5" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-18" value="&lt;div&gt;Why not online opt only?&lt;/div&gt;&lt;div&gt;Also another idea to answer the problem of the workload runtime estimation in a STF scenario is to do a fully on-line software that performs a micro benchmark on a few sample at the beginning of the learning. Then parallelize and distribute pipelines to given machines in order to achieve the best synchronization.&lt;/div&gt;&lt;div&gt;=&amp;gt; Task based with profilled data, requires that you already have access to the cluster though, and it leaves us less room to tell the user if training on multilpe machines isn&#39;t needed, because the program will be launched on every machine, then do online optimization.&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="S0F9j79lc6jPb9hruzFB-18" value="&lt;div&gt;Why not online opt only?&lt;/div&gt;&lt;div&gt;Also another idea to answer the problem of the workload runtime estimation in a STF scenario is to do a fully on-line software that performs a micro benchmark on a few sample at the beginning of the learning. Then parallelize and distribute pipelines to given machines in order to achieve the best synchronization.&lt;/div&gt;&lt;div&gt;=&amp;gt; Task based with profilled data, requires that you already have access to the cluster though, and it leaves us less room to tell the user if training on multilpe machines isn&#39;t needed, because the program will be launched on every machine, then do online optimization.&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="880" y="5060" width="278" height="210" as="geometry" />
         </mxCell>
-        <mxCell id="S0F9j79lc6jPb9hruzFB-19" value="Also I am forgetting a little bit to tackle network heterogeneity" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="507.5" y="5240" width="290" height="90" as="geometry" />
+        <mxCell id="S0F9j79lc6jPb9hruzFB-19" value="Also I am forgetting a little bit to tackle network heterogeneity" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="507.5" y="5270" width="290" height="90" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
