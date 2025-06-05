@@ -963,3 +963,15 @@ void matrix_transpose(void* buffers[2], void* cl_arg)
         }
     }
 }
+
+void matrix_resize(void* buffers[1], void* cl_arg)
+{
+    size_t new_nx;
+    size_t new_ny;
+    size_t new_ld;
+    starpu_codelet_unpack_args(cl_arg, &new_nx, &new_ny, &new_ld);
+
+    STARPU_MATRIX_SET_NX(buffers[0], new_nx);
+    STARPU_MATRIX_SET_NY(buffers[0], new_ny);
+    STARPU_MATRIX_SET_LD(buffers[0], new_ld);
+}

@@ -64,6 +64,12 @@ void task_matrix_add(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c)
 void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
 void task_matrix_sub_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
 void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp const min, dahl_fp const max);
+
+// Flatten a matrix and consider it as a row matrix
+void task_matrix_to_flat_row(dahl_matrix* mat);
+
+// Flatten a matrix and consider it as a column matrix
+void task_matrix_to_flat_col(dahl_matrix* mat);
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);

@@ -63,8 +63,12 @@ void block_data_release(dahl_block const* block);
 
 // Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
 // Exactly creates z sub matrices, so `block_get_sub_matrix_nb` should be equal to z.
-// Note the the block itself cannot be used as long as it is partitioned. TODO: I think?
+// Note the the block itself cannot be used as long as it is partitioned.
 void block_partition_along_z(dahl_block* block);
+
+// Same that `block_partition_along_z` but actually produces flattened vectors of the matrices on x,y.
+// Exactly creates z sub vectors, so `block_get_sub_vector_nb` should be equal to z.
+void block_partition_along_z_flat(dahl_block* block);
 
 // Unpartition a block
 void block_unpartition(dahl_block* block);
@@ -72,8 +76,12 @@ void block_unpartition(dahl_block* block);
 // Get the number of sub matrices
 size_t block_get_sub_matrix_nb(dahl_block const* block);
 
-// Get sub matrix at index
+// Get sub matrix at index. To be called after `block_partition_along_z`.
 dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index);
+
+size_t block_get_sub_vectors_nb(dahl_block const* block);
+// Get sub vector at index. To be called after `block_partition_along_z_flat`.
+dahl_vector* block_get_sub_vector(dahl_block const* block, const size_t index);
 
 // Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
 dahl_vector* block_to_vector(dahl_block* block);
@@ -150,10 +158,6 @@ void vector_data_release(dahl_vector const* vector);
 dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape);
 dahl_matrix* vector_to_column_matrix(dahl_vector* vector);
 dahl_matrix* vector_to_row_matrix(dahl_vector* vector);
-
-dahl_matrix* vector_as_matrix(dahl_vector const* vector, dahl_shape2d shape);
-dahl_matrix* vector_as_column_matrix(dahl_vector const* vector);
-dahl_matrix* vector_as_row_matrix(dahl_vector const* vector);
 
 // Converts a vector to a block
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape);

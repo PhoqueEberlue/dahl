@@ -19,8 +19,8 @@ typedef struct _dahl_vector
     starpu_data_handle_t handle;
     dahl_fp* data;
 
-    // Wether this vector is a sub matrix data
-    bool is_sub_matrix_data;
+    // Wether this vector is matrix (or block) sub data 
+    bool is_sub_data;
 } dahl_vector;
 
 typedef struct _dahl_matrix
@@ -31,15 +31,17 @@ typedef struct _dahl_matrix
     dahl_vector* sub_vectors;
     bool is_partitioned;
 
-    // Wether this matrix is a sub block data
-    bool is_sub_block_data;
+    // Wether this matrix is a block sub data
+    bool is_sub_data;
 } dahl_matrix;
 
 typedef struct _dahl_block
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
+
     dahl_matrix* sub_matrices;
+    dahl_vector* sub_vectors;
     bool is_partitioned;
 } dahl_block;
 

@@ -21,7 +21,7 @@ dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
     dahl_matrix* matrix = malloc(sizeof(dahl_matrix));
     matrix->handle = handle;
     matrix->data = data;
-    matrix->is_sub_block_data = false;
+    matrix->is_sub_data = false;
     matrix->is_partitioned = false;
     matrix->sub_vectors = nullptr;
 
@@ -165,7 +165,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 
         matrix->sub_vectors[i].handle = sub_vector_handle;
         matrix->sub_vectors[i].data = data;
-        matrix->sub_vectors[i].is_sub_matrix_data = true;
+        matrix->sub_vectors[i].is_sub_data = true;
     }
 }
 
@@ -249,7 +249,7 @@ void matrix_finalize(dahl_matrix* matrix)
         starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
     }
 
-    if (matrix->is_sub_block_data)
+    if (matrix->is_sub_data)
     {
         printf("ERROR: matrix_finalize() shouldn't be used on sub block data because it will be freed by block_unpartition().");
         abort();

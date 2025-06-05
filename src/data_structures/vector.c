@@ -17,7 +17,7 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
     dahl_vector* vector = malloc(sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
-    vector->is_sub_matrix_data = false;
+    vector->is_sub_data = false;
 
     return vector;
 }
@@ -143,7 +143,7 @@ void vector_print(dahl_vector const* vector)
 
 void vector_finalize_without_data(dahl_vector* vector)
 {
-    if (vector->is_sub_matrix_data)
+    if (vector->is_sub_data)
     {
         printf("ERROR: vector_finalize_without_data() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
         abort();
@@ -155,7 +155,7 @@ void vector_finalize_without_data(dahl_vector* vector)
 
 void vector_finalize(dahl_vector* vector)
 {
-    if (vector->is_sub_matrix_data)
+    if (vector->is_sub_data)
     {
         printf("ERROR: vector_finalize() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
         abort();
@@ -193,34 +193,6 @@ dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
     size_t len = vector_get_len(vector);
     dahl_shape2d new_shape = { .x = len, .y = 1 };
     return vector_to_matrix(vector, new_shape);
-}
-
-dahl_matrix* vector_as_matrix(dahl_vector const* vector, dahl_shape2d shape)
-{
-    size_t len = vector_get_len(vector);
-    dahl_fp* data = vector_data_acquire(vector);
-
-    assert(shape.x * shape.y == len);
-
-    dahl_matrix* res = matrix_init_from_ptr(shape, data);
-
-    vector_data_release(vector);
-
-    return res;
-}
-
-dahl_matrix* vector_as_column_matrix(dahl_vector const* vector)
-{
-    size_t len = vector_get_len(vector);
-    dahl_shape2d new_shape = { .x = 1, .y = len };
-    return vector_as_matrix(vector, new_shape);
-}
-
-dahl_matrix* vector_as_row_matrix(dahl_vector const* vector)
-{
-    size_t len = vector_get_len(vector);
-    dahl_shape2d new_shape = { .x = len, .y = 1 };
-    return vector_as_matrix(vector, new_shape);
 }
 
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)

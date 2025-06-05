@@ -85,6 +85,9 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 
 int main(int argc, char **argv)
 {
+    // Set the seed for reproducible results. Also it seems that StarPU might also set the seed somewhere,
+    // because it still works when removing this line.
+    srand(42);
     dahl_init();
 
     dataset* set = load_mnist(argv[1], argv[2]);

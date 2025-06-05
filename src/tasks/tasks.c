@@ -450,3 +450,35 @@ dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in)
 
     return out;
 }
+
+void task_matrix_resize(dahl_matrix* mat, size_t new_nx, size_t new_ny, size_t new_ld)
+{
+    // It is important that the matrix should be passed with write, because otherwise other tasks
+    // won't wait for the resize to occur.
+    int ret = starpu_task_insert(&cl_matrix_resize,
+                             STARPU_VALUE, &new_nx, sizeof(&new_nx),
+                             STARPU_VALUE, &new_ny, sizeof(&new_ny),
+                             STARPU_VALUE, &new_ld, sizeof(&new_ld),
+                             STARPU_W, mat->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_matrix_to_flat_row(dahl_matrix* mat)
+{
+    dahl_shape2d shape = matrix_get_shape(mat);
+    size_t new_nx = shape.x * shape.y;
+    size_t new_ny = 1;
+    size_t new_ld = new_nx;
+
+    task_matrix_resize(mat, new_nx, new_ny, new_ld);
+}
+
+void task_matrix_to_flat_col(dahl_matrix* mat)
+{
+    dahl_shape2d shape = matrix_get_shape(mat);
+    size_t new_nx = 1;
+    size_t new_ny = shape.x * shape.y;
+    size_t new_ld = 1;
+
+    task_matrix_resize(mat, new_nx, new_ny, new_ld);
+}

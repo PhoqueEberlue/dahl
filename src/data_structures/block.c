@@ -184,6 +184,9 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding,
 
 void block_partition_along_z(dahl_block* block)
 {
+    // The block shouldn't be already partitionned
+    assert(block->is_partitioned != true);
+
     dahl_shape3d const shape = block_get_shape(block);
 
     struct starpu_data_filter f =
@@ -207,22 +210,145 @@ void block_partition_along_z(dahl_block* block)
 
         block->sub_matrices[i].handle = sub_matrix_handle;
         block->sub_matrices[i].data = data;
-        block->sub_matrices[i].is_sub_block_data = true;
+        block->sub_matrices[i].is_sub_data = true;
         block->sub_matrices[i].is_partitioned = false;
+    }
+}
+
+// Custom filter
+static void starpu_block_filter_pick_matrix_z_as_flat_vector(
+    void* parent_interface, void* child_interface, 
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter* f,
+    unsigned id, unsigned nparts)
+{
+	struct starpu_block_interface* block_parent = (struct starpu_block_interface *) parent_interface;
+	struct starpu_vector_interface* vector_child = (struct starpu_vector_interface *) child_interface;
+
+	unsigned blocksize;
+
+	size_t nx = block_parent->nx;
+	size_t ny = block_parent->ny;
+	size_t nz = block_parent->nz;
+	
+    blocksize = block_parent->ldz;
+
+	size_t elemsize = block_parent->elemsize;
+
+	size_t chunk_pos = (size_t)f->filter_arg_ptr;
+
+	STARPU_ASSERT_MSG(nparts <= nz, "cannot get %u vectors", nparts);
+	STARPU_ASSERT_MSG((chunk_pos + id) < nz, "the chosen vector should be in the block");
+
+	size_t offset = (chunk_pos + id) * blocksize * elemsize;
+
+	STARPU_ASSERT_MSG(block_parent->id == STARPU_BLOCK_INTERFACE_ID, "%s can only be applied on a block data", __func__);
+	vector_child->id = STARPU_VECTOR_INTERFACE_ID;
+
+    vector_child->nx = nx*ny;
+
+	vector_child->elemsize = elemsize;
+	vector_child->allocsize = vector_child->nx * elemsize;
+
+	if (block_parent->dev_handle)
+	{
+		if (block_parent->ptr)
+			vector_child->ptr = block_parent->ptr + offset;
+		
+		vector_child->dev_handle = block_parent->dev_handle;
+		vector_child->offset = block_parent->offset + offset;
+	}
+}
+
+struct starpu_data_interface_ops *starpu_block_filter_pick_vector_child_ops(
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter *f, STARPU_ATTRIBUTE_UNUSED unsigned child)
+{
+	return &starpu_interface_vector_ops;
+}
+
+void block_partition_along_z_flat(dahl_block* block)
+{
+    // The block shouldn't be already partitionned
+    assert(block->is_partitioned != true);
+
+    dahl_shape3d const shape = block_get_shape(block);
+
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_block_filter_pick_matrix_z_as_flat_vector,
+		.nchildren = shape.z,
+		.get_child_ops = starpu_block_filter_pick_vector_child_ops
+	};
+
+	starpu_data_partition(block->handle, &f);
+    
+    block->is_partitioned = true;
+    block->sub_vectors = malloc(shape.z * sizeof(dahl_vector));
+
+    for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
+    {
+		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(block->handle, 1, i);
+
+        //TODO: Check if the pointer is always valid?
+        dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
+
+        block->sub_vectors[i].handle = sub_vector_handle;
+        block->sub_vectors[i].data = data;
+        block->sub_vectors[i].is_sub_data = true;
     }
 }
 
 void block_unpartition(dahl_block* block)
 {
+    assert(block->is_partitioned);
+
     starpu_data_unpartition(block->handle, STARPU_MAIN_RAM);
-    free(block->sub_matrices);
-    block->sub_matrices = nullptr;
+
+    // Only one of sub_matrices or sub_vectors should be defined
+    if (block->sub_matrices != nullptr)
+    {
+        free(block->sub_matrices);
+        block->sub_matrices = nullptr;
+    }
+    else if (block->sub_vectors != nullptr)
+    {
+        free(block->sub_vectors);
+        block->sub_vectors = nullptr;
+    }
+    else 
+    {
+        printf("ERROR: Neither sub_matrices or sub_vectors were defined, this is weird");
+        abort();
+    }
+
     block->is_partitioned = false;
 }
 
 size_t block_get_sub_matrix_nb(dahl_block const* block)
 {
     return starpu_data_get_nb_children(block->handle);
+}
+
+dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
+{
+    assert(block->is_partitioned 
+        && block->sub_matrices != nullptr 
+        && index < starpu_data_get_nb_children(block->handle));
+
+    return &block->sub_matrices[index];
+}
+
+size_t block_get_sub_vectors_nb(dahl_block const* block)
+{
+    return starpu_data_get_nb_children(block->handle);
+}
+
+dahl_vector* block_get_sub_vector(dahl_block const* block, const size_t index)
+{
+    assert(block->is_partitioned 
+        && block->sub_vectors != nullptr 
+        && index < starpu_data_get_nb_children(block->handle));
+
+    return &block->sub_vectors[index];
 }
 
 void block_print(dahl_block const* block)
@@ -267,15 +393,6 @@ void block_finalize_without_data(dahl_block* block)
     assert(!block->is_partitioned);
     starpu_data_unregister(block->handle);
     free(block);
-}
-
-dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
-{
-    assert(block->is_partitioned 
-        && block->sub_matrices != nullptr 
-        && index < starpu_data_get_nb_children(block->handle));
-
-    return &block->sub_matrices[index];
 }
 
 dahl_vector* block_to_vector(dahl_block* block)
