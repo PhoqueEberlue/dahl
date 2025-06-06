@@ -26,7 +26,7 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 
     dahl_matrix* tmp = matrix_init(tmp_shape);
 
-    block_partition_along_z(input_data);
+    block_partition_along_z_flat(input_data);
     block_partition_along_z(dense->weights);
     matrix_partition_along_y(tmp);
 
@@ -34,9 +34,7 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 
     for (size_t i = 0; i < n_channels; i++)
     {
-        dahl_matrix const* sub_input = block_get_sub_matrix(input_data, i);
-        dahl_vector const* sub_input_flatten = matrix_as_vector(sub_input);
-
+        dahl_vector const* sub_input_flatten = block_get_sub_vector(input_data, i);
         dahl_matrix const* sub_weights = block_get_sub_matrix(dense->weights, i);
         dahl_vector* sub_tmp = matrix_get_sub_vector(tmp, i);
 
