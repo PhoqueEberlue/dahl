@@ -14,6 +14,9 @@
 - cmake if macos ignore cuda
 - Investigate on that: if I partition a starpu block, and send tasks with the sub blocks on the GPU, does StarPU copies the whole block on the GPU, or
   every single sub block one by one?
+- My API let the opportunity to acquire a data multiple times which leads to deadlocks and could be hard to debug,
+  maybe we should hide the data acquire and instead give accessor to fill the data. See [hiding-acquire-release](./design-talk/topics/hiding-acquire-release.md)
+- the padding function is very unefficient
 
 ## Questionable
 
