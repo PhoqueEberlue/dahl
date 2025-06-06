@@ -67,8 +67,9 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
 
 dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
 {
-    // derivative loss
-    dahl_matrix* dl_dinput = matrix_init(conv->input_shape);
+    dahl_shape3d tmp_shape = { .x = conv->input_shape.x, .y = conv->input_shape.y, .z = conv->num_filters };
+    dahl_block* dl_dinput_tmp = block_init(tmp_shape);
+
     dahl_block* dl_dfilters = block_init(conv->filter_shape);
 
     // Here we need padding on dl_dout
@@ -82,6 +83,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
     block_partition_along_z(dl_dout);
     block_partition_along_z(dl_dfilters);
     block_partition_along_z(conv->filters);
+    block_partition_along_z(dl_dinput_tmp);
 
     // Every block should have the same number of sub matrices
     size_t sub_matrix_nb = block_get_sub_matrix_nb(conv->filters);
@@ -96,18 +98,20 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
         // Next lines
         // dL_dinput += correlate2d(dL_dout[i],self.filters[i], mode="full")
         dahl_matrix const* sub_filters = block_get_sub_matrix(conv->filters, i);
-        dahl_matrix* tmp = matrix_init(conv->input_shape);
-
         dahl_matrix const* sub_dl_dout_padded = block_get_sub_matrix(dl_dout_padded, i);
+        dahl_matrix* sub_dl_dinput_tmp = block_get_sub_matrix(dl_dinput_tmp, i);
 
-        task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, tmp);
-        TASK_ADD_SELF(dl_dinput, tmp);
+        task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, sub_dl_dinput_tmp);
     }
 
     block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
     block_unpartition(dl_dfilters);
     block_unpartition(conv->filters);
+    block_unpartition(dl_dinput_tmp);
+
+    // Sum the temporary results that were computed just before
+    dahl_matrix* dl_dinput = task_block_sum_z_axis(dl_dinput_tmp);
 
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
@@ -119,6 +123,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
     TASK_SUB_SELF(conv->biases, dl_dout);
 
     block_finalize(dl_dfilters);
+    block_finalize(dl_dinput_tmp);
 
     return dl_dinput;
 }
