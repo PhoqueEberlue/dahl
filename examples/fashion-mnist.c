@@ -7,10 +7,10 @@
 
 bool check_prediction(dahl_vector const* predictions, dahl_vector const* targets)
 {
+    size_t num_classes = vector_get_len(predictions);
+
     dahl_fp* pred_data = vector_data_acquire(predictions);
     dahl_fp* targ_data = vector_data_acquire(targets);
-
-    size_t num_classes = vector_get_len(predictions);
 
     dahl_fp max_val = 0.0F;
     size_t max_index = 0;

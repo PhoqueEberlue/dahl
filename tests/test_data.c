@@ -202,6 +202,26 @@ void test_block_add_padding()
     ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
 }
 
+void test_matrix_get_shape()
+{
+    dahl_fp data[3][4] = {
+        { 3.0F, 1.0F,-8.0F,-3.0F },
+        {-7.0F,-3.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    };
+
+    dahl_shape2d shape = { .x = 4, .y = 3 };
+
+    dahl_matrix* matrix = matrix_init_from(shape, (dahl_fp*)&data);
+
+    task_matrix_to_flat_col(matrix);
+
+    dahl_shape2d expect_shape = { .x = 1, .y = 12 };
+
+    dahl_shape2d res_shape = matrix_get_shape(matrix);
+
+    ASSERT_SHAPE2D_EQUALS(expect_shape, res_shape);
+}
 
 void test_data()
 {
@@ -209,4 +229,5 @@ void test_data()
     test_matrix_partition_along_y();
     test_block_to_vector();
     test_block_add_padding();
+    test_matrix_get_shape();
 }

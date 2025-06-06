@@ -61,7 +61,7 @@ dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix c
     return c;
 }
 
-void task_block_relu(const dahl_block *in, dahl_block *out)
+void task_block_relu(dahl_block const* in, dahl_block *out)
 {
     int ret = starpu_task_insert(&cl_block_relu,
                                  STARPU_R, in->handle, 
@@ -69,7 +69,7 @@ void task_block_relu(const dahl_block *in, dahl_block *out)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_matrix_relu(const dahl_matrix *in, dahl_matrix *out)
+void task_matrix_relu(dahl_matrix const* in, dahl_matrix *out)
 {
     int ret = starpu_task_insert(&cl_matrix_relu,
                                  STARPU_R, in->handle, 
@@ -77,7 +77,7 @@ void task_matrix_relu(const dahl_matrix *in, dahl_matrix *out)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
 
-void task_vector_relu(const dahl_vector *in, dahl_vector *out)
+void task_vector_relu(dahl_vector const* in, dahl_vector *out)
 {
     int ret = starpu_task_insert(&cl_vector_relu,
                                  STARPU_R, in->handle, 

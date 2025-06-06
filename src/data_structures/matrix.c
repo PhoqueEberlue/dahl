@@ -73,19 +73,21 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
 
 dahl_matrix* matrix_clone(dahl_matrix const* matrix)
 {
-    dahl_fp* data = matrix_data_acquire(matrix);
     dahl_shape2d shape = matrix_get_shape(matrix);
 
+    dahl_fp* data = matrix_data_acquire(matrix);
     dahl_matrix* res = matrix_init_from(shape, data);
-    matrix_data_release((dahl_matrix*)matrix);
+    matrix_data_release(matrix);
 
     return res;
 }
 
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
 {
+    starpu_data_acquire(matrix->handle, STARPU_R);
     size_t nx = starpu_matrix_get_nx(matrix->handle);
     size_t ny = starpu_matrix_get_ny(matrix->handle);
+    starpu_data_release(matrix->handle);
     
     dahl_shape2d res = { .x = nx, .y = ny };
     return res;
@@ -262,8 +264,9 @@ void matrix_finalize(dahl_matrix* matrix)
 
 dahl_vector* matrix_as_vector(dahl_matrix const* matrix)
 {
-    dahl_fp* data = matrix_data_acquire(matrix);
     dahl_shape2d shape = matrix_get_shape(matrix);
+
+    dahl_fp* data = matrix_data_acquire(matrix);
 
     dahl_vector* res = vector_init_from_ptr(shape.x * shape.y, data);
 

@@ -508,6 +508,7 @@ void test_dense()
     dahl_matrix const* expect_weights = matrix_init_from(expect_weighs_shape, (dahl_fp*)&expect_dense_weights);
     dahl_vector const* expect_biases = vector_init_from(num_classes, (dahl_fp*)&expect_dense_biases);
 
+    // TODO
     // ASSERT_SHAPE2D_EQUALS(expect_weighs_shape, matrix_get_shape(dense->weights));
     // ASSERT_MATRIX_EQUALS_ROUND(expect_weights, dense->weights, 6);
 

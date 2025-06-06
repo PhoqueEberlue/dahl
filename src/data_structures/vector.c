@@ -1,4 +1,5 @@
 #include "data_structures.h"
+#include "starpu_data.h"
 #include <math.h>
 
 // See `block_init_from_ptr` for more information.
@@ -61,18 +62,21 @@ dahl_vector* vector_init(size_t const len)
 
 dahl_vector* vector_clone(dahl_vector const* vector)
 {
-    dahl_fp* data = vector_data_acquire(vector);
     size_t shape = vector_get_len(vector);
 
-    dahl_vector* res = vector_init_from(shape, data);
-    vector_data_release((dahl_vector*)vector);
+    starpu_data_acquire(vector->handle, STARPU_R);
+    dahl_vector* res = vector_init_from(shape, vector->data);
+    starpu_data_release(vector->handle);
 
     return res;
 }
 
 size_t vector_get_len(dahl_vector const *const vector)
 {
-    return starpu_vector_get_nx(vector->handle);
+    starpu_data_acquire(vector->handle, STARPU_R);
+    size_t nx = starpu_vector_get_nx(vector->handle);
+    starpu_data_release(vector->handle);
+    return nx;
 }
 
 dahl_fp* vector_data_acquire(dahl_vector const* vector)
@@ -169,13 +173,14 @@ void vector_finalize(dahl_vector* vector)
 dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape)
 {
     size_t len = vector_get_len(vector);
-    dahl_fp* data = vector_data_acquire(vector);
+
+    starpu_data_acquire(vector->handle, STARPU_R);
 
     assert(shape.x * shape.y == len);
 
-    dahl_matrix* res = matrix_init_from_ptr(shape, data);
+    dahl_matrix* res = matrix_init_from_ptr(shape, vector->data);
 
-    vector_data_release(vector);
+    starpu_data_release(vector->handle);
     vector_finalize_without_data(vector);
 
     return res;
@@ -198,13 +203,13 @@ dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 {
     size_t len = vector_get_len(vector);
-    dahl_fp* data = vector_data_acquire(vector);
+    starpu_data_acquire(vector->handle, STARPU_R);
 
     assert(shape.x * shape.y * shape.z == len);
 
-    dahl_block* res = block_init_from_ptr(shape, data);
+    dahl_block* res = block_init_from_ptr(shape, vector->data);
 
-    vector_data_release(vector);
+    starpu_data_release(vector->handle);
     vector_finalize_without_data(vector);
 
     return res;
@@ -213,22 +218,23 @@ dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 // TODO: why wouldn't it be a codelet?
 dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes)
 {
-    dahl_fp* vec = vector_data_acquire(vector);
     size_t len = vector_get_len(vector);
 
-    dahl_shape2d shape = { .x = num_classes, .y = len };
-    dahl_matrix* res = matrix_init(shape);
+    starpu_data_acquire(vector->handle, STARPU_R);
 
-    dahl_fp* mat = matrix_data_acquire(res);
+    dahl_shape2d shape = { .x = num_classes, .y = len };
+    dahl_matrix* matrix = matrix_init(shape);
+
+    starpu_data_acquire(matrix->handle, STARPU_W);
 
     for (size_t i = 0; i < len; i++)
     {
-        size_t class = (size_t)vec[i];
-        mat[(i * num_classes) + class] = 1;
+        size_t class = (size_t)vector->data[i];
+        matrix->data[(i * num_classes) + class] = 1;
     }
 
-    vector_data_release(vector);
-    matrix_data_release(res);
+    starpu_data_release(vector->handle);
+    starpu_data_release(matrix->handle);
 
-    return res;
+    return matrix;
 }

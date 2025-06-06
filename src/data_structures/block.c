@@ -1,5 +1,6 @@
 #include "data_structures.h"
 #include "../utils.h"
+#include "starpu_data.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"
 #include "sys/types.h"
@@ -75,9 +76,9 @@ dahl_block* block_init(dahl_shape3d const shape)
 
 dahl_block* block_clone(dahl_block const* block)
 {
-    dahl_fp* data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
 
+    dahl_fp* data = block_data_acquire(block);
     dahl_block* res = block_init_from(shape, data);
     block_data_release(block);
 
@@ -86,8 +87,10 @@ dahl_block* block_clone(dahl_block const* block)
 
 dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
 {
-    dahl_fp* old_data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
+
+    starpu_data_acquire(block->handle, STARPU_R);
+    dahl_fp* data = block->data;
 
     assert(new_shape.x >= shape.x && new_shape.y >= shape.y && new_shape.z >= shape.z);
 
@@ -96,7 +99,8 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
     size_t diff_x = (new_shape.x - shape.x) / 2;
 
     dahl_block* res = block_init(new_shape);
-    dahl_fp* data = block_data_acquire(res);
+    starpu_data_acquire(res->handle, STARPU_W);
+    dahl_fp* res_data = res->data;
 
     for (size_t z = 0; z < shape.z; z++)
     {
@@ -104,29 +108,28 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
         {
             for (size_t x = 0; x < shape.x; x++)
             {
-                dahl_fp old_value = old_data[(z * shape.x * shape.y) + (y * shape.x) + x];
+                dahl_fp value = data[(z * shape.x * shape.y) + (y * shape.x) + x];
                 // FIX PLEASE JUST DO AN ACCESSOR FUNCTION WITH X, Y, Z AS PARAMETERS SO WE CAN IGNORE LD
-                data[((z + diff_z) * new_shape.x * new_shape.y) + ((y + diff_y) * new_shape.x) + (x + diff_x)] = old_value;
+                res_data[((z + diff_z) * new_shape.x * new_shape.y) + ((y + diff_y) * new_shape.x) + (x + diff_x)] = value;
             }
         }
 
     }
 
-    block_data_release(block);
-    block_data_release(res);
+    starpu_data_release(block->handle);
+    starpu_data_release(res->handle);
 
     return res;
 }
 
 dahl_shape3d block_get_shape(dahl_block const* block)
 {
-    // TODO: do I need to acquire data? maybe it updates the field, not so sure though because I would have to call the resize functions
-    // So I think its fine like this.
-    starpu_data_handle_t handle = block->handle;
-    size_t nx = starpu_block_get_nx(handle);
-	size_t ny = starpu_block_get_ny(handle);
-	size_t nz = starpu_block_get_nz(handle);
+    starpu_data_acquire(block->handle, STARPU_R);
+    size_t nx = starpu_block_get_nx(block->handle);
+	size_t ny = starpu_block_get_ny(block->handle);
+	size_t nz = starpu_block_get_nz(block->handle);
     dahl_shape3d res = { .x = nx, .y = ny, .z = nz };
+    starpu_data_release(block->handle);
 
     return res;
 }
@@ -397,12 +400,12 @@ void block_finalize_without_data(dahl_block* block)
 
 dahl_vector* block_to_vector(dahl_block* block)
 {
-    dahl_fp* data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
 
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
+    starpu_data_acquire(block->handle, STARPU_R);
+    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, block->data);
+    starpu_data_release(block->handle);
 
-    block_data_release(block);
     block_finalize_without_data(block);
 
     return res;
@@ -410,12 +413,11 @@ dahl_vector* block_to_vector(dahl_block* block)
 
 dahl_vector* block_as_vector(dahl_block const* block)
 {
-    dahl_fp* data = block_data_acquire(block);
     dahl_shape3d shape = block_get_shape(block);
 
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, data);
-
-    block_data_release(block);
+    starpu_data_acquire(block->handle, STARPU_R);
+    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, block->data);
+    starpu_data_release(block->handle);
 
     return res;
 }
