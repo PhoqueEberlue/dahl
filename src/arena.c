@@ -1,4 +1,4 @@
-#include "../include/dahl_arena.h"
+#include "arena.h"
 
 #include <assert.h>
 #include <malloc.h>
@@ -12,9 +12,10 @@ dahl_arena* arena_new(size_t const size)
     res->buffer_size = size;
     res->buffer_offset = 0;
 
-    res->handles = (starpu_data_handle_t*)malloc(10000);
-    res->handles_size = 10000;
-    res->handles_offset = 0;
+    // Here its the maximum number of dahl_any, i.e. number of dahl data objects
+    res->anys = malloc(10000 * sizeof(dahl_any));
+    res->anys_capacity = 10000;
+    res->anys_offset = 0;
 
     return res;
 }
@@ -29,12 +30,12 @@ void* arena_put(dahl_arena* arena, size_t size)
     return res;
 }
 
-void arena_add_handle(dahl_arena* arena, starpu_data_handle_t handle)
+void arena_attach_data(dahl_arena* arena, dahl_any any)
 {
-    assert(arena->handles_offset + sizeof(starpu_data_handle_t) < arena->handles_size);
+    assert(arena->anys_number < arena->anys_capacity);
 
-    arena->handles[arena->handles_offset] = handle;
-    arena->buffer_offset += sizeof(starpu_data_handle_t);
+    arena->anys[arena->anys_number] = any;
+    arena->anys_number++;
 }
 
 void arena_reset(dahl_arena* arena)
