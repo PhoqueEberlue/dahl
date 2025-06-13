@@ -2,7 +2,6 @@
 #define DAHL_DATA_H
 
 #include "dahl_types.h"
-#include "dahl_arena.h"
 
 typedef struct _dahl_vector dahl_vector;
 typedef struct _dahl_matrix dahl_matrix;
