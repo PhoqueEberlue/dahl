@@ -28,8 +28,6 @@ This project can be built with Nix
 
 [Download Nix on whatever OS](https://nixos.org/download/#multi-user-installation-recommended)
 
-[Join the sect of the holy NixOS](https://nixos.org/download/#graphical-iso-image)
-
 Enter the development environment
 ```shell
 nix develop
@@ -63,3 +61,7 @@ Train the CNN
 ```shell
 ./example-mnist ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
 ```
+
+## Acknowledgements
+
+Thanks tsoding for the [Arena implementation](https://github.com/tsoding/arena).
