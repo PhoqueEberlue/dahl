@@ -3,11 +3,13 @@
 #include "sys/types.h"
 #include <math.h>
 
-// See `block_init_from_ptr` for more information.
-dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
+dahl_matrix* matrix_init(dahl_shape2d const shape)
 {
-    starpu_data_handle_t handle = nullptr;
+    size_t n_elems = shape.x * shape.y;
+    // Arena always returns 0 initialized data, no need to fill it
+    dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
 
+    starpu_data_handle_t handle = nullptr;
     starpu_matrix_data_register(
         &handle,
         STARPU_MAIN_RAM,
@@ -18,7 +20,9 @@ dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
         sizeof(dahl_fp)
     );
 
-    dahl_matrix* matrix = malloc(sizeof(dahl_matrix));
+    dahl_arena_attach_handle(handle);
+
+    dahl_matrix* matrix = dahl_arena_alloc(sizeof(dahl_matrix));
     matrix->handle = handle;
     matrix->data = data;
     matrix->is_sub_data = false;
@@ -30,45 +34,31 @@ dahl_matrix* matrix_init_from_ptr(dahl_shape2d const shape, dahl_fp* data)
 
 dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data)
 {
+    dahl_matrix* matrix = matrix_init(shape);
     size_t n_elems = shape.x * shape.y;
-    dahl_fp* data_copy = malloc(n_elems * sizeof(dahl_fp));
     
     // TODO: memcpy doesn't work, it's not a big deal but it would be nice to understand why
     // memcpy(data_copy, data, n_elems);
 
     for (int i = 0; i < n_elems; i++)
     {
-        data_copy[i] = data[i];
+        matrix->data[i] = data[i];
     }
 
-    return matrix_init_from_ptr(shape, data_copy);
+    return matrix;
 }
 
 dahl_matrix* matrix_init_random(dahl_shape2d const shape)
 {
+    dahl_matrix* matrix = matrix_init(shape);
     size_t n_elems = shape.x * shape.y;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
 
     for (int i = 0; i < n_elems; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
+        matrix->data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
     }
 
-    return matrix_init_from(shape, data);
-}
-
-// Initialize a starpu matrix at 0 and return its handle
-dahl_matrix* matrix_init(dahl_shape2d const shape)
-{
-    size_t n_elems = shape.x * shape.y;
-    dahl_fp* data = malloc(n_elems * sizeof(dahl_fp));
-
-    for (int i = 0; i < n_elems; i += 1)
-    {
-        data[i] = 0;
-    }
-
-    return matrix_init_from_ptr(shape, data);
+    return matrix;
 }
 
 dahl_matrix* matrix_clone(dahl_matrix const* matrix)
@@ -157,7 +147,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 	starpu_data_partition(matrix->handle, &f);
     
     matrix->is_partitioned = true;
-    matrix->sub_vectors = malloc(shape.y * sizeof(dahl_vector));
+    matrix->sub_vectors = dahl_arena_alloc(shape.y * sizeof(dahl_vector));
 
     for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
     {
@@ -174,7 +164,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 void matrix_unpartition(dahl_matrix* const matrix)
 {
     starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
-    free(matrix->sub_vectors);
+    // No need to free the subvectors, they are managed by the arena, however we can reset the pointer
     matrix->sub_vectors = nullptr;
     matrix->is_partitioned = false;
 }
@@ -243,32 +233,14 @@ void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)
 	starpu_data_release(matrix->handle);
 }
 
-void matrix_finalize(dahl_matrix* matrix)
-{
-    if (matrix->is_partitioned)
-    {
-        // Case where user forgot to unpartition data
-        starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
-    }
-
-    if (matrix->is_sub_data)
-    {
-        printf("ERROR: matrix_finalize() shouldn't be used on sub block data because it will be freed by block_unpartition().");
-        abort();
-    }
-
-    starpu_data_unregister(matrix->handle);
-    free(matrix->data);
-    free(matrix);
-}
-
 dahl_vector* matrix_as_vector(dahl_matrix const* matrix)
 {
     dahl_shape2d shape = matrix_get_shape(matrix);
 
     dahl_fp* data = matrix_data_acquire(matrix);
 
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y, data);
+    // TODO: here it performs a copy...
+    dahl_vector* res = vector_init_from(shape.x * shape.y, data);
 
     matrix_data_release(matrix);
     // Here it returns a "view", bc it points to the same data as the matrix, but the handle will treat it as a vector.

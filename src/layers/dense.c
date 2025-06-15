@@ -1,10 +1,19 @@
 #include "../../include/dahl_dense.h"
 #include "starpu_task.h"
 #include <stdlib.h>
+#include "../arena/arena.h"
 
-dahl_dense* dense_init(dahl_arena* arena, dahl_shape3d const input_shape, size_t const output_size)
+dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
 {
-    dahl_dense* dense = arena_put(arena, sizeof(dahl_dense));
+    // All the allocations in this function will be performed in the persistent arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = default_arena;
+
+    dahl_dense* dense = dahl_arena_alloc(sizeof(dahl_dense));
+
+    dahl_vector* output = vector_init(output_size);
+
+    dahl_block* dl_dinput = block_init(input_shape);
 
     *(dahl_shape3d*)&dense->input_shape = input_shape;
     *(size_t*)&dense->output_size = output_size;
@@ -13,12 +22,20 @@ dahl_dense* dense_init(dahl_arena* arena, dahl_shape3d const input_shape, size_t
 
     dense->weights =  block_init_random(weights_shape);
     dense->biases =  vector_init_random(output_size);
+    dense->output = output;
+    dense->dl_dinput = dl_dinput;
+
+    context_arena = save_arena;
 
     return dense;
 }
 
-dahl_vector* dense_forward(dahl_dense* dense, dahl_arena* arena, dahl_block* input_data)
+dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 {
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
+
     dense->input_data = input_data;
 
     // x: number of classes, y: number of channels
@@ -49,16 +66,20 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_arena* arena, dahl_block* inp
 
     TASK_ADD_SELF(out, dense->biases);
 
-    dense->output = task_vector_softmax_init(out);
+    task_vector_softmax(out, dense->output);
 
-    matrix_finalize(tmp);
-    vector_finalize(out);
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
 
     return dense->output;
 }
 
-dahl_block* dense_backward(dahl_dense* dense, dahl_arena* arena, dahl_vector const* dl_dout, dahl_fp const learning_rate)
+dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_fp const learning_rate)
 {
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
+
     dahl_matrix const* tmp = task_vector_softmax_derivative(dense->output);
 
     dahl_vector* dl_dy = task_matrix_vector_product_init(tmp, dl_dout);
@@ -70,16 +91,13 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_arena* arena, dahl_vector con
     dahl_shape3d dl_dw_shape = { .x = dense->input_shape.x * dense->input_shape.y, .y = dense->output_size, .z = dense->input_shape.z };
     dahl_block* dl_dw = block_init(dl_dw_shape);
 
-    // Backward return an output of the same shape of the forward input
-    dahl_block* output = block_init(dense->input_shape);
-
     block_partition_along_z(dense->input_data);
     block_partition_along_z(dense->weights);
     block_partition_along_z(dl_dw);
 
     // Here we partition the output into flat vectors, because the output is stored as multiple matrices,
     // however we need to perform the partial computation on flattened views of the matrices.
-    block_partition_along_z_flat(output);
+    block_partition_along_z_flat(dense->dl_dinput);
 
     size_t const n_channels = block_get_sub_matrix_nb(dense->input_data);
 
@@ -95,7 +113,7 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_arena* arena, dahl_vector con
         dahl_matrix* sub_weights = block_get_sub_matrix(dense->weights, i);
         dahl_matrix const* sub_weights_t = task_matrix_transpose_init(sub_weights);
 
-        dahl_vector* sub_output = block_get_sub_vector(output, i);
+        dahl_vector* sub_output = block_get_sub_vector(dense->dl_dinput, i);
         task_matrix_vector_product(sub_weights_t, dl_dy, sub_output);
 
         // Updating weights
@@ -106,11 +124,14 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_arena* arena, dahl_vector con
     block_unpartition(dense->input_data);
     block_unpartition(dense->weights);
     block_unpartition(dl_dw);
-    block_unpartition(output);
+    block_unpartition(dense->dl_dinput);
 
     // Updating biases
     TASK_SCAL_SELF(dl_dy, learning_rate);
     TASK_SUB_SELF(dense->biases, dl_dy);
 
-    return output;
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
+
+    return dense->dl_dinput;
 }

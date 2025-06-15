@@ -405,6 +405,9 @@ static constexpr dahl_fp expect_conv_biases[2][23][23] = {
 
 void test_convolution()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     // ----------- Forward -----------
     dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
     size_t const num_channels = 2;
@@ -442,10 +445,16 @@ void test_convolution()
 
     ASSERT_SHAPE3D_EQUALS(expect_shape, block_get_shape(conv->biases));
     ASSERT_BLOCK_EQUALS_ROUND(expect_biases, conv->biases, 6);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_pool()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     // ----------- Forward -----------
     dahl_shape3d constexpr input_shape = { .x = 23, .y = 23, .z = 2 };
     dahl_pooling* pool = pooling_init(2, input_shape);
@@ -475,10 +484,16 @@ void test_pool()
     ASSERT_BLOCK_EQUALS_ROUND(expect_backward, pool_backward_out, 6);
 
     // No weights/biases on this layer
+    
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_dense()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     // ----------- Forward -----------
     size_t const num_classes = 10;
     dahl_shape3d constexpr input_shape = { .x = 11, .y = 11, .z = 2 };
@@ -513,6 +528,9 @@ void test_dense()
     // ASSERT_MATRIX_EQUALS_ROUND(expect_weights, dense->weights, 6);
 
     ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 6);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 

@@ -7,6 +7,9 @@ void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
                                      dahl_fp* b, dahl_shape2d b_shape,
                                      dahl_fp* expect, dahl_shape2d expect_shape)
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_matrix* a_matrix = matrix_init_from(a_shape, a);
     dahl_matrix* b_matrix = matrix_init_from(b_shape, b);
     dahl_matrix* c_matrix = matrix_init(expect_shape);
@@ -16,14 +19,14 @@ void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
 
     ASSERT_MATRIX_EQUALS(expect_matrix, c_matrix);
 
-    matrix_finalize(a_matrix);
-    matrix_finalize(b_matrix);
-    matrix_finalize(c_matrix);
-    matrix_finalize(expect_matrix);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_matrix_cross_correlation_1()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
     dahl_shape2d a_shape = { .x = 5, .y = 5 };
     dahl_shape2d b_shape = { .x = 3, .y = 3 };
     dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
@@ -82,6 +85,9 @@ void test_matrix_cross_correlation_2()
 
 void test_relu()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
     dahl_shape3d expect_shape = a_shape;
 
@@ -117,14 +123,17 @@ void test_relu()
     TASK_RELU_SELF(a_block);
 
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
-    block_finalize(a_block);
-    block_finalize(expect_block);
 
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
     // TODO: add test for other types and task relu without self
 }
 
 void test_block_sum_z_axis()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
     dahl_shape2d expect_shape = { .x = 4, .y = 3 };
 
@@ -149,17 +158,20 @@ void test_block_sum_z_axis()
 
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_matrix* expect_matrix = matrix_init_from(expect_shape, (dahl_fp*)&expect);
-
-    dahl_matrix* result_matrix = task_block_sum_z_axis(a_block);
+    dahl_matrix* result_matrix = matrix_init(expect_shape);
+    task_block_sum_z_axis(a_block, result_matrix);
 
     ASSERT_MATRIX_EQUALS(expect_matrix, result_matrix);
-    block_finalize(a_block);
-    matrix_finalize(expect_matrix);
-    matrix_finalize(result_matrix);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_matrix_sum_y_axis()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape2d a_shape = { .x = 4, .y = 3 };
     size_t expect_len = 4;
 
@@ -177,13 +189,16 @@ void test_matrix_sum_y_axis()
     dahl_vector* result_vector = task_matrix_sum_y_axis(a_matrix);
 
     ASSERT_VECTOR_EQUALS(expect_vector, result_vector);
-    matrix_finalize(a_matrix);
-    vector_finalize(expect_vector);
-    vector_finalize(result_vector);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_scal()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
     dahl_shape3d expect_shape = a_shape;
 
@@ -219,12 +234,16 @@ void test_scal()
     TASK_SCAL_SELF(a_block, 2);
 
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
-    block_finalize(a_block);
-    block_finalize(expect_block);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_sub()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
     dahl_shape3d b_shape = a_shape;
     dahl_shape3d expect_shape = a_shape;
@@ -275,14 +294,15 @@ void test_sub()
     TASK_SUB_SELF(a_block, b_block);
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
 
-    block_finalize(a_block);
-    block_finalize(b_block);
-    block_finalize(result_block);
-    block_finalize(expect_block);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_add()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d a_shape = { .x = 2, .y = 2, .z = 2 };
     dahl_shape3d b_shape = a_shape;
     dahl_shape3d expect_shape = a_shape;
@@ -333,14 +353,15 @@ void test_add()
     TASK_ADD_SELF(a_block, b_block);
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
 
-    block_finalize(a_block);
-    block_finalize(b_block);
-    block_finalize(result_block);
-    block_finalize(expect_block);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_vector_softmax()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
     dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
@@ -365,15 +386,15 @@ void test_vector_softmax()
 
     ASSERT_VECTOR_EQUALS_ROUND(expect_vec_2, out, 6);
 
-    vector_finalize(in);
-    vector_finalize(out);
-    vector_finalize(expect_vec);
-    vector_finalize(in_2);
-    vector_finalize(expect_vec_2);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_vector_dot_product()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data_1[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
     dahl_vector* a = vector_init_from(len, (dahl_fp*)&data_1);
@@ -393,12 +414,15 @@ void test_vector_dot_product()
 
     ASSERT_FP_EQUALS(expect_2, result);
 
-    vector_finalize(a);
-    vector_finalize(b);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_vector_diag()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
     dahl_vector* a = vector_init_from(len, (dahl_fp*)&data);
@@ -422,13 +446,15 @@ void test_vector_diag()
 
     ASSERT_MATRIX_EQUALS(expect_matrix, result);
 
-    vector_finalize(a);
-    matrix_finalize(expect_matrix);
-    matrix_finalize(result);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_add_value()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
     dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
@@ -447,13 +473,15 @@ void test_add_value()
 
     ASSERT_VECTOR_EQUALS(expect_vec, in);
 
-    vector_finalize(in);
-    vector_finalize(out);
-    vector_finalize(expect_vec);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_sub_value()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
     dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
@@ -472,13 +500,15 @@ void test_sub_value()
 
     ASSERT_VECTOR_EQUALS(expect_vec, in);
 
-    vector_finalize(in);
-    vector_finalize(out);
-    vector_finalize(expect_vec);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_matrix_vector_product()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape2d constexpr mat_shape = { .x = 3, .y = 2 };
     dahl_fp mat[mat_shape.y][mat_shape.x] = {
         { 1.0F, -1.0F, 2.0F },
@@ -512,18 +542,15 @@ void test_matrix_vector_product()
 
     ASSERT_VECTOR_EQUALS(expect_vec_2, out_vec_2);
 
-    matrix_finalize(in_mat);
-    vector_finalize(in_vec);
-    vector_finalize(out_vec);
-    vector_finalize(expect_vec);
-    matrix_finalize(in_mat_t);
-    vector_finalize(in_vec_2);
-    vector_finalize(out_vec_2);
-    vector_finalize(expect_vec_2);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_clip()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
     dahl_vector* in = vector_init_from(len, (dahl_fp*)&data);
@@ -547,15 +574,15 @@ void test_clip()
 
     ASSERT_VECTOR_EQUALS(expect_vec_2, in_2);
 
-    vector_finalize(in);
-    vector_finalize(out);
-    vector_finalize(expect_vec);
-    vector_finalize(in_2);
-    vector_finalize(expect_vec_2);
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_vector_cross_entropy_loss()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr len = 10;
     dahl_fp pred[len] = { 
         1.69330994e-43F, 1.00000000e+00F, 1.46134680e-11F, 4.19037620e-45F, 2.11622997e-31F, 
@@ -571,10 +598,16 @@ void test_vector_cross_entropy_loss()
     dahl_fp res = task_vector_cross_entropy_loss(pred_vec, target_vec);
 
     ASSERT_FP_EQUALS(res, 1.6118095639272222996396521921269595623016357421875);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_matrix_matrix_product()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape2d constexpr a_shape = { .x = 3, .y = 2 };
     dahl_fp a[a_shape.y][a_shape.x] = {
         { 1.0F, -1.0F, 2.0F },
@@ -602,10 +635,16 @@ void test_matrix_matrix_product()
     task_matrix_matrix_product(a_vec, b_vec, c_vec);
 
     ASSERT_MATRIX_EQUALS(expect_vec, c_vec);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_vector_cross_entropy_loss_gradient()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     size_t constexpr num_classes = 10;
     dahl_fp targets[num_classes] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F };
     dahl_fp predictions[num_classes] = { 
@@ -622,6 +661,9 @@ void test_vector_cross_entropy_loss_gradient()
 
     // FIX: Only work with a precision of 2 digits, not more. Weird?
     ASSERT_VECTOR_EQUALS_ROUND(expect_vec, gradient, 2);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_sum()

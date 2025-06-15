@@ -1,4 +1,3 @@
-#include "../../include/dahl_arena.h"
 #include "data_structures.h"
 #include "../utils.h"
 #include "starpu_data.h"
@@ -8,12 +7,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
+dahl_block* block_init(dahl_shape3d const shape)
 {
-    // TODO: potentially pin the data
     size_t n_elems = shape.x * shape.y * shape.z;
     // Arena always returns 0 initialized data, no need to fill it
-    dahl_fp* data = arena_put(arena, n_elems * sizeof(dahl_fp));
+    dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
 
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
@@ -28,9 +26,9 @@ dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
         sizeof(dahl_fp)
     );
 
-    arena_add_handle(arena, handle);
+    dahl_arena_attach_handle(handle);
 
-    dahl_block* block = arena_put(arena, sizeof(dahl_block));
+    dahl_block* block = dahl_arena_alloc(sizeof(dahl_block));
     block->handle = handle;
     block->data = data;
     block->sub_matrices = nullptr;
@@ -39,9 +37,9 @@ dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
     return block;
 }
 
-dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
+dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
 {
-    dahl_block* block = block_init(arena, shape);
+    dahl_block* block = block_init(shape);
     size_t const n_elems = shape.x * shape.y * shape.z;
 
     for (int i = 0; i < n_elems; i++)
@@ -52,9 +50,9 @@ dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp
     return block;
 }
 
-dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
+dahl_block* block_init_random(dahl_shape3d const shape)
 {
-    dahl_block* block = block_init(arena, shape);
+    dahl_block* block = block_init(shape);
     size_t const n_elems = shape.x * shape.y * shape.z;
 
     for (int i = 0; i < n_elems; i += 1)
@@ -67,18 +65,18 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
     return block;
 }
 
-dahl_block* block_clone(dahl_arena* arena, dahl_block const* block)
+dahl_block* block_clone(dahl_block const* block)
 {
     dahl_shape3d shape = block_get_shape(block);
 
     dahl_fp* data = block_data_acquire(block);
-    dahl_block* res = block_init_from(arena, shape, data);
+    dahl_block* res = block_init_from(shape, data);
     block_data_release(block);
 
     return res;
 }
 
-dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape)
+dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
 {
     dahl_shape3d shape = block_get_shape(block);
 
@@ -91,7 +89,7 @@ dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, d
     size_t diff_y = (new_shape.y - shape.y) / 2;
     size_t diff_x = (new_shape.x - shape.x) / 2;
 
-    dahl_block* res = block_init(arena, new_shape);
+    dahl_block* res = block_init(new_shape);
     starpu_data_acquire(res->handle, STARPU_W);
     dahl_fp* res_data = res->data;
 
@@ -195,7 +193,7 @@ void block_partition_along_z(dahl_block* block)
 	starpu_data_partition(block->handle, &f);
     
     block->is_partitioned = true;
-    block->sub_matrices = malloc(shape.z * sizeof(dahl_matrix));
+    block->sub_matrices = dahl_arena_alloc(shape.z * sizeof(dahl_matrix));
 
     for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
     {
@@ -278,7 +276,7 @@ void block_partition_along_z_flat(dahl_block* block)
 	starpu_data_partition(block->handle, &f);
     
     block->is_partitioned = true;
-    block->sub_vectors = malloc(shape.z * sizeof(dahl_vector));
+    block->sub_vectors = dahl_arena_alloc(shape.z * sizeof(dahl_vector));
 
     for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
     {
@@ -302,12 +300,12 @@ void block_unpartition(dahl_block* block)
     // Only one of sub_matrices or sub_vectors should be defined
     if (block->sub_matrices != nullptr)
     {
-        free(block->sub_matrices);
+        // Will be freed by the arena
         block->sub_matrices = nullptr;
     }
     else if (block->sub_vectors != nullptr)
     {
-        free(block->sub_vectors);
+        // Will be freed by the arena
         block->sub_vectors = nullptr;
     }
     else 
@@ -376,30 +374,15 @@ void block_print(dahl_block const* block)
 	starpu_data_release(block->handle);
 }
 
-void block_finalize(dahl_block* block)
-{
-    assert(!block->is_partitioned);
-    starpu_data_unregister(block->handle);
-    free(block->data);
-    free(block);
-}
 
-void block_finalize_without_data(dahl_block* block)
-{
-    assert(!block->is_partitioned);
-    starpu_data_unregister(block->handle);
-    free(block);
-}
-
+// TODO: make it coherent with the new memory management setup
 dahl_vector* block_to_vector(dahl_block* block)
 {
     dahl_shape3d shape = block_get_shape(block);
 
     starpu_data_acquire(block->handle, STARPU_R);
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, block->data);
+    dahl_vector* res = vector_init_from(shape.x * shape.y * shape.z, block->data);
     starpu_data_release(block->handle);
-
-    block_finalize_without_data(block);
 
     return res;
 }
@@ -409,7 +392,7 @@ dahl_vector* block_as_vector(dahl_block const* block)
     dahl_shape3d shape = block_get_shape(block);
 
     starpu_data_acquire(block->handle, STARPU_R);
-    dahl_vector* res = vector_init_from_ptr(shape.x * shape.y * shape.z, block->data);
+    dahl_vector* res = vector_init_from(shape.x * shape.y * shape.z, block->data);
     starpu_data_release(block->handle);
 
     return res;

@@ -14,7 +14,7 @@
 
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
-dahl_matrix* task_block_sum_z_axis(dahl_block const* in);
+void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
 void task_block_relu(dahl_block const* in, dahl_block* out);
 void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp const factor);
 void task_block_sub(dahl_block const* a, dahl_block const* b, dahl_block* c);

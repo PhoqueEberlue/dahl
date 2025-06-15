@@ -1,15 +1,20 @@
 #include "../../include/dahl_convolution.h"
+#include "../arena/arena.h"
 #include <stdio.h>
 
-dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
+dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
+    // All the allocations in this function will be performed in the persistent arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = default_arena;
+
     dahl_shape3d filter_shape = {
         .x = filter_size,
         .y = filter_size,
         .z = num_filters,
     };
     
-    dahl_block* filters = block_init_random(arena, filter_shape);
+    dahl_block* filters = block_init_random(filter_shape);
 
     dahl_shape3d output_shape = {
         .x = input_shape.x - filter_size + 1,
@@ -17,9 +22,12 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape2d input_shape, 
         .z = num_filters,
     };
 
-    dahl_block* biases = block_init_random(arena, output_shape);
+    dahl_block* biases = block_init_random(output_shape);
 
-    dahl_convolution* conv = arena_put(arena, sizeof(dahl_convolution));
+    dahl_block* output = block_init(output_shape);
+    dahl_matrix* dl_dinput = matrix_init(input_shape);
+
+    dahl_convolution* conv = dahl_arena_alloc(sizeof(dahl_convolution));
 
     // Little trick to initialize const fields dynamically
     *(dahl_shape2d*)&conv->input_shape = input_shape;
@@ -29,20 +37,21 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape2d input_shape, 
     *(dahl_shape3d*)&conv->output_shape = output_shape;
     conv->filters = filters;
     conv->biases = biases;
+    conv->output = output;
+    conv->dl_dinput = dl_dinput;
+
+    context_arena = save_arena;
 
     return conv;
 }
 
-dahl_block* convolution_forward(dahl_convolution* conv, dahl_arena* arena, dahl_matrix const* input)
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input)
 {
-    // TODO: we may free data between each call of this function? (at each epoch?)
-    // so maybe store and free the output from the previous call here?
-    // or it should be freed in dahl_pooling_forward_pass which should be the last one to use it, 
-    // but it seems like a bad idea.
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
     
-    dahl_block* output = block_init(arena, conv->output_shape);
-
-    block_partition_along_z(output);
+    block_partition_along_z(conv->output);
     block_partition_along_z(conv->filters);
 
     // Every block should have the same number of sub matrices
@@ -50,35 +59,41 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_arena* arena, dahl_
 
     for (int i = 0; i < n_channels; i++)
     {
-        dahl_matrix* sub_output = block_get_sub_matrix(output, i);
+        dahl_matrix* sub_output = block_get_sub_matrix(conv->output, i);
         dahl_matrix* sub_filters = block_get_sub_matrix(conv->filters, i);
 
         task_matrix_cross_correlation(input, sub_filters, sub_output);
     }
     
-    block_unpartition(output);
+    block_unpartition(conv->output);
     block_unpartition(conv->filters);
 
-    TASK_ADD_SELF(output, conv->biases);
-    TASK_RELU_SELF(output);
-    // TODO: Forgot to add biases?
+    TASK_ADD_SELF(conv->output, conv->biases);
+    TASK_RELU_SELF(conv->output);
 
-    return output;
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
+
+    return conv->output;
 }
 
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_arena* arena, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
 {
-    dahl_shape3d tmp_shape = { .x = conv->input_shape.x, .y = conv->input_shape.y, .z = conv->num_filters };
-    dahl_block* dl_dinput_tmp = block_init(arena, tmp_shape);
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
 
-    dahl_block* dl_dfilters = block_init(arena, conv->filter_shape);
+    dahl_shape3d tmp_shape = { .x = conv->input_shape.x, .y = conv->input_shape.y, .z = conv->num_filters };
+    dahl_block* dl_dinput_tmp = block_init(tmp_shape);
+
+    dahl_block* dl_dfilters = block_init(conv->filter_shape);
 
     // Here we need padding on dl_dout
     size_t padding = (conv->filter_size - 1) * 2;
     dahl_shape3d padding_shape = block_get_shape(dl_dout);
     padding_shape.x += padding;
     padding_shape.y += padding;
-    dahl_block* dl_dout_padded = block_add_padding_init(arena, dl_dout, padding_shape);
+    dahl_block* dl_dout_padded = block_add_padding_init(dl_dout, padding_shape);
 
     block_partition_along_z(dl_dout_padded);
     block_partition_along_z(dl_dout);
@@ -112,7 +127,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_arena* arena, dah
     block_unpartition(dl_dinput_tmp);
 
     // Sum the temporary results that were computed just before
-    dahl_matrix* dl_dinput = task_block_sum_z_axis(dl_dinput_tmp);
+    task_block_sum_z_axis(dl_dinput_tmp, conv->dl_dinput);
 
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
@@ -123,8 +138,8 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_arena* arena, dah
     TASK_SUB_SELF(conv->filters, dl_dfilters);
     TASK_SUB_SELF(conv->biases, dl_dout);
 
-    block_finalize(dl_dfilters);
-    block_finalize(dl_dinput_tmp);
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
 
-    return dl_dinput;
+    return conv->dl_dinput;
 }

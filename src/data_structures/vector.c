@@ -2,11 +2,12 @@
 #include "starpu_data.h"
 #include <math.h>
 
-// See `block_init_from_ptr` for more information.
-dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
+dahl_vector* vector_init(size_t const len)
 {
-    starpu_data_handle_t handle = nullptr;
+    // Arena always returns 0 initialized data, no need to fill it
+    dahl_fp* data = dahl_arena_alloc(len * sizeof(dahl_fp));
 
+    starpu_data_handle_t handle = nullptr;
     starpu_vector_data_register(
         &handle,
         STARPU_MAIN_RAM,
@@ -15,7 +16,9 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
         sizeof(dahl_fp)
     );
 
-    dahl_vector* vector = malloc(sizeof(dahl_vector));
+    dahl_arena_attach_handle(handle);
+
+    dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
     vector->is_sub_data = false;
@@ -25,39 +28,26 @@ dahl_vector* vector_init_from_ptr(size_t const len, dahl_fp* data)
 
 dahl_vector* vector_init_from(size_t const len, dahl_fp const* data)
 {
-    dahl_fp* data_copy = malloc(len * sizeof(dahl_fp));
+    dahl_vector* vector = vector_init(len);
     
     for (int i = 0; i < len; i++)
     {
-        data_copy[i] = data[i];
+        vector->data[i] = data[i];
     }
 
-    return vector_init_from_ptr(len, data_copy);
+    return vector;
 }
 
 dahl_vector* vector_init_random(size_t const len)
 {
-    dahl_fp* data = malloc(len * sizeof(dahl_fp));
+    dahl_vector* vector = vector_init(len);
 
     for (int i = 0; i < len; i += 1)
     {
-        data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
+        vector->data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
     }
 
-    return vector_init_from(len, data);
-}
-
-// Initialize a starpu vector at 0 and return its handle
-dahl_vector* vector_init(size_t const len)
-{
-    dahl_fp* data = malloc(len * sizeof(dahl_fp));
-
-    for (int i = 0; i < len; i += 1)
-    {
-        data[i] = 0;
-    }
-
-    return vector_init_from_ptr(len, data);
+    return vector;
 }
 
 dahl_vector* vector_clone(dahl_vector const* vector)
@@ -145,31 +135,7 @@ void vector_print(dahl_vector const* vector)
 	starpu_data_release(vector->handle);
 }
 
-void vector_finalize_without_data(dahl_vector* vector)
-{
-    if (vector->is_sub_data)
-    {
-        printf("ERROR: vector_finalize_without_data() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
-        abort();
-    }
-
-    starpu_data_unregister(vector->handle);
-    free(vector);
-}
-
-void vector_finalize(dahl_vector* vector)
-{
-    if (vector->is_sub_data)
-    {
-        printf("ERROR: vector_finalize() shouldn't be used on sub matrix data because it will be freed by matrix_unpartition().");
-        abort();
-    }
-
-    starpu_data_unregister(vector->handle);
-    free(vector->data);
-    free(vector);
-}
-
+// FIXME 
 dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape)
 {
     size_t len = vector_get_len(vector);
@@ -178,14 +144,14 @@ dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape)
 
     assert(shape.x * shape.y == len);
 
-    dahl_matrix* res = matrix_init_from_ptr(shape, vector->data);
+    dahl_matrix* res = matrix_init_from(shape, vector->data);
 
     starpu_data_release(vector->handle);
-    vector_finalize_without_data(vector);
 
     return res;
 }
 
+// FIXME 
 dahl_matrix* vector_to_column_matrix(dahl_vector* vector)
 {
     size_t len = vector_get_len(vector);
@@ -193,6 +159,7 @@ dahl_matrix* vector_to_column_matrix(dahl_vector* vector)
     return vector_to_matrix(vector, new_shape);
 }
 
+// FIXME 
 dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
 {
     size_t len = vector_get_len(vector);
@@ -200,6 +167,7 @@ dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
     return vector_to_matrix(vector, new_shape);
 }
 
+// FIXME 
 dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 {
     size_t len = vector_get_len(vector);
@@ -207,14 +175,14 @@ dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
 
     assert(shape.x * shape.y * shape.z == len);
 
-    dahl_block* res = block_init_from_ptr(shape, vector->data);
+    dahl_block* res = block_init_from(shape, vector->data);
 
     starpu_data_release(vector->handle);
-    vector_finalize_without_data(vector);
 
     return res;
 }
 
+// FIXME 
 // TODO: why wouldn't it be a codelet?
 dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes)
 {

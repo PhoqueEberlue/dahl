@@ -34,8 +34,6 @@ bool check_prediction(dahl_vector const* predictions, dahl_vector const* targets
 
 void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense)
 {
-    dahl_arena* epoch_arena = arena_new(100000);
-
     dahl_block* image_block = set->train_images;
     dahl_matrix* y_categorical = vector_as_categorical(set->train_labels, 10);
 
@@ -57,9 +55,9 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
             dahl_matrix* image = block_get_sub_matrix(image_block, i);
             dahl_vector* targets = matrix_get_sub_vector(y_categorical, i);
 
-            dahl_block* conv_out = convolution_forward(conv, epoch_arena, image);
-            dahl_block* pool_out = pooling_forward(pool, epoch_arena, conv_out);
-            dahl_vector* dense_out = dense_forward(dense, epoch_arena, pool_out); // predictions
+            dahl_block* conv_out = convolution_forward(conv, image);
+            dahl_block* pool_out = pooling_forward(pool, conv_out);
+            dahl_vector* dense_out = dense_forward(dense, pool_out); // predictions
 
             dahl_fp loss = task_vector_cross_entropy_loss(dense_out, targets);
             total_loss += loss;
@@ -71,13 +69,11 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 
             dahl_vector* gradient = task_vector_cross_entropy_loss_gradient(dense_out, targets);
 
-            dahl_block* dense_back = dense_backward(dense, epoch_arena, gradient, LEARNING_RATE);
-            dahl_block* pool_back = pooling_backward(pool, epoch_arena, dense_back);
+            dahl_block* dense_back = dense_backward(dense, gradient, LEARNING_RATE);
+            dahl_block* pool_back = pooling_backward(pool, dense_back);
             // TODO: maybe save the image in the struct so we don't have to pass it?
-            dahl_matrix* conv_back = convolution_backward(conv, epoch_arena, pool_back, LEARNING_RATE, image);
+            dahl_matrix* conv_back = convolution_backward(conv, pool_back, LEARNING_RATE, image);
             // Why aren't we using bacward convolution result result?
-
-            arena_reset(epoch_arena);
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n", total_loss / (dahl_fp)n_samples, correct_predictions / (float)n_samples * 100.0F);
@@ -85,8 +81,6 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 
     block_unpartition(image_block);
     matrix_unpartition(y_categorical);
-
-    arena_delete(epoch_arena);
 }
 
 int main(int argc, char **argv)
@@ -96,8 +90,7 @@ int main(int argc, char **argv)
     srand(42);
     dahl_init();
 
-    dahl_arena* network_arena = arena_new(10000);
-    dataset* set = load_mnist(network_arena, argv[1], argv[2]);
+    dataset* set = load_mnist(argv[1], argv[2]);
 
     dahl_shape2d constexpr img_shape = { .x = 28, .y = 28 };
     size_t const num_channels = 2;
@@ -105,13 +98,11 @@ int main(int argc, char **argv)
     size_t const filter_size = 6;
     size_t const pool_size = 2;
 
-    dahl_convolution* conv = convolution_init(network_arena, img_shape, filter_size, num_channels);
-    dahl_pooling* pool = pooling_init(network_arena, pool_size, conv->output_shape);
-    dahl_dense* dense = dense_init(network_arena, pool->output_shape, num_classes);
+    dahl_convolution* conv = convolution_init(img_shape, filter_size, num_channels);
+    dahl_pooling* pool = pooling_init(pool_size, conv->output_shape);
+    dahl_dense* dense = dense_init(pool->output_shape, num_classes);
     
     train_network(set, conv, pool, dense);
-
-    arena_delete(network_arena);
 
     dahl_shutdown();
     return 0;
