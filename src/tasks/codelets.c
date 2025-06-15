@@ -82,6 +82,12 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     assert(in_nx == mask_nx);
     assert(in_ny == mask_ny);
 
+    // Reset mask
+    for (size_t i = 0; i < mask_nx*mask_ny; i++)
+    {
+        mask[i] = 0.0F;
+    }
+
     // Loop through i,j on axes x,y of matrix `out`
     for (size_t j = 0; j < out_ny; j++)
     {

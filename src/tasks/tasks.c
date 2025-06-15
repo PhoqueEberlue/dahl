@@ -85,18 +85,12 @@ void task_vector_relu(dahl_vector const* in, dahl_vector *out)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
-dahl_matrix* task_block_sum_z_axis(dahl_block const* in)
+void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
 {
-    dahl_shape3d in_shape = block_get_shape(in);
-    dahl_shape2d out_shape = { .x = in_shape.x, .y = in_shape.y };
-    dahl_matrix* out = matrix_init(out_shape);
-
     int ret = starpu_task_insert(&cl_block_sum_z_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    return out;
 }
 
 dahl_vector* task_matrix_sum_y_axis(dahl_matrix const* in)

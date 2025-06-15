@@ -12,7 +12,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Enable debug flags and avoid optimizations
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
 
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)

@@ -31,26 +31,26 @@ typedef struct
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
-dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape);
+dahl_block* block_init(dahl_shape3d const shape);
 
 // Initialize a dahl_block with random values.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
-dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape);
+dahl_block* block_init_random(dahl_shape3d const shape);
 
 // Initialize a dahl_block by cloning an existing array.
 // Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
 // - shape: dahl_shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
-dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data);
+dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data);
 
-dahl_block* block_clone(dahl_arena* arena, dahl_block const* block);
+dahl_block* block_clone(dahl_block const* block);
 
 // Returns a new block with added padding. 
 // The new_shape should be larger than the previous block.
 // If it is exactly the same, it just produces a copy of the bolck.
 // If the new padding is even, the remainder is placed at the end of the axis.
-dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape);
+dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape);
 
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const* block);
@@ -89,10 +89,6 @@ dahl_vector* block_as_vector(dahl_block const* block);
 
 void block_print(dahl_block const* block);
 
-// Finalize the block without freeing the pointed data
-void block_finalize_without_data(dahl_block* block);
-void block_finalize(dahl_block* block);
-
 // Initialize a dahl_matrix with every values at 0.
 // parameters:
 // - shape: dahl_shape2d object describing the dimensions of the matrix
@@ -127,7 +123,6 @@ dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, size_t const index
 
 void matrix_print(dahl_matrix const* matrix);
 void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold);
-void matrix_finalize(dahl_matrix* matrix);
 
 
 // Initialize a dahl_vector with every values at 0.
@@ -173,7 +168,5 @@ dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_c
 bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding, u_int8_t const precision);
 
 void vector_print(dahl_vector const* vector);
-void vector_finalize_without_data(dahl_vector* vector);
-void vector_finalize(dahl_vector* vector);
 
 #endif //!DAHL_DATA_H

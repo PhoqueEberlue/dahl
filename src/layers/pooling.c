@@ -1,11 +1,17 @@
 #include "../../include/dahl_pooling.h"
 #include "../../include/dahl_tasks.h"
 #include <stdlib.h>
+#include "../arena/arena.h"
 
 // Not much to init because most of the other fields need to be computed depending on input data.
-dahl_pooling* pooling_init(dahl_arena* arena, size_t const pool_size, dahl_shape3d const input_shape)
+dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shape)
 {
-    dahl_pooling* pool = arena_put(arena, sizeof(dahl_pooling));
+    // All the allocations in this function will be performed in the persistent arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = default_arena;
+
+    dahl_pooling* pool = dahl_arena_alloc(sizeof(dahl_pooling));
+
     *(size_t*)&pool->pool_size = pool_size;
     *(dahl_shape3d*)&pool->input_shape = input_shape;
 
@@ -15,17 +21,25 @@ dahl_pooling* pooling_init(dahl_arena* arena, size_t const pool_size, dahl_shape
     // Channel dimension
     *(size_t*)&pool->output_shape.z = pool->input_shape.z;
 
+    dahl_block* output = block_init(pool->output_shape);
+    dahl_block* mask = block_init(pool->input_shape);
+
+    pool->output = output;
+    pool->mask = mask;
+
+    context_arena = save_arena;
+
     return pool;
 }
 
-dahl_block* pooling_forward(dahl_pooling* pool, dahl_arena* arena, dahl_block* input_data)
+dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
 {
-    dahl_block* output_data = block_init(arena, pool->output_shape);
-    
-    pool->mask = block_init(arena, pool->input_shape);
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
 
     block_partition_along_z(input_data);
-    block_partition_along_z(output_data);
+    block_partition_along_z(pool->output);
     block_partition_along_z(pool->mask);
 
     size_t sub_matrix_nb = block_get_sub_matrix_nb(input_data);
@@ -33,21 +47,28 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_arena* arena, dahl_block* i
     for (int i = 0; i < sub_matrix_nb; i++)
     {
         dahl_matrix const* sub_input = block_get_sub_matrix(input_data, i);
-        dahl_matrix* sub_output = block_get_sub_matrix(output_data, i);
+        dahl_matrix* sub_output = block_get_sub_matrix(pool->output, i);
         dahl_matrix* sub_mask = block_get_sub_matrix(pool->mask, i);
 
         task_matrix_max_pooling(sub_input, sub_output, sub_mask, pool->pool_size);
     }
 
     block_unpartition(input_data);
-    block_unpartition(output_data);
+    block_unpartition(pool->output);
     block_unpartition(pool->mask);
 
-    return output_data;
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
+
+    return pool->output;
 }
 
-dahl_block* pooling_backward(dahl_pooling* pool, dahl_arena* arena, dahl_block* dl_dout)
+dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
 {
+    // All the allocations in this function will be performed in the temporary arena
+    dahl_arena* save_arena = context_arena;
+    context_arena = temporary_arena;
+
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);
 
@@ -63,6 +84,9 @@ dahl_block* pooling_backward(dahl_pooling* pool, dahl_arena* arena, dahl_block* 
 
     block_unpartition(pool->mask);
     block_unpartition(dl_dout);
+
+    dahl_arena_reset(temporary_arena);
+    context_arena = save_arena;
 
     return pool->mask;
 }

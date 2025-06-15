@@ -1,6 +1,7 @@
 #include "../include/dahl_mnist_loader.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "arena/arena.h"
 
 // Function to read 4-byte integer from file (big-endian format)
 int read_int(FILE *file)
@@ -11,8 +12,11 @@ int read_int(FILE *file)
 }
 
 // Function to load MNIST images
-dahl_block* load_mnist_images(dahl_arena* arena, char const* filename)
+dahl_block* load_mnist_images(char const* filename)
 {
+    // All the allocations in this function will be performed in the persistent arena
+    context_arena = default_arena;
+
     FILE *file = fopen(filename, "rb");
     if (!file)
     {
@@ -29,7 +33,7 @@ dahl_block* load_mnist_images(dahl_arena* arena, char const* filename)
     printf("Loaded %lu images of size %lux%lu from %s\n", num_images, rows, cols, filename);
 
     dahl_shape3d shape_image_block = { .x = rows, .y = cols, .z = num_images };
-    dahl_block* image_block = block_init(arena, shape_image_block);
+    dahl_block* image_block = block_init(shape_image_block);
 
     dahl_fp* images = block_data_acquire(image_block);
 
@@ -53,8 +57,11 @@ dahl_block* load_mnist_images(dahl_arena* arena, char const* filename)
 }
 
 // Function to load MNIST labels
-dahl_vector* load_mnist_labels(dahl_arena* arena, char const* filename)
+dahl_vector* load_mnist_labels(char const* filename)
 {
+    // All the allocations in this function will be performed in the persistent arena
+    context_arena = default_arena;
+
     FILE *file = fopen(filename, "rb");
     if (!file)
     {
@@ -84,18 +91,12 @@ dahl_vector* load_mnist_labels(dahl_arena* arena, char const* filename)
     return label_vec;
 }
 
-dataset* load_mnist(dahl_arena* arena, char const* image_file, char const* label_file)
+dataset* load_mnist(char const* image_file, char const* label_file)
 {
-    dataset* res = arena_put(arena, sizeof(dataset));
+    dataset* res = dahl_arena_alloc(sizeof(dataset));
     // Load training images & labels
-    res->train_images = load_mnist_images(arena, image_file);
-    res->train_labels = load_mnist_labels(arena, label_file); 
+    res->train_images = load_mnist_images(image_file);
+    res->train_labels = load_mnist_labels(label_file); 
 
     return res;
-}
-
-void free_dataset(dataset* set)
-{
-    block_finalize(set->train_images);
-    vector_finalize(set->train_labels);
 }
