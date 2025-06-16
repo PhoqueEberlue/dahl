@@ -624,6 +624,49 @@ void test_vector_cross_entropy_loss_gradient()
     ASSERT_VECTOR_EQUALS_ROUND(expect_vec, gradient, 2);
 }
 
+void test_sum()
+{
+    dahl_shape3d data_shape_block = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp data_block[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_block* block = block_init_from(data_shape_block, (dahl_fp*)&data_block);
+    dahl_fp result = task_block_sum(block);
+
+    ASSERT_FP_EQUALS(8, result);
+
+    dahl_shape2d data_shape_matrix = { .x = 4, .y = 3 };
+
+    dahl_fp data_matrix[3][4] = {
+        {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-1.0F, 4.0F,-1.0F },
+    };
+
+    dahl_matrix* matrix = matrix_init_from(data_shape_matrix, (dahl_fp*)&data_matrix);
+    result = task_matrix_sum(matrix);
+
+    ASSERT_FP_EQUALS(8, result);
+
+    dahl_fp data_vector[4] = { -2.0F, 1.0F, 2.0F,-1.0F };
+
+    dahl_vector* vector = vector_init_from(4, (dahl_fp*)&data_vector);
+    result = task_vector_sum(vector);
+
+    ASSERT_FP_EQUALS(0, result);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -644,4 +687,5 @@ void test_tasks()
     test_vector_cross_entropy_loss();
     test_matrix_matrix_product();
     test_vector_cross_entropy_loss_gradient();
+    test_sum();
 }

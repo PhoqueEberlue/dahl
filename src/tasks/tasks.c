@@ -482,3 +482,47 @@ void task_matrix_to_flat_col(dahl_matrix* mat)
 
     task_matrix_resize(mat, new_nx, new_ny, new_ld);
 }
+
+dahl_fp task_sum(starpu_data_handle_t handle, struct starpu_codelet* codelet)
+{
+    dahl_fp res = 0.0F;
+    dahl_fp* res_p = &res;
+
+    struct starpu_task* task = starpu_task_create();
+    task->cl = codelet;
+
+    // Initialize argument buffer to obtain the return value with a pointer pointer
+    char *arg_buffer;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
+
+    task->cl_arg = arg_buffer;
+    task->cl_arg_size = arg_buffer_size;
+    task->nbuffers = 1;
+    task->handles[0] = handle;
+    task->detach = 0;
+
+    int ret = starpu_task_submit(task); 
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    ret = starpu_task_wait(task);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return res;
+}
+
+dahl_fp task_block_sum(dahl_block const* in)
+{
+    return task_sum(in->handle, &cl_block_sum);
+}
+
+dahl_fp task_matrix_sum(dahl_matrix const* in)
+{
+    return task_sum(in->handle, &cl_matrix_sum);
+}
+
+dahl_fp task_vector_sum(dahl_vector const* in)
+{
+    return task_sum(in->handle, &cl_vector_sum);
+}

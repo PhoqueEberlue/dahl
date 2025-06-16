@@ -22,6 +22,7 @@ void task_block_add(dahl_block const* a, dahl_block const* b, dahl_block* c);
 void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
 void task_block_sub_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
 void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp const min, dahl_fp const max);
+dahl_fp task_block_sum(dahl_block const* in);
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator
@@ -65,6 +66,8 @@ void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp cons
 void task_matrix_sub_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
 void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp const min, dahl_fp const max);
 
+dahl_fp task_matrix_sum(dahl_matrix const* in);
+
 // Flatten a matrix and consider it as a row matrix
 void task_matrix_to_flat_row(dahl_matrix* mat);
 
@@ -102,6 +105,7 @@ void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c)
 void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
 void task_vector_sub_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
 void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp const min, dahl_fp const max);
+dahl_fp task_vector_sum(dahl_vector const* in);
 // ---------------------------- HELPER MACRO FOR TASKS COMMON TO ANY TYPES ----------------------------
 
 // Type comparison without taking into account const qualifiers
