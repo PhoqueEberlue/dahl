@@ -668,6 +668,9 @@ void test_vector_cross_entropy_loss_gradient()
 
 void test_sum()
 {
+    dahl_arena* save_arena = context_arena;
+    context_arena = test_arena;
+
     dahl_shape3d data_shape_block = { .x = 4, .y = 3, .z = 2 };
 
     dahl_fp data_block[2][3][4] = {
@@ -707,6 +710,9 @@ void test_sum()
     result = task_vector_sum(vector);
 
     ASSERT_FP_EQUALS(0, result);
+
+    dahl_arena_reset(test_arena);
+    context_arena = save_arena;
 }
 
 void test_tasks()
