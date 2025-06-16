@@ -4,6 +4,7 @@
 
 // Including data.h and not include/dahl_data.h so we have access to the private functions
 #include "../data_structures/data_structures.h"
+#include "starpu_data.h"
 
 void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* kernel, dahl_matrix* out)
 {
@@ -530,4 +531,27 @@ dahl_fp task_matrix_sum(dahl_matrix const* in)
 dahl_fp task_vector_sum(dahl_vector const* in)
 {
     return task_sum(in->handle, &cl_vector_sum);
+}
+
+void task_fill(starpu_data_handle_t handle, struct starpu_codelet* codelet, dahl_fp value)
+{
+    int ret = starpu_task_insert(codelet,
+                             STARPU_VALUE, &value, sizeof(&value),
+                             STARPU_W, handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_block_fill(dahl_block const* block, dahl_fp value)
+{
+    task_fill(block->handle, &cl_block_fill, value);
+}
+
+void task_matrix_fill(dahl_matrix const* matrix, dahl_fp value)
+{
+    task_fill(matrix->handle, &cl_matrix_fill, value);
+}
+
+void task_vector_fill(dahl_vector const* vector, dahl_fp value)
+{
+    task_fill(vector->handle, &cl_vector_fill, value);
 }

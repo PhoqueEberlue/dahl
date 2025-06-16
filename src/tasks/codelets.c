@@ -82,12 +82,6 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     assert(in_nx == mask_nx);
     assert(in_ny == mask_ny);
 
-    // Reset mask
-    for (size_t i = 0; i < mask_nx*mask_ny; i++)
-    {
-        mask[i] = 0.0F;
-    }
-
     // Loop through i,j on axes x,y of matrix `out`
     for (size_t j = 0; j < out_ny; j++)
     {
@@ -994,7 +988,7 @@ dahl_fp sum(dahl_fp const* in, size_t const start, size_t const end)
     return res;
 }
 
-void block_sum(void* buffers[2], void* cl_arg)
+void block_sum(void* buffers[1], void* cl_arg)
 {
     dahl_fp *res_p;
     starpu_codelet_unpack_args(cl_arg, &res_p);
@@ -1004,20 +998,11 @@ void block_sum(void* buffers[2], void* cl_arg)
     size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
     dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
 
-    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[0]);
-    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[0]);
-    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
-    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
-
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
-    assert(in_nz == out_nz);
-
     dahl_fp res = sum(in, 0, in_nx*in_ny*in_nz); 
     *res_p = res; // Pass the result with pointer
 }
 
-void matrix_sum(void* buffers[2], void* cl_arg)
+void matrix_sum(void* buffers[1], void* cl_arg)
 {
     dahl_fp *res_p;
     starpu_codelet_unpack_args(cl_arg, &res_p);
@@ -1026,18 +1011,11 @@ void matrix_sum(void* buffers[2], void* cl_arg)
     size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
     dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
 
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
-
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
-
     dahl_fp res = sum(in, 0, in_nx*in_ny); 
     *res_p = res; // Pass the result with pointer
 }
 
-void vector_sum(void* buffers[2], void* cl_arg)
+void vector_sum(void* buffers[1], void* cl_arg)
 {
     dahl_fp *res_p;
     starpu_codelet_unpack_args(cl_arg, &res_p);
@@ -1045,11 +1023,50 @@ void vector_sum(void* buffers[2], void* cl_arg)
     size_t const in_nx = STARPU_VECTOR_GET_NX(buffers[0]);
     dahl_fp const* in = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
 
-    size_t const out_nx = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    assert(in_nx == out_nx);
-
     dahl_fp res = sum(in, 0, in_nx); 
     *res_p = res; // Pass the result with pointer
+}
+
+void fill(dahl_fp* buf, dahl_fp const value, size_t const start, size_t const end)
+{
+    for (size_t i = start; i < end; i++)
+    {
+        buf[i] = value;
+    }
+}
+
+void block_fill(void* buffers[1], void* cl_arg)
+{
+    dahl_fp value;
+    starpu_codelet_unpack_args(cl_arg, &value);
+
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    dahl_fp* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    fill(in, value, 0, in_nx*in_ny*in_nz); 
+}
+
+void matrix_fill(void* buffers[1], void* cl_arg)
+{
+    dahl_fp value;
+    starpu_codelet_unpack_args(cl_arg, &value);
+
+    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    dahl_fp* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    fill(in, value, 0, in_nx*in_ny); 
+}
+
+void vector_fill(void* buffers[1], void* cl_arg)
+{
+    dahl_fp value;
+    starpu_codelet_unpack_args(cl_arg, &value);
+
+    size_t const in_nx = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp* in = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    fill(in, value, 0, in_nx); 
 }
