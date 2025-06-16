@@ -91,6 +91,9 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_f
     dahl_shape3d dl_dw_shape = { .x = dense->input_shape.x * dense->input_shape.y, .y = dense->output_size, .z = dense->input_shape.z };
     dahl_block* dl_dw = block_init(dl_dw_shape);
 
+    // Reset dl_dinput
+    task_block_fill(dense->dl_dinput, 0);
+
     block_partition_along_z(dense->input_data);
     block_partition_along_z(dense->weights);
     block_partition_along_z(dl_dw);

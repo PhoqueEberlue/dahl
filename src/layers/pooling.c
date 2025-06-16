@@ -38,6 +38,9 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
     dahl_arena* save_arena = context_arena;
     context_arena = temporary_arena;
 
+    // Reset the mask
+    task_block_fill(pool->mask, 0.0F);
+
     block_partition_along_z(input_data);
     block_partition_along_z(pool->output);
     block_partition_along_z(pool->mask);
