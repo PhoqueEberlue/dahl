@@ -112,3 +112,83 @@ This obviously includes the processing unit speed, number, and types (gpu, cpu),
 but also maximum memory of each processing unit (gpu, cpu).
 As a side note I think memory managment is also important to reduce for energy consumption.
 Also it should lead to better usage of the cache, thus speeding up the execution speed.
+
+[Mon Jun 16 04:24:21 PM CEST 2025]
+
+Arena having been finally implemented.
+
+Concerning previous task, at the moment it seems "ok" to me to let StarPU manage GPU memory.
+It's still a pretty homogeneous way to handle memory from the user perspective.
+
+I decided to use an existing arena implemetation and wrap it so I can store the handles that points to data in the arena.
+I also included `starpu_memory_pin()` calls in the arena to permit asynchronous transfers.
+However we should check later if this really works, because instead of pinning data one by one (which mean I should store they position in the arena), I pin directly the arena buffer.
+I hope I will be ok for StarPU. 
+I could also do `starpu_malloc()` but it feels like its done for singular data elements (a bit like pin in fact?).
+
+Anyways it works really really well in terms of memory consumption.
+The arena implementation I am using can grow, which means it will grow at the first iteration then remain the same for every other.
+
+Surprisingly, it did not improve runtime.
+
+Results with the arena version
+
+```bash
+andrew@nixos ~/l/i/d/build (arena) [nix] > time ./example-mnist ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
+[starpu][_starpu_init_topology] Warning: there are several kinds of CPU on this system. For now StarPU assumes all CPU are equal
+[starpu][_starpu_initialize_workers_bindid] Warning: hwloc reported 14 logical CPUs for 12 cores, this is not homogeneous, will assume 1 logical CPUs per core
+Loaded 60000 images of size 28x28 from ../fashion-mnist/train-images-idx3-ubyte
+Loaded 60000 labels from ../fashion-mnist/train-labels-idx1-ubyte
+Epoch 0
+Average loss: 0.140936 - Accuracy: 52.619999%
+Epoch 1
+Average loss: 0.087665 - Accuracy: 68.540001%
+Epoch 2
+Average loss: 0.077776 - Accuracy: 72.339996%
+Epoch 3
+Average loss: 0.071970 - Accuracy: 74.299995%
+Epoch 4
+Average loss: 0.067910 - Accuracy: 75.919998%
+
+________________________________________________________
+Executed in  156.48 secs    fish           external
+   usr time  585.66 secs    0.97 millis  585.66 secs
+   sys time  364.38 secs    1.75 millis  364.38 secs
+```
+
+With the malloc version
+```bash
+[starpu][_starpu_init_topology] Warning: there are several kinds of CPU on this system. For now StarPU assumes all CPU are equal
+[starpu][_starpu_initialize_workers_bindid] Warning: hwloc reported 14 logical CPUs for 12 cores, this is not homogeneous, will assume 1 logical CPUs per core
+Loaded 60000 images of size 28x28 from ../fashion-mnist/train-images-idx3-ubyte
+Loaded 60000 labels from ../fashion-mnist/train-labels-idx1-ubyte
+Epoch 0
+Average loss: 0.140936 - Accuracy: 52.619999%
+Epoch 1
+Average loss: 0.087665 - Accuracy: 68.540001%
+Epoch 2
+Average loss: 0.077776 - Accuracy: 72.339996%
+Epoch 3
+Average loss: 0.071970 - Accuracy: 74.299995%
+Epoch 4
+Average loss: 0.067910 - Accuracy: 75.919998%
+
+________________________________________________________
+Executed in  160.40 secs    fish           external
+   usr time  544.30 secs    0.00 millis  544.30 secs
+   sys time  284.45 secs    1.74 millis  284.45 secs
+```
+
+Reproducing these results:
+
+Arena version commit `3251a3bfd03b2a954b30787c853a5135e88abfa9`.
+Malloc version commit `2f85eab08278250346d29a47da9c70f091c4b3fd`.
+
+Make sure that the fashion mnist dataset have been downloaded.
+
+```bash
+git checkout <commit>
+nix develop
+mkdir build && cd build && cmake .. && make
+time ./example-mnist ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
+```

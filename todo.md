@@ -3,11 +3,11 @@
 ## Important
 
 - Homogeneize `x_to_y`, `x_as_y` etc functions. Maybe actually add a view functionnality?
-- check memory leaks, don't forget to call the finalize() at some point :) -> Arena?
 - make the partition function work with const data?? -> obviously lead to problems bc we need to create the views and change some values to toggle the partition boolean.
 
 ## Later
 
+- Investigate why filling arenas buffer in block/matrix/vector works and not with a memset directly inside the arena_alloc function
 - propagate precision passed in the asserts to the block/matirx/vector prints
 - Add compilation condition to enable/disable debugg asserts
 - change the strings of the STARPU_CHECK_RETURN_VALUE()
@@ -17,6 +17,7 @@
 - My API let the opportunity to acquire a data multiple times which leads to deadlocks and could be hard to debug,
   maybe we should hide the data acquire and instead give accessor to fill the data. See [hiding-acquire-release](./design-talk/topics/hiding-acquire-release.md)
 - the padding function is very unefficient
+- We might still have a neglibeable memory leak even after the arena introduction.
 
 ## Questionable
 
