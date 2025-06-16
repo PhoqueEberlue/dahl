@@ -34,6 +34,7 @@ bool check_prediction(dahl_vector const* predictions, dahl_vector const* targets
 
 void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense)
 {
+    // TODO: set num_classes (atm 10)
     dahl_block* image_block = set->train_images;
     dahl_matrix* y_categorical = vector_as_categorical(set->train_labels, 10);
 
@@ -67,9 +68,9 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
                 correct_predictions += 1.0F;
             }
 
-            dahl_vector* gradient = task_vector_cross_entropy_loss_gradient(dense_out, targets);
+            dahl_vector* gradients = task_vector_cross_entropy_loss_gradient(dense_out, targets);
 
-            dahl_block* dense_back = dense_backward(dense, gradient, LEARNING_RATE);
+            dahl_block* dense_back = dense_backward(dense, gradients, LEARNING_RATE);
             dahl_block* pool_back = pooling_backward(pool, dense_back);
             // TODO: maybe save the image in the struct so we don't have to pass it?
             dahl_matrix* conv_back = convolution_backward(conv, pool_back, LEARNING_RATE, image);

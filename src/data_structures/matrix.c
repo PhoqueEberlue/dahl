@@ -6,8 +6,10 @@
 dahl_matrix* matrix_init(dahl_shape2d const shape)
 {
     size_t n_elems = shape.x * shape.y;
-    // Arena always returns 0 initialized data, no need to fill it
     dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
+
+    for (size_t i = 0; i < n_elems; i++)
+        data[i] = 0.0F;
 
     starpu_data_handle_t handle = nullptr;
     starpu_matrix_data_register(

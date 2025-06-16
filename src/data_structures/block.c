@@ -6,12 +6,15 @@
 #include "sys/types.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 dahl_block* block_init(dahl_shape3d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
-    // Arena always returns 0 initialized data, no need to fill it
     dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
+
+    for (size_t i = 0; i < n_elems; i++)
+        data[i] = 0.0F;
 
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
@@ -32,6 +35,7 @@ dahl_block* block_init(dahl_shape3d const shape)
     block->handle = handle;
     block->data = data;
     block->sub_matrices = nullptr;
+    block->sub_vectors = nullptr;
     block->is_partitioned = false;
 
     return block;

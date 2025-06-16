@@ -19,6 +19,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include "starpu_stdlib.h"
+#include <string.h>
 #define ARENA_IMPLEMENTATION
 
 #ifndef ARENA_H_
@@ -156,7 +158,8 @@ Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
     // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
-    Region *r = (Region*)malloc(size_bytes);
+    Region *r = (Region*)malloc(size_bytes); 
+    starpu_memory_pin(r->data, capacity * sizeof(uintptr_t));
     ARENA_ASSERT(r); // TODO: since ARENA_ASSERT is disableable go through all the places where we use it to check for failed memory allocation and return with NULL there.
     r->next = NULL;
     r->count = 0;
@@ -434,6 +437,7 @@ void arena_free(Arena *a)
     while (r) {
         Region *r0 = r;
         r = r->next;
+        starpu_memory_unpin(r0->data, r0->capacity * sizeof(uintptr_t));
         free_region(r0);
     }
     a->begin = NULL;
@@ -445,6 +449,7 @@ void arena_trim(Arena *a){
     while (r) {
         Region *r0 = r;
         r = r->next;
+        starpu_memory_unpin(r0->data, r0->capacity * sizeof(uintptr_t));
         free_region(r0);
     }
     a->end->next = NULL;

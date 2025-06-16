@@ -11,12 +11,12 @@
 dahl_arena* dahl_arena_new()
 {
     dahl_arena* arena = malloc(sizeof(dahl_arena));
-    arena->arena = (Arena) {0};
-    arena->handle_count = 0;
+    arena->arena.begin = nullptr;
+    arena->arena.end = nullptr;
 
-    arena->handles = (starpu_data_handle_t*)malloc(10000 * sizeof(starpu_data_handle_t));
+    arena->handles = (starpu_data_handle_t*)malloc(100 * sizeof(starpu_data_handle_t));
     arena->handle_count = 0;
-    arena->handle_capacity = 10000;
+    arena->handle_capacity = 100;
 
     return arena;
 }

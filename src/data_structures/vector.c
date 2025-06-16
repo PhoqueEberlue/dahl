@@ -4,8 +4,10 @@
 
 dahl_vector* vector_init(size_t const len)
 {
-    // Arena always returns 0 initialized data, no need to fill it
     dahl_fp* data = dahl_arena_alloc(len * sizeof(dahl_fp));
+
+    for (size_t i = 0; i < len; i++)
+        data[i] = 0.0F;
 
     starpu_data_handle_t handle = nullptr;
     starpu_vector_data_register(
