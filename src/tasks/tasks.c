@@ -382,11 +382,11 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
     size_t const n_classes = vector_get_len(predictions);
 
     // Init in the temporary arena 
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
     dahl_vector* tmp = vector_init(n_classes);
     // Then switch to previous context. TODO: make it look better
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 
     TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
 
@@ -423,11 +423,11 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predicti
     size_t len = vector_get_len(predictions);
 
     // Init in the temporary arena 
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
     dahl_vector* out = vector_init(len);
     // Then switch to previous context. TODO: make it look better
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 
     int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
                              STARPU_R, predictions->handle,

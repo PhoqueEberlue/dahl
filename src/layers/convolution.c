@@ -5,8 +5,8 @@
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters)
 {
     // All the allocations in this function will be performed in the persistent arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = default_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_persistent_arena;
 
     dahl_shape3d filter_shape = {
         .x = filter_size,
@@ -40,7 +40,7 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     conv->output = output;
     conv->dl_dinput = dl_dinput;
 
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 
     return conv;
 }
@@ -48,8 +48,8 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
 dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
     
     block_partition_along_z(conv->output);
     block_partition_along_z(conv->filters);
@@ -71,8 +71,8 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
     TASK_ADD_SELF(conv->output, conv->biases);
     TASK_RELU_SELF(conv->output);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return conv->output;
 }
@@ -80,8 +80,8 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
 dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
     dahl_shape3d tmp_shape = { .x = conv->input_shape.x, .y = conv->input_shape.y, .z = conv->num_filters };
     dahl_block* dl_dinput_tmp = block_init(tmp_shape);
@@ -142,8 +142,8 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
     TASK_SUB_SELF(conv->filters, dl_dfilters);
     TASK_SUB_SELF(conv->biases, dl_dout);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return conv->dl_dinput;
 }

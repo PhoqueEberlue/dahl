@@ -7,8 +7,8 @@
 dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shape)
 {
     // All the allocations in this function will be performed in the persistent arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = default_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_persistent_arena;
 
     dahl_pooling* pool = dahl_arena_alloc(sizeof(dahl_pooling));
 
@@ -27,7 +27,7 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shap
     pool->output = output;
     pool->mask = mask;
 
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 
     return pool;
 }
@@ -35,8 +35,8 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape3d const input_shap
 dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
     // Reset the mask
     task_block_fill(pool->mask, 0.0F);
@@ -60,8 +60,8 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
     block_unpartition(pool->output);
     block_unpartition(pool->mask);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return pool->output;
 }
@@ -69,8 +69,8 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
 dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);
@@ -88,8 +88,8 @@ dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
     block_unpartition(pool->mask);
     block_unpartition(dl_dout);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return pool->mask;
 }

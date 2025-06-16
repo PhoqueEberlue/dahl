@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <starpu.h>
 
-dahl_arena* default_arena = nullptr;
-dahl_arena* temporary_arena = nullptr;
-dahl_arena* context_arena = nullptr;
-dahl_arena* context_arena_save = nullptr;
+dahl_arena* dahl_persistent_arena = nullptr;
+dahl_arena* dahl_temporary_arena = nullptr;
+dahl_arena* dahl_context_arena = nullptr;
 
 void dahl_init()
 {
@@ -15,9 +14,9 @@ void dahl_init()
         printf("Could not initialize starpu");
     }
 
-    default_arena = dahl_arena_new();
-    temporary_arena = dahl_arena_new();
-    context_arena = default_arena;
+    dahl_persistent_arena = dahl_arena_new();
+    dahl_temporary_arena = dahl_arena_new();
+    dahl_context_arena = dahl_persistent_arena;
 }
 
 void dahl_shutdown()

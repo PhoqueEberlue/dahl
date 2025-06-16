@@ -5,10 +5,9 @@
 
 typedef struct _dahl_arena dahl_arena;
 
-extern dahl_arena* default_arena;
-extern dahl_arena* temporary_arena;
-extern dahl_arena* context_arena;
-extern dahl_arena* context_arena_save;
+extern dahl_arena* dahl_persistent_arena;
+extern dahl_arena* dahl_temporary_arena;
+extern dahl_arena* dahl_context_arena;
 
 dahl_arena* dahl_arena_new();
 void* dahl_arena_alloc(size_t size);

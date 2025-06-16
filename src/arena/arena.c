@@ -23,17 +23,17 @@ dahl_arena* dahl_arena_new()
 
 void* dahl_arena_alloc(size_t size)
 {
-    assert(context_arena);
-    return arena_alloc(&context_arena->arena, size);
+    assert(dahl_context_arena);
+    return arena_alloc(&dahl_context_arena->arena, size);
 }
 
 void dahl_arena_attach_handle(starpu_data_handle_t handle)
 {
     // TODO: realloc if max number of handles is reached
-    assert(context_arena->handle_count + 1 < context_arena->handle_capacity);
+    assert(dahl_context_arena->handle_count + 1 < dahl_context_arena->handle_capacity);
 
-    context_arena->handles[context_arena->handle_count] = handle;
-    context_arena->handle_count++;
+    dahl_context_arena->handles[dahl_context_arena->handle_count] = handle;
+    dahl_context_arena->handle_count++;
 }
 
 void dahl_arena_reset(dahl_arena* arena)

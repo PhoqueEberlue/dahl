@@ -6,8 +6,8 @@
 dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
 {
     // All the allocations in this function will be performed in the persistent arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = default_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_persistent_arena;
 
     dahl_dense* dense = dahl_arena_alloc(sizeof(dahl_dense));
 
@@ -25,7 +25,7 @@ dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
     dense->output = output;
     dense->dl_dinput = dl_dinput;
 
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 
     return dense;
 }
@@ -33,8 +33,8 @@ dahl_dense* dense_init(dahl_shape3d const input_shape, size_t const output_size)
 dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
     dense->input_data = input_data;
 
@@ -68,8 +68,8 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 
     task_vector_softmax(out, dense->output);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return dense->output;
 }
@@ -77,8 +77,8 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
 dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_fp const learning_rate)
 {
     // All the allocations in this function will be performed in the temporary arena
-    dahl_arena* save_arena = context_arena;
-    context_arena = temporary_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
     dahl_matrix const* tmp = task_vector_softmax_derivative(dense->output);
 
@@ -133,8 +133,8 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_f
     TASK_SCAL_SELF(dl_dy, learning_rate);
     TASK_SUB_SELF(dense->biases, dl_dy);
 
-    dahl_arena_reset(temporary_arena);
-    context_arena = save_arena;
+    dahl_arena_reset(dahl_temporary_arena);
+    dahl_context_arena = save_arena;
 
     return dense->dl_dinput;
 }

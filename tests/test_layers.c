@@ -405,8 +405,8 @@ static constexpr dahl_fp expect_conv_biases[2][23][23] = {
 
 void test_convolution()
 {
-    dahl_arena* save_arena = context_arena;
-    context_arena = test_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = test_arena;
 
     // ----------- Forward -----------
     dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
@@ -447,13 +447,13 @@ void test_convolution()
     ASSERT_BLOCK_EQUALS_ROUND(expect_biases, conv->biases, 6);
 
     dahl_arena_reset(test_arena);
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 }
 
 void test_pool()
 {
-    dahl_arena* save_arena = context_arena;
-    context_arena = test_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = test_arena;
 
     // ----------- Forward -----------
     dahl_shape3d constexpr input_shape = { .x = 23, .y = 23, .z = 2 };
@@ -486,13 +486,13 @@ void test_pool()
     // No weights/biases on this layer
     
     dahl_arena_reset(test_arena);
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 }
 
 void test_dense()
 {
-    dahl_arena* save_arena = context_arena;
-    context_arena = test_arena;
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = test_arena;
 
     // ----------- Forward -----------
     size_t const num_classes = 10;
@@ -530,7 +530,7 @@ void test_dense()
     ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 6);
 
     dahl_arena_reset(test_arena);
-    context_arena = save_arena;
+    dahl_context_arena = save_arena;
 }
 
 

@@ -15,7 +15,7 @@ int read_int(FILE *file)
 dahl_block* load_mnist_images(char const* filename)
 {
     // All the allocations in this function will be performed in the persistent arena
-    context_arena = default_arena;
+    dahl_context_arena = dahl_persistent_arena;
 
     FILE *file = fopen(filename, "rb");
     if (!file)
@@ -60,7 +60,7 @@ dahl_block* load_mnist_images(char const* filename)
 dahl_vector* load_mnist_labels(char const* filename)
 {
     // All the allocations in this function will be performed in the persistent arena
-    context_arena = default_arena;
+    dahl_context_arena = dahl_persistent_arena;
 
     FILE *file = fopen(filename, "rb");
     if (!file)
