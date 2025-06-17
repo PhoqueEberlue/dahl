@@ -92,39 +92,6 @@ void test_matrix_partition_along_y()
     dahl_context_arena = save_arena;
 }
 
-
-void test_block_to_vector()
-{
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
-    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
-
-    dahl_fp data[2][3][4] = {
-        {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
-        },
-        {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
-        },
-    };
-
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
-
-    dahl_vector* vec = block_to_vector(block);
-
-    dahl_fp res = task_vector_dot_product(vec, vec);
-
-    ASSERT_FP_EQUALS(res, 302.0F);
-
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
-}
-
 void test_block_add_padding()
 {
     dahl_arena* const save_arena = dahl_context_arena;
@@ -248,7 +215,6 @@ void test_data()
 {
     test_block_partition_along_z();
     test_matrix_partition_along_y();
-    test_block_to_vector();
     test_block_add_padding();
     test_matrix_get_shape();
 }

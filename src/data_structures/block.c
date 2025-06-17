@@ -377,27 +377,3 @@ void block_print(dahl_block const* block)
 
 	starpu_data_release(block->handle);
 }
-
-
-// TODO: make it coherent with the new memory management setup
-dahl_vector* block_to_vector(dahl_block* block)
-{
-    dahl_shape3d shape = block_get_shape(block);
-
-    starpu_data_acquire(block->handle, STARPU_R);
-    dahl_vector* res = vector_init_from(shape.x * shape.y * shape.z, block->data);
-    starpu_data_release(block->handle);
-
-    return res;
-}
-
-dahl_vector* block_as_vector(dahl_block const* block)
-{
-    dahl_shape3d shape = block_get_shape(block);
-
-    starpu_data_acquire(block->handle, STARPU_R);
-    dahl_vector* res = vector_init_from(shape.x * shape.y * shape.z, block->data);
-    starpu_data_release(block->handle);
-
-    return res;
-}

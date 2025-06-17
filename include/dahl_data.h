@@ -83,10 +83,6 @@ size_t block_get_sub_vectors_nb(dahl_block const* block);
 // Get sub vector at index. To be called after `block_partition_along_z_flat`.
 dahl_vector* block_get_sub_vector(dahl_block const* block, const size_t index);
 
-// Returns a flattened vector of the block, the previous instance of the block is finalized automatically.
-dahl_vector* block_to_vector(dahl_block* block);
-dahl_vector* block_as_vector(dahl_block const* block);
-
 void block_print(dahl_block const* block);
 
 // Initialize a dahl_matrix with every values at 0.
