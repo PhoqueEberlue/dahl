@@ -203,8 +203,8 @@ void block_partition_along_z(dahl_block* block)
     {
 		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
-        //TODO: Check if the pointer is always valid?
         dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
+        assert(data);
 
         block->sub_matrices[i].handle = sub_matrix_handle;
         block->sub_matrices[i].data = data;
@@ -286,8 +286,8 @@ void block_partition_along_z_flat(dahl_block* block)
     {
 		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
-        //TODO: Check if the pointer is always valid?
         dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
+        assert(data);
 
         block->sub_vectors[i].handle = sub_vector_handle;
         block->sub_vectors[i].data = data;

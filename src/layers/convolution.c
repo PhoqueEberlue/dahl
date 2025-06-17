@@ -37,6 +37,7 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     *(dahl_shape3d*)&conv->output_shape = output_shape;
     conv->filters = filters;
     conv->biases = biases;
+    conv->input = nullptr;
     conv->output = output;
     conv->dl_dinput = dl_dinput;
 
@@ -45,11 +46,14 @@ dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size,
     return conv;
 }
 
-dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input)
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix* input)
 {
     // All the allocations in this function will be performed in the temporary arena
     dahl_arena* const save_arena = dahl_context_arena;
     dahl_context_arena = dahl_temporary_arena;
+
+    // Saves the input for backward pass
+    conv->input = input;
     
     block_partition_along_z(conv->output);
     block_partition_along_z(conv->filters);
@@ -77,7 +81,7 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input
     return conv->output;
 }
 
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input)
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate)
 {
     // All the allocations in this function will be performed in the temporary arena
     dahl_arena* const save_arena = dahl_context_arena;
@@ -109,7 +113,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
         dahl_matrix const* sub_dl_dout = block_get_sub_matrix(dl_dout, i);
         dahl_matrix* sub_dl_dfilters = block_get_sub_matrix(dl_dfilters, i);
 
-        task_matrix_cross_correlation(input, sub_dl_dout, sub_dl_dfilters);
+        task_matrix_cross_correlation(conv->input, sub_dl_dout, sub_dl_dfilters);
 
         // Next lines
         // dL_dinput += correlate2d(dL_dout[i],self.filters[i], mode="full")

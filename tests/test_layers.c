@@ -428,7 +428,7 @@ void test_convolution()
     
     dahl_block* input_backward = block_init_from(expect_shape, (dahl_fp*)&expect_pool_backward);
 
-    dahl_matrix* conv_backward_out = convolution_backward(conv, input_backward, learning_rate, img_matrix);
+    dahl_matrix* conv_backward_out = convolution_backward(conv, input_backward, learning_rate);
 
     dahl_matrix const* expect_backward = matrix_init_from(input_shape, (dahl_fp*)&expect_conv_backward);
 

@@ -2,8 +2,7 @@
 
 ## Important
 
-- Homogeneize `x_to_y`, `x_as_y` etc functions. Maybe actually add a view functionnality?
-- make the partition function work with const data?? -> obviously lead to problems bc we need to create the views and change some values to toggle the partition boolean.
+- Implementing the 3 other parallelizable dimensions
 
 ## Later
 
@@ -18,6 +17,7 @@
   maybe we should hide the data acquire and instead give accessor to fill the data. See [hiding-acquire-release](./design-talk/topics/hiding-acquire-release.md)
 - the padding function is very unefficient
 - We might still have a neglibeable memory leak even after the arena introduction.
+- make the dataset loader more generic
 
 ## Questionable
 

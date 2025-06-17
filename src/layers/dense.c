@@ -84,9 +84,8 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_f
 
     dahl_vector* dl_dy = task_matrix_vector_product_init(tmp, dl_dout);
 
-    // We need to clone dl_dy because we change its dimensions
-    dahl_vector* dl_dy_clone = vector_clone(dl_dy);
-    dahl_matrix const* dl_dy_col = vector_to_column_matrix(dl_dy_clone);
+    // Create a clone of dl_dy as a column matrix
+    dahl_matrix const* dl_dy_col = vector_to_column_matrix(dl_dy);
 
     dahl_shape3d dl_dw_shape = { .x = dense->input_shape.x * dense->input_shape.y, .y = dense->output_size, .z = dense->input_shape.z };
     dahl_block* dl_dw = block_init(dl_dw_shape);

@@ -311,14 +311,18 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in)
 {
     dahl_matrix* result = task_vector_diag(in);
 
-    dahl_matrix* in_col = vector_to_column_matrix(vector_clone(in));
-    dahl_matrix* in_row = vector_to_row_matrix(vector_clone(in));
+    // Init in the temporary arena 
+    dahl_arena* const save_arena = dahl_context_arena;
+    dahl_context_arena = dahl_temporary_arena;
 
+    dahl_matrix* in_col = vector_to_column_matrix(in);
+    dahl_matrix* in_row = vector_to_row_matrix(in);
     dahl_matrix* tmp = task_matrix_matrix_product_init(in_col, in_row);
 
-    TASK_SUB_SELF(result, tmp);
+    // Then switch to previous context.
+    dahl_context_arena = save_arena;
 
-    // TODO: add finalize
+    TASK_SUB_SELF(result, tmp);
 
     return result;
 }
@@ -384,8 +388,10 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
     // Init in the temporary arena 
     dahl_arena* const save_arena = dahl_context_arena;
     dahl_context_arena = dahl_temporary_arena;
+
     dahl_vector* tmp = vector_init(n_classes);
-    // Then switch to previous context. TODO: make it look better
+
+    // Then switch to previous context.
     dahl_context_arena = save_arena;
 
     TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
@@ -425,8 +431,10 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predicti
     // Init in the temporary arena 
     dahl_arena* const save_arena = dahl_context_arena;
     dahl_context_arena = dahl_temporary_arena;
+
     dahl_vector* out = vector_init(len);
-    // Then switch to previous context. TODO: make it look better
+
+    // Then switch to previous context.
     dahl_context_arena = save_arena;
 
     int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,

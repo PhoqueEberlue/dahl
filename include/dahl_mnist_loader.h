@@ -4,7 +4,6 @@
 #include "dahl_data.h"
 #include <stdio.h>
 
-// TODO: make it generic
 typedef struct
 {
     dahl_block* train_images;

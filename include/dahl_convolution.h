@@ -10,7 +10,7 @@ typedef struct
 {
     dahl_shape2d const input_shape;
     // Last input data
-    dahl_matrix* input_data;
+    dahl_matrix* input;
 
     size_t const num_filters;
     size_t const filter_size;
@@ -29,7 +29,7 @@ typedef struct
 } dahl_convolution;
 
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters);
-dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix const* input);
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate, dahl_matrix const* input);
+dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix* input);
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate);
 
 #endif //!DAHL_CONVOLUTION_H

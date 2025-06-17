@@ -39,9 +39,6 @@ dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data)
     dahl_matrix* matrix = matrix_init(shape);
     size_t n_elems = shape.x * shape.y;
     
-    // TODO: memcpy doesn't work, it's not a big deal but it would be nice to understand why
-    // memcpy(data_copy, data, n_elems);
-
     for (int i = 0; i < n_elems; i++)
     {
         matrix->data[i] = data[i];
@@ -156,6 +153,7 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
+        assert(data);
 
         matrix->sub_vectors[i].handle = sub_vector_handle;
         matrix->sub_vectors[i].data = data;

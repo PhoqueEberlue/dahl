@@ -73,7 +73,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
             dahl_block* dense_back = dense_backward(dense, gradients, LEARNING_RATE);
             dahl_block* pool_back = pooling_backward(pool, dense_back);
             // TODO: maybe save the image in the struct so we don't have to pass it?
-            dahl_matrix* conv_back = convolution_backward(conv, pool_back, LEARNING_RATE, image);
+            dahl_matrix* conv_back = convolution_backward(conv, pool_back, LEARNING_RATE);
             // Why aren't we using bacward convolution result result?
         }
 
