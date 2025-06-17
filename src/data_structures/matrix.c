@@ -234,18 +234,3 @@ void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)
 
 	starpu_data_release(matrix->handle);
 }
-
-dahl_vector* matrix_as_vector(dahl_matrix const* matrix)
-{
-    dahl_shape2d shape = matrix_get_shape(matrix);
-
-    dahl_fp* data = matrix_data_acquire(matrix);
-
-    // TODO: here it performs a copy...
-    dahl_vector* res = vector_init_from(shape.x * shape.y, data);
-
-    matrix_data_release(matrix);
-    // Here it returns a "view", bc it points to the same data as the matrix, but the handle will treat it as a vector.
-    // Later we should be careful to manage this memory problem
-    return res;
-}

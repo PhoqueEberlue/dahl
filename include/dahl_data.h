@@ -145,24 +145,29 @@ size_t vector_get_len(dahl_vector const* vector);
 dahl_fp* vector_data_acquire(dahl_vector const* vector);
 void vector_data_release(dahl_vector const* vector);
 
-// Converts a vector to a matrix
-dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape);
-dahl_matrix* vector_to_column_matrix(dahl_vector* vector);
-dahl_matrix* vector_to_row_matrix(dahl_vector* vector);
+// Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
+dahl_matrix* vector_to_matrix(dahl_vector const* vector, dahl_shape2d shape);
 
-// Converts a vector to a block
-dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape);
+// Copy the vector into a new column matrix of shape (1, len)
+dahl_matrix* vector_to_column_matrix(dahl_vector const* vector);
 
-// Creates a "view" to the matrix as a vector.
-dahl_vector* matrix_as_vector(dahl_matrix const* matrix);
+// Copy the vector into a new row matrix of shape (len, 1)
+dahl_matrix* vector_to_row_matrix(dahl_vector const* vector);
 
-// Clone the vector as a categorical matrix
-dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes);
+// Copy the vector into a new categorical matrix
+// E.g. [1,2,0,1,1] gives:
+// [[0, 1, 0],
+//  [0, 0, 1],
+//  [1, 0, 0],
+//  [0, 1, 0],
+//  [0, 1, 0]]
+dahl_matrix* vector_to_categorical(dahl_vector const* vector, size_t const num_classes);
 
 // Compares the two matrices value by value and returns wether or not they're equal.
-// Note: values are rounded in order to obtain valid comparisons.
+// Rounding values can be enabled or disabled, and rounding precision can be specified.
 bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding, u_int8_t const precision);
 
+// Print a vector
 void vector_print(dahl_vector const* vector);
 
 #endif //!DAHL_DATA_H

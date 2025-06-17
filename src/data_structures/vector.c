@@ -137,56 +137,31 @@ void vector_print(dahl_vector const* vector)
 	starpu_data_release(vector->handle);
 }
 
-// FIXME 
-dahl_matrix* vector_to_matrix(dahl_vector* vector, dahl_shape2d shape)
+dahl_matrix* vector_to_matrix(dahl_vector const* vector, dahl_shape2d shape)
 {
-    size_t len = vector_get_len(vector);
+    assert(shape.x * shape.y == vector_get_len(vector));
 
     starpu_data_acquire(vector->handle, STARPU_R);
-
-    assert(shape.x * shape.y == len);
-
     dahl_matrix* res = matrix_init_from(shape, vector->data);
-
     starpu_data_release(vector->handle);
 
     return res;
 }
 
-// FIXME 
-dahl_matrix* vector_to_column_matrix(dahl_vector* vector)
+dahl_matrix* vector_to_column_matrix(dahl_vector const* vector)
 {
-    size_t len = vector_get_len(vector);
-    dahl_shape2d new_shape = { .x = 1, .y = len };
+    dahl_shape2d new_shape = { .x = 1, .y = vector_get_len(vector) };
     return vector_to_matrix(vector, new_shape);
 }
 
-// FIXME 
-dahl_matrix* vector_to_row_matrix(dahl_vector* vector)
+dahl_matrix* vector_to_row_matrix(dahl_vector const* vector)
 {
-    size_t len = vector_get_len(vector);
-    dahl_shape2d new_shape = { .x = len, .y = 1 };
+    dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
     return vector_to_matrix(vector, new_shape);
 }
 
-// FIXME 
-dahl_block* vector_to_block(dahl_vector* vector, dahl_shape3d shape)
-{
-    size_t len = vector_get_len(vector);
-    starpu_data_acquire(vector->handle, STARPU_R);
-
-    assert(shape.x * shape.y * shape.z == len);
-
-    dahl_block* res = block_init_from(shape, vector->data);
-
-    starpu_data_release(vector->handle);
-
-    return res;
-}
-
-// FIXME 
 // TODO: why wouldn't it be a codelet?
-dahl_matrix* vector_as_categorical(dahl_vector const* vector, size_t const num_classes)
+dahl_matrix* vector_to_categorical(dahl_vector const* vector, size_t const num_classes)
 {
     size_t len = vector_get_len(vector);
 
