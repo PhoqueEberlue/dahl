@@ -21,6 +21,8 @@ void dahl_init()
 
 void dahl_shutdown()
 {
+    dahl_arena_delete(dahl_persistent_arena);
+    dahl_arena_delete(dahl_temporary_arena);
 	/* terminate StarPU, no task can be submitted after */
 	starpu_shutdown();
 }

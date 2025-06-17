@@ -1,12 +1,22 @@
-#include "_arena.h"
-#include "starpu_data_interfaces.h"
-#include "starpu_task.h"
+#include "arena.h"
 
 #include <assert.h>
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Including the arena backend implementation here to avoid leaking its functions outside this file.
+#include "arena_tsoding.h"
+
+// Defining dahl_arena here so it stays opaque in the public API
+typedef struct _dahl_arena
+{
+    Arena arena;
+    starpu_data_handle_t* handles;
+    size_t handle_count;
+    size_t handle_capacity;
+} dahl_arena;
 
 dahl_arena* dahl_arena_new()
 {
@@ -49,9 +59,12 @@ void dahl_arena_reset(dahl_arena* arena)
     arena->handle_count = 0;
 }
 
-// void arena_delete(dahl_arena* arena)
-// {
-//     free(arena->buffer);
-//     free(arena);
-// }
+void dahl_arena_delete(dahl_arena* arena)
+{
+    // Important to unregister handles
+    dahl_arena_reset(arena);
 
+    arena_free(&arena->arena);
+    free((void*)arena->handles);
+    free(arena);
+}
