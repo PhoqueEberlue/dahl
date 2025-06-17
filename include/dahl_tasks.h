@@ -218,22 +218,22 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 // Clip and modify every elements of `self` between `min` and `max`.
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
 
-// Sum every elements of `data`.
+// Sum every elements of `object`.
 // No self version of this macro because this is obviously the default behavior.
-#define TASK_SUM(DATA, VALUE)          \
-    _Generic((DATA),                   \
+#define TASK_SUM(OBJECT, VALUE)        \
+    _Generic((OBJECT),                 \
         dahl_block*: task_block_sum,   \
         dahl_matrix*: task_matrix_sum, \
         dahl_vector*: task_vector_sum  \
-    )(DATA, VALUE)
+    )(OBJECT, VALUE)
 
-// Fill every elements of `data` with `value`.
+// Fill every elements of `object` with `value`.
 // No self version of this macro because this is obviously the default behavior.
-#define TASK_FILL(DATA, VALUE)          \
-    _Generic((DATA),                    \
+#define TASK_FILL(OBJECT, VALUE)        \
+    _Generic((OBJECT),                  \
         dahl_block*: task_block_fill,   \
         dahl_matrix*: task_matrix_fill, \
         dahl_vector*: task_vector_fill  \
-    )(DATA, VALUE)
+    )(OBJECT, VALUE)
 
 #endif //!DAHL_TASKS_H
