@@ -541,17 +541,17 @@ void task_fill(starpu_data_handle_t handle, struct starpu_codelet* codelet, dahl
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_block_fill(dahl_block const* block, dahl_fp value)
+void task_block_fill(dahl_block* block, dahl_fp value)
 {
     task_fill(block->handle, &cl_block_fill, value);
 }
 
-void task_matrix_fill(dahl_matrix const* matrix, dahl_fp value)
+void task_matrix_fill(dahl_matrix* matrix, dahl_fp value)
 {
     task_fill(matrix->handle, &cl_matrix_fill, value);
 }
 
-void task_vector_fill(dahl_vector const* vector, dahl_fp value)
+void task_vector_fill(dahl_vector* vector, dahl_fp value)
 {
     task_fill(vector->handle, &cl_vector_fill, value);
 }

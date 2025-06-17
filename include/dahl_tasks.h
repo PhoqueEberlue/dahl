@@ -11,6 +11,9 @@
 //   - `` default implementation, the user should instanciate the output data structure before calling the function
 //   - `self` writes the result in the same data structure that is used for input (usually the argument named *_self)
 //   - `init` the function instanciates and returns the result data structure
+//
+// Functions common to the three data types have helper macros that infers the type at compilation.
+// The documentation for these functions is not repeated and only present in the macro definitions.
 
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
@@ -23,7 +26,7 @@ void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp const v
 void task_block_sub_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
 void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp const min, dahl_fp const max);
 dahl_fp task_block_sum(dahl_block const* in);
-void task_block_fill(dahl_block const* block, dahl_fp value);
+void task_block_fill(dahl_block* block, dahl_fp value);
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator
@@ -74,7 +77,7 @@ void task_matrix_to_flat_row(dahl_matrix* mat);
 
 // Flatten a matrix and consider it as a column matrix
 void task_matrix_to_flat_col(dahl_matrix* mat);
-void task_matrix_fill(dahl_matrix const* matrix, dahl_fp value);
+void task_matrix_fill(dahl_matrix* matrix, dahl_fp value);
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
@@ -106,9 +109,10 @@ void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c)
 
 void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
 void task_vector_sub_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
+
 void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp const min, dahl_fp const max);
 dahl_fp task_vector_sum(dahl_vector const* in);
-void task_vector_fill(dahl_vector const* vector, dahl_fp value);
+void task_vector_fill(dahl_vector* vector, dahl_fp value);
 // ---------------------------- HELPER MACRO FOR TASKS COMMON TO ANY TYPES ----------------------------
 
 // Type comparison without taking into account const qualifiers
@@ -116,8 +120,6 @@ void task_vector_fill(dahl_vector const* vector, dahl_fp value);
     (__builtin_types_compatible_p(typeof(*(T1)), typeof(*(T2))))
 
 #define TASK_RELU(IN, OUT)                                 \
-    _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                   "IN and OUT must be of the same type"); \
     _Generic((OUT),                                        \
         dahl_block*: task_block_relu,                      \
         dahl_matrix*: task_matrix_relu,                    \
@@ -203,6 +205,7 @@ void task_vector_fill(dahl_vector const* vector, dahl_fp value);
 // Substract `value` to every elements of `in` writing directly in the same buffer
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) TASK_SUB_VALUE(SELF, SELF, VALUE)
 
+// Clip every elements of `in` between `min` and `max` and store to `out`.
 #define TASK_CLIP(IN, OUT, MIN, MAX)                       \
     _Static_assert(TYPES_MATCH((IN), (OUT)),               \
                    "IN and OUT must be of the same type"); \
@@ -212,6 +215,25 @@ void task_vector_fill(dahl_vector const* vector, dahl_fp value);
         dahl_vector*: task_vector_clip                     \
     )(IN, OUT, MIN, MAX)
 
+// Clip and modify every elements of `self` between `min` and `max`.
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
+
+// Sum every elements of `data`.
+// No self version of this macro because this is obviously the default behavior.
+#define TASK_SUM(DATA, VALUE)          \
+    _Generic((DATA),                   \
+        dahl_block*: task_block_sum,   \
+        dahl_matrix*: task_matrix_sum, \
+        dahl_vector*: task_vector_sum  \
+    )(DATA, VALUE)
+
+// Fill every elements of `data` with `value`.
+// No self version of this macro because this is obviously the default behavior.
+#define TASK_FILL(DATA, VALUE)          \
+    _Generic((DATA),                    \
+        dahl_block*: task_block_fill,   \
+        dahl_matrix*: task_matrix_fill, \
+        dahl_vector*: task_vector_fill  \
+    )(DATA, VALUE)
 
 #endif //!DAHL_TASKS_H

@@ -128,7 +128,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
 
     // Reset dl_dinput. Nedeed because otherwise the previous iter data will collide and
     // produce wrong results (because block_sum_z_axis increments in the ouput buffer). FIX?
-    task_matrix_fill(conv->dl_dinput, 0);
+    TASK_FILL(conv->dl_dinput, 0);
 
     // Sum the temporary results that were computed just before
     task_block_sum_z_axis(dl_dinput_tmp, conv->dl_dinput);

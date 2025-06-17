@@ -36,7 +36,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 {
     // TODO: set num_classes (atm 10)
     dahl_block* image_block = set->train_images;
-    dahl_matrix* y_categorical = vector_as_categorical(set->train_labels, 10);
+    dahl_matrix* y_categorical = vector_to_categorical(set->train_labels, 10);
 
     block_partition_along_z(image_block);
     matrix_partition_along_y(y_categorical);

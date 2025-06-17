@@ -7,27 +7,6 @@ typedef struct _dahl_vector dahl_vector;
 typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_block dahl_block;
 
-// Wrapper around the dahl data structures `dahl_block`, `dahl_matrix` and `dahl_vector`
-// that represent any of the previously cited types.
-// It can contain a pointer to the original data structure yet it's memory should still
-// be managed by the original type.
-typedef struct
-{
-    union dahl_structure
-    {
-        dahl_block* block;
-        dahl_matrix* matrix;
-        dahl_vector* vector;
-    } structure;
-
-    enum dahl_type
-    {
-        dahl_type_block,
-        dahl_type_matrix,
-        dahl_type_vector,
-    } type;
-} dahl_any;
-
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
@@ -44,6 +23,7 @@ dahl_block* block_init_random(dahl_shape3d const shape);
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data);
 
+// Clone a block
 dahl_block* block_clone(dahl_block const* block);
 
 // Returns a new block with added padding. 
@@ -55,10 +35,13 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const* block);
 
-// Compares the two blocks value by value and returns wether or not they're equal.
+// Compares two blocks value by value and returns wether or not they're equal.
 bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding, u_int8_t const precision);
 
+// Acquire the block data, will wait any associated tasks to finish.
 dahl_fp* block_data_acquire(dahl_block const* block);
+
+// Release the block data, tasks will be able to use the block again.
 void block_data_release(dahl_block const* block);
 
 // Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
@@ -83,6 +66,7 @@ size_t block_get_sub_vectors_nb(dahl_block const* block);
 // Get sub vector at index. To be called after `block_partition_along_z_flat`.
 dahl_vector* block_get_sub_vector(dahl_block const* block, const size_t index);
 
+// Print a block
 void block_print(dahl_block const* block);
 
 // Initialize a dahl_matrix with every values at 0.
@@ -101,25 +85,40 @@ dahl_matrix* matrix_init_random(dahl_shape2d const shape);
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data);
 
+// Clone a matrix
 dahl_matrix* matrix_clone(dahl_matrix const* matrix);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const* matrix);
 
+// Acquire the matrix data, will wait any associated tasks to finish.
 dahl_fp* matrix_data_acquire(dahl_matrix const* matrix);
+
+// Release the matrix data, tasks will be able to use the block again.
 void matrix_data_release(dahl_matrix const* matrix);
 
-// Compares the two matrices value by value and returns wether or not they're equal.
+// Compares two matrices value by value and returns wether or not they're equal.
 bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding, u_int8_t const precision);
 
+// Partition data along y axis, the sub vectors can then be accesed with `matrix_get_sub_vector`.
+// Exactly creates y sub vectors, so `matrix_get_sub_vector_nb` should be equal to y.
+// Note the the vector itself cannot be used as long as it is partitioned.
 void matrix_partition_along_y(dahl_matrix* matrix);
+
+// Unpartition a matrix
 void matrix_unpartition(dahl_matrix* matrix);
+
+// Get the number of sub vectors
 size_t matrix_get_sub_vector_nb(dahl_matrix const* matrix);
+
+// Get the sub vector at index
 dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, size_t const index);
 
+// Print a matrix
 void matrix_print(dahl_matrix const* matrix);
-void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold);
 
+// Print a matrix with ascii format, useful to print images in the terminal
+void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold);
 
 // Initialize a dahl_vector with every values at 0.
 // parameters:
@@ -137,12 +136,16 @@ dahl_vector* vector_init_random(size_t const len);
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_vector* vector_init_from(size_t const len, dahl_fp const* data);
 
+// Clone a vector
 dahl_vector* vector_clone(dahl_vector const* vector);
 
 // Returns the vector len
 size_t vector_get_len(dahl_vector const* vector);
 
+// Acquire the vector data, will wait any associated tasks to finish.
 dahl_fp* vector_data_acquire(dahl_vector const* vector);
+
+// Release the vector data, tasks will be able to use the block again.
 void vector_data_release(dahl_vector const* vector);
 
 // Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
