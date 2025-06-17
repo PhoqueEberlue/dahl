@@ -18,6 +18,8 @@ int main(int argc, char **argv)
     test_tasks();
     test_data();
 
+    dahl_arena_delete(test_arena);
+
     dahl_shutdown();
 
     return 0;
