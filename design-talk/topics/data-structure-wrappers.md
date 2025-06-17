@@ -15,7 +15,6 @@ dahl_fp block_get(starpu_data_handle_t handle, size_t x, size_t y, size_t z)
 
     size_t index = (z*ldz)+(y*ldy)+x;
 
-    // TODO: add debug flags macros
     size_t nx = starpu_block_get_nx(handle);
     size_t ny = starpu_block_get_ny(handle);
     size_t nz = starpu_block_get_nz(handle);
