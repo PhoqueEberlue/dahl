@@ -18,11 +18,15 @@
   simgrid,
   mpi,
   cudaPackages,
+  fxt,
+  pajeng,
+  python3,
 
   # Options
   enableSimgrid ? false,
   enableMPI ? false,
   enableCUDA ? false,
+  enableTracing ? false,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -32,6 +36,7 @@ stdenv.mkDerivation (finalAttrs: {
   inherit enableSimgrid;
   inherit enableMPI;
   inherit enableCUDA;
+  inherit enableTracing;
 
   # src = fetchzip {
   #   url = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/starpu-${finalAttrs.version}.tar.gz";
@@ -52,7 +57,13 @@ stdenv.mkDerivation (finalAttrs: {
     ]
     ++ lib.optional finalAttrs.enableSimgrid simgrid
     ++ lib.optional finalAttrs.enableMPI mpi
-    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit;
+    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit
+    ++ lib.optional finalAttrs.enableTracing [ fxt ];
+
+  nativeCheckInputs = 
+    [
+    ]
+    ++ lib.optional finalAttrs.enableTracing [ pajeng python3 fxt ];
 
   buildInputs =
     [
@@ -93,7 +104,7 @@ stdenv.mkDerivation (finalAttrs: {
   postConfigure = ''
     # Patch shebangs recursively because a lot of scripts are used
     shopt -s globstar
-    patchShebangs --build **/*.sh
+    patchShebangs --build **/*.sh tools/*
 
     # this line removes a bug where value of $HOME is set to a non-writable /homeless-shelter dir
     export HOME=$(pwd)

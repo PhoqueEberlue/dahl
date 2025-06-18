@@ -1,5 +1,5 @@
 {
-  description = "Nix flake for a development shell with CUDA, StarPU, and nixGLHost";
+  description = "Nix flake for DAHL's development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -38,12 +38,19 @@
           hwloc = pkgs.hwloc.override { enableCuda = enableCUDA; };
           # nixgl is only needed for cuda executions
           nixglhost = if enableCUDA then pkgs.callPackage "${nixglhost-src}/default.nix" { } else null;
+          fxt = pkgs.callPackage ./nix/fxt.nix {};
+          pajeng = pkgs.callPackage ./nix/pajeng.nix {};
 
           # Building from my local derivation of StarPU until it is available on nixpkgs
-          starpu = pkgs.callPackage ./starpu.nix { 
+          starpu = pkgs.callPackage ./nix/starpu.nix { 
             cudaPackages = cudaPackages;
-            hwloc = hwloc;
             enableCUDA = enableCUDA;
+            hwloc = hwloc;
+
+            # Tracing libs
+            fxt = fxt;
+            pajeng = pajeng;
+            enableTracing = true;
           };
         in
           {
@@ -58,6 +65,8 @@
                 flamegraph
                 hwloc
                 czmq
+                fxt
+                pajeng
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
