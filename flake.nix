@@ -40,6 +40,7 @@
           nixglhost = if enableCUDA then pkgs.callPackage "${nixglhost-src}/default.nix" { } else null;
           fxt = pkgs.callPackage ./nix/fxt.nix {};
           pajeng = pkgs.callPackage ./nix/pajeng.nix {};
+          vite = pkgs.callPackage ./nix/vite.nix { qtPackages = pkgs.libsForQt5.qt5; };
 
           # Building from my local derivation of StarPU until it is available on nixpkgs
           starpu = pkgs.callPackage ./nix/starpu.nix { 
@@ -67,6 +68,7 @@
                 czmq
                 fxt
                 pajeng
+                vite
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
