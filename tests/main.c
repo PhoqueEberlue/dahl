@@ -4,7 +4,7 @@
 
 #define RANDOM_SEED 42
 
-dahl_arena* test_arena = nullptr;
+dahl_arena* testing_arena = nullptr;
 
 int main(int argc, char **argv)
 {
@@ -12,13 +12,15 @@ int main(int argc, char **argv)
 
     dahl_init();
 
-    test_arena = dahl_arena_new();
+    // Instanciate a testing arena and set it as context
+    testing_arena = dahl_arena_new();
+    dahl_context_arena = testing_arena;
 
     test_layers();
     test_tasks();
     test_data();
 
-    dahl_arena_delete(test_arena);
+    dahl_arena_delete(testing_arena);
 
     dahl_shutdown();
 

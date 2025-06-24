@@ -3,9 +3,6 @@
 
 void test_block_partition_along_z()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
     dahl_fp data[2][3][4] = {
@@ -54,15 +51,11 @@ void test_block_partition_along_z()
 
     block_unpartition(block);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_matrix_partition_along_y()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     dahl_shape2d data_shape = { .x = 4, .y = 5 };
 
     dahl_fp data[5][4] = {
@@ -88,15 +81,11 @@ void test_matrix_partition_along_y()
 
     matrix_unpartition(matrix);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_block_add_padding()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
     dahl_fp data[2][3][4] = {
@@ -180,15 +169,11 @@ void test_block_add_padding()
 
     ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_matrix_get_shape()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     dahl_fp data[3][4] = {
         { 3.0F, 1.0F,-8.0F,-3.0F },
         {-7.0F,-3.0F, 3.0F, 2.0F },
@@ -207,8 +192,7 @@ void test_matrix_get_shape()
 
     ASSERT_SHAPE2D_EQUALS(expect_shape, res_shape);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_data()

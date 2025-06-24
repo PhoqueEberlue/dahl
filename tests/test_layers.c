@@ -398,9 +398,6 @@ static constexpr dahl_fp expect_conv_biases[2][23][23] = {
 
 void test_convolution()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     // ----------- Forward -----------
     dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
     size_t const num_channels = 2;
@@ -439,15 +436,11 @@ void test_convolution()
     ASSERT_SHAPE3D_EQUALS(expect_shape, block_get_shape(conv->biases));
     ASSERT_BLOCK_EQUALS_ROUND(expect_biases, conv->biases, 6);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_pool()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     // ----------- Forward -----------
     dahl_shape3d constexpr input_shape = { .x = 23, .y = 23, .z = 2 };
     dahl_pooling* pool = pooling_init(2, input_shape);
@@ -478,15 +471,11 @@ void test_pool()
 
     // No weights/biases on this layer
     
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 void test_dense()
 {
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = test_arena;
-
     // ----------- Forward -----------
     size_t const num_classes = 10;
     size_t constexpr num_channels = 2;
@@ -503,7 +492,7 @@ void test_dense()
     // ----------- Backward -----------
     dahl_fp const learning_rate = 0.05F;
     dahl_vector const* targets = vector_init_from(num_classes, (dahl_fp*)&img_targets);
-    dahl_vector* gradients = task_vector_cross_entropy_loss_gradient(dense_forward_out, targets);
+    dahl_vector* gradients = task_vector_cross_entropy_loss_gradient_init(dense_forward_out, targets);
 
     dahl_block* dense_backward_out = dense_backward(dense, gradients, learning_rate);
 
@@ -522,8 +511,7 @@ void test_dense()
 
     ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 6);
 
-    dahl_arena_reset(test_arena);
-    dahl_context_arena = save_arena;
+    dahl_arena_reset(testing_arena);
 }
 
 
