@@ -1,3 +1,4 @@
+#include "stdlib.h"
 #include "utils.h"
 
 #define LEARNING_RATE 0.05F
@@ -12,8 +13,10 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
     block_partition_along_z(image_block);
     matrix_partition_along_y(y_categorical);
 
-    // size_t const n_samples = block_get_nb_children(image_block);
+    // size_t const n_samples = block_get_sub_matrix_nb(image_block);
     size_t const n_samples = 5000; // Let's only use the first 5k for now
+    // Number of data parallel dimensions
+    size_t const n_dp_dim = 2;
 
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)
     {
@@ -43,9 +46,9 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
 
             dahl_block* dense_back = dense_backward(dense, gradients, LEARNING_RATE);
             dahl_block* pool_back = pooling_backward(pool, dense_back);
-            // TODO: maybe save the image in the struct so we don't have to pass it?
             dahl_matrix* conv_back = convolution_backward(conv, pool_back, LEARNING_RATE);
             // Why aren't we using bacward convolution result result?
+            abort();
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n", total_loss / (dahl_fp)n_samples, correct_predictions / (float)n_samples * 100.0F);

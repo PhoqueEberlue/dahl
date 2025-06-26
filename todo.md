@@ -2,7 +2,16 @@
 
 ## Important
 
+
+- What I can do is defining multiple implementations for a single codelet, for example I could keep my actual version of the cross correlation,
+  but I could also write a vectorized version. This way I keep the naive, and perf oriented implem, and StarPU will be able to chose between the two.
+- Think about implementing a mini batch mechanism
+  -> need to add a batch argument to my conv, pooling and dense layers
+  -> it implies adding a 4th data structure, so we should refactor cleanly the codelet api to reuse cleanly the basic functions
+- benchmark with different task granularity?
+- benchmark with different batch sizes?
 - Implementing the 3 other parallelizable dimensions
+- Implement PipeDream algorithm
 
 ## Later
 

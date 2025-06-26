@@ -10,9 +10,12 @@ enable_language(CUDA)
 # Shows compile command in ./build/compile_commands.json, useful for clangd language server
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+
 # Enable debug flags and avoid optimizations
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
 
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)
@@ -53,6 +56,16 @@ add_executable(example-mnist
     "./examples/fashion-mnist.c"
 )
 
+add_executable(example-mnist-dp
+    "./examples/fashion-mnist-dp.c"
+)
+
+add_executable(example-mnist-mini-batch
+    "./examples/fashion-mnist-mini-batch.c"
+)
+
 target_link_libraries(dahl PRIVATE czmq scal_obj)
 target_link_libraries(tests PUBLIC dahl)
 target_link_libraries(example-mnist PUBLIC dahl)
+target_link_libraries(example-mnist-dp PUBLIC dahl)
+target_link_libraries(example-mnist-mini-batch PUBLIC dahl)
