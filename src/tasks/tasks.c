@@ -67,7 +67,7 @@ void task_block_relu(dahl_block const* in, dahl_block *out)
     int ret = starpu_task_insert(&cl_block_relu,
                                  STARPU_R, in->handle, 
                                  STARPU_W, out->handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
 
 void task_matrix_relu(dahl_matrix const* in, dahl_matrix *out)
@@ -94,15 +94,20 @@ void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_vector* task_matrix_sum_y_axis(dahl_matrix const* in)
+void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out)
 {
-    dahl_shape2d in_shape = matrix_get_shape(in);
-    dahl_vector* out = vector_init(in_shape.x);
-
     int ret = starpu_task_insert(&cl_matrix_sum_y_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in)
+{
+    dahl_shape2d in_shape = matrix_get_shape(in);
+    dahl_vector* out = vector_init(in_shape.x);
+    
+    task_matrix_sum_y_axis(in, out);
 
     return out;
 }
@@ -279,33 +284,6 @@ void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp cons
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
 }
 
-void task_block_sub_value(dahl_block const* in, dahl_block* out, dahl_fp const value)
-{
-    int ret = starpu_task_insert(&cl_block_sub_value,
-                             STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, in->handle,
-                             STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-}
-
-void task_matrix_sub_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value)
-{
-    int ret = starpu_task_insert(&cl_matrix_sub_value,
-                             STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, in->handle,
-                             STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
-}
-
-void task_vector_sub_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value)
-{
-    int ret = starpu_task_insert(&cl_vector_sub_value,
-                             STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, in->handle,
-                             STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_vector_submit");
-}
-
 // TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
 dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in)
 {
@@ -424,7 +402,16 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
     return res;
 }
 
-dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets)
+void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
+{
+    int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
+                             STARPU_R, predictions->handle,
+                             STARPU_R, targets->handle,
+                             STARPU_W, gradients->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets)
 {
     size_t len = vector_get_len(predictions);
 
@@ -432,18 +419,14 @@ dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predicti
     dahl_arena* const save_arena = dahl_context_arena;
     dahl_context_arena = dahl_temporary_arena;
 
-    dahl_vector* out = vector_init(len);
+    dahl_vector* gradients = vector_init(len);
 
     // Then switch to previous context.
     dahl_context_arena = save_arena;
 
-    int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
-                             STARPU_R, predictions->handle,
-                             STARPU_R, targets->handle,
-                             STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
 
-    return out;
+    return gradients;
 }
 
 void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out)

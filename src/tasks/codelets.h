@@ -14,7 +14,7 @@
                                                                                    \
     static struct starpu_perfmodel perf_model_##func_name = {                      \
         .type = STARPU_HISTORY_BASED,                                              \
-        .symbol = "perf_model_" #func_name                                         \
+        .symbol = #func_name                                                       \
     };                                                                             \
                                                                                    \
     static struct starpu_codelet cl_##func_name = {                                \
@@ -56,10 +56,6 @@ DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_add_value, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_sub_value, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_sub_value, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_sub_value, 2, STARPU_R, STARPU_W);
 
 DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
 

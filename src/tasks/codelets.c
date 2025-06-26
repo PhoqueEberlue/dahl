@@ -719,63 +719,6 @@ void vector_add_value(void* buffers[2], void* cl_arg)
     add_value(in, out, 0, in_nx, value); 
 }
 
-void block_sub_value(void* buffers[2], void* cl_arg)
-{
-    dahl_fp value;
-    starpu_codelet_unpack_args(cl_arg, &value);
-
-    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
-    size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
-
-    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
-
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
-    assert(in_nz == out_nz);
-
-    add_value(in, out, 0, in_nx, -value); 
-}
-
-void matrix_sub_value(void* buffers[2], void* cl_arg)
-{
-    dahl_fp value;
-    starpu_codelet_unpack_args(cl_arg, &value);
-
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
-
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
-
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
-
-    add_value(in, out, 0, in_nx, -value); 
-}
-
-void vector_sub_value(void* buffers[2], void* cl_arg)
-{
-    dahl_fp value;
-    starpu_codelet_unpack_args(cl_arg, &value);
-
-    size_t const in_nx = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    size_t const out_nx = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
-
-    assert(in_nx == out_nx);
-
-    add_value(in, out, 0, in_nx, -value); 
-}
-
 void matrix_vector_product(void* buffers[3], void* cl_arg)
 {
     // Input matrix

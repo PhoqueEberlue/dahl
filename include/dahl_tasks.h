@@ -23,7 +23,6 @@ void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp const factor
 void task_block_sub(dahl_block const* a, dahl_block const* b, dahl_block* c);
 void task_block_add(dahl_block const* a, dahl_block const* b, dahl_block* c);
 void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
-void task_block_sub_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
 void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp const min, dahl_fp const max);
 dahl_fp task_block_sum(dahl_block const* in);
 void task_block_fill(dahl_block* block, dahl_fp value);
@@ -40,7 +39,8 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 // - `mask` shape should be the same as `in` shape.
 void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t const pool_size);
 
-dahl_vector* task_matrix_sum_y_axis(dahl_matrix const* in);
+void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out);
+dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in);
 
 // Performs a backward max dahl_pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
 // - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
@@ -67,7 +67,6 @@ void task_matrix_sub(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c)
 void task_matrix_add(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
 
 void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
-void task_matrix_sub_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
 void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp const min, dahl_fp const max);
 
 dahl_fp task_matrix_sum(dahl_matrix const* in);
@@ -98,7 +97,8 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in);
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
 
-dahl_vector* task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets);
+void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
+dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets);
 
 void task_vector_relu(dahl_vector const* in, dahl_vector* out);
 
@@ -108,7 +108,6 @@ void task_vector_sub(dahl_vector const* a, dahl_vector const* b, dahl_vector* c)
 void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c);
 
 void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
-void task_vector_sub_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
 
 void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp const min, dahl_fp const max);
 dahl_fp task_vector_sum(dahl_vector const* in);
@@ -138,6 +137,10 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
     )(IN, OUT, FACTOR)
 
 #define TASK_SCAL_SELF(SELF, FACTOR) TASK_SCAL(SELF, SELF, FACTOR)
+
+#define TASK_DIVIDE(IN, OUT, DIVISOR) TASK_SCAL(IN, OUT, 1/(DIVISOR))
+
+#define TASK_DIVIDE_SELF(SELF, DIVISOR) TASK_DIVIDE(SELF, SELF, DIVISOR)
 
 // Performs `c` = `a` - `b`, where:
 // - `-` is the value by value substraction
@@ -193,14 +196,7 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 #define TASK_ADD_VALUE_SELF(SELF, VALUE) TASK_ADD_VALUE(SELF, SELF, VALUE)
 
 // Substract `value` to every elements of `in` and put the result in `out`
-#define TASK_SUB_VALUE(IN, OUT, VALUE)                     \
-    _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                   "IN and OUT must be of the same type"); \
-    _Generic((OUT),                                        \
-        dahl_block*: task_block_sub_value,                 \
-        dahl_matrix*: task_matrix_sub_value,               \
-        dahl_vector*: task_vector_sub_value                \
-    )(IN, OUT, VALUE)
+#define TASK_SUB_VALUE(IN, OUT, VALUE) TASK_ADD_VALUE(IN, OUT, -(VALUE))
 
 // Substract `value` to every elements of `in` writing directly in the same buffer
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) TASK_SUB_VALUE(SELF, SELF, VALUE)
