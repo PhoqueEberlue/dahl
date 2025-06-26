@@ -8,6 +8,10 @@
 
 // Including the arena backend implementation here to avoid leaking its functions outside this file.
 #include "arena_tsoding.h"
+#include "starpu_data.h"
+
+// TODO: make it dynamic?
+#define NMAX_HANDLES 1000
 
 // Defining dahl_arena here so it stays opaque in the public API
 typedef struct _dahl_arena
@@ -24,9 +28,9 @@ dahl_arena* dahl_arena_new()
     arena->arena.begin = nullptr;
     arena->arena.end = nullptr;
 
-    arena->handles = (starpu_data_handle_t*)malloc(100 * sizeof(starpu_data_handle_t));
+    arena->handles = (starpu_data_handle_t*)malloc(NMAX_HANDLES * sizeof(starpu_data_handle_t));
     arena->handle_count = 0;
-    arena->handle_capacity = 100;
+    arena->handle_capacity = NMAX_HANDLES;
 
     return arena;
 }
@@ -52,7 +56,8 @@ void dahl_arena_reset(dahl_arena* arena)
 
     for (size_t i = 0; i < arena->handle_count; i++)
     {
-        starpu_data_unregister(arena->handles[i]);
+        // Using no coherency to prevent data to be copied in the main memory
+        starpu_data_unregister_no_coherency(arena->handles[i]);
         arena->handles[i] = nullptr;
     }
 

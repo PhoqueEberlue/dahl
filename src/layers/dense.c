@@ -62,7 +62,7 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
     block_unpartition(dense->weights);
     matrix_unpartition(tmp);
 
-    dahl_vector* out = task_matrix_sum_y_axis(tmp);
+    dahl_vector* out = task_matrix_sum_y_axis_init(tmp);
 
     TASK_ADD_SELF(out, dense->biases);
 
