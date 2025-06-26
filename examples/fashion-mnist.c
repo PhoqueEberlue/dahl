@@ -68,7 +68,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
                 correct_predictions += 1.0F;
             }
 
-            dahl_vector* gradients = task_vector_cross_entropy_loss_gradient(dense_out, targets);
+            dahl_vector* gradients = task_vector_cross_entropy_loss_gradient_init(dense_out, targets);
 
             dahl_block* dense_back = dense_backward(dense, gradients, LEARNING_RATE);
             dahl_block* pool_back = pooling_backward(pool, dense_back);
