@@ -251,8 +251,7 @@ void test_divide()
     dahl_block* a_block = block_init_from(a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
 
-    TASK_DIVIDE_SELF(a_block, 2);
-
+    TASK_DIVIDE_SELF(a_block, 2e0);
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
 
     dahl_arena_reset(testing_arena);

@@ -19,6 +19,7 @@ int main(int argc, char **argv)
     test_layers();
     test_tasks();
     test_data();
+    test_arena();
 
     dahl_arena_delete(testing_arena);
 

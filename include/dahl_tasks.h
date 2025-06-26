@@ -138,8 +138,10 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 
 #define TASK_SCAL_SELF(SELF, FACTOR) TASK_SCAL(SELF, SELF, FACTOR)
 
+// Please use scientific notation for the divisor, e.g. 2e0 to divide by two
 #define TASK_DIVIDE(IN, OUT, DIVISOR) TASK_SCAL(IN, OUT, 1/(DIVISOR))
 
+// Please use scientific notation for the divisor, e.g. 2e0 to divide by two
 #define TASK_DIVIDE_SELF(SELF, DIVISOR) TASK_DIVIDE(SELF, SELF, DIVISOR)
 
 // Performs `c` = `a` - `b`, where:
