@@ -19,11 +19,11 @@
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
 void task_block_relu(dahl_block const* in, dahl_block* out);
-void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp const factor);
+void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp factor);
 void task_block_sub(dahl_block const* a, dahl_block const* b, dahl_block* c);
 void task_block_add(dahl_block const* a, dahl_block const* b, dahl_block* c);
-void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp const value);
-void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp const min, dahl_fp const max);
+void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp value);
+void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp min, dahl_fp max);
 dahl_fp task_block_sum(dahl_block const* in);
 void task_block_fill(dahl_block* block, dahl_fp value);
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
@@ -37,7 +37,7 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 // Performs max dahl_pooling on `in`, write output on `out` and store mask of the max values indexes in `mask`
 // - `out` shape should be equal to `in` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `in` shape.
-void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t const pool_size);
+void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t pool_size);
 
 void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out);
 dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in);
@@ -45,10 +45,10 @@ dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in);
 // Performs a backward max dahl_pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
 // - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `out` shape.
-void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t const pool_size);
+void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t pool_size);
 
 // Same as `task_matrix_backward_max_pooling` but stores the output directly in `mask_self`.
-void task_matrix_backward_max_pooling_self(dahl_matrix const* in, dahl_matrix* mask_self, size_t const pool_size);
+void task_matrix_backward_max_pooling_self(dahl_matrix const* in, dahl_matrix* mask_self, size_t pool_size);
 
 // Performs matrix vector product. Tries to find the right dimension to perform the operation.
 void task_matrix_vector_product(dahl_matrix const* mat, dahl_vector const* vec, dahl_vector* out);
@@ -61,13 +61,13 @@ void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out);
 dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in);
 
 void task_matrix_relu(dahl_matrix const* in, dahl_matrix* out);
-void task_matrix_scal(dahl_matrix const* in, dahl_matrix* out, dahl_fp const factor);
+void task_matrix_scal(dahl_matrix const* in, dahl_matrix* out, dahl_fp factor);
 
 void task_matrix_sub(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
 void task_matrix_add(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
 
-void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp const value);
-void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp const min, dahl_fp const max);
+void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp value);
+void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp min, dahl_fp max);
 
 dahl_fp task_matrix_sum(dahl_matrix const* in);
 
@@ -102,14 +102,14 @@ dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* pre
 
 void task_vector_relu(dahl_vector const* in, dahl_vector* out);
 
-void task_vector_scal(dahl_vector const* in, dahl_vector* out, dahl_fp const factor);
+void task_vector_scal(dahl_vector const* in, dahl_vector* out, dahl_fp factor);
 
 void task_vector_sub(dahl_vector const* a, dahl_vector const* b, dahl_vector* c);
 void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c);
 
-void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp const value);
+void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp value);
 
-void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp const min, dahl_fp const max);
+void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp min, dahl_fp max);
 dahl_fp task_vector_sum(dahl_vector const* in);
 void task_vector_fill(dahl_vector* vector, dahl_fp value);
 // ---------------------------- HELPER MACRO FOR TASKS COMMON TO ANY TYPES ----------------------------
