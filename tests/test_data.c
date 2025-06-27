@@ -54,6 +54,47 @@ void test_block_partition_along_z()
     dahl_arena_reset(testing_arena);
 }
 
+void test_block_partition_flatten_to_vector()
+{
+    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp data[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+
+    dahl_fp expect[24] = {
+        -2.0F, 1.0F, 2.0F,-1.0F,
+        3.0F, 1.0F,-3.0F, 1.0F,
+        4.0F,-1.0F, 4.0F,-1.0F,
+        3.0F, 1.0F,-8.0F,-3.0F,
+       -7.0F,-3.0F, 3.0F, 2.0F,
+        1.0F, 1.0F, 9.0F, 1.0F,
+    };
+
+    dahl_vector* expect_vector = vector_init_from(24, (dahl_fp*)&expect);
+
+    block_partition_flatten_to_vector(block);
+
+    dahl_vector* flat_vector = block_get_sub_vector(block, 0);
+    ASSERT_SIZE_T_EQUALS(24, vector_get_len(flat_vector));
+    ASSERT_VECTOR_EQUALS(expect_vector, flat_vector);
+
+    block_unpartition(block);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_matrix_partition_along_y()
 {
     dahl_shape2d data_shape = { .x = 4, .y = 5 };
@@ -198,6 +239,7 @@ void test_matrix_get_shape()
 void test_data()
 {
     test_block_partition_along_z();
+    test_block_partition_flatten_to_vector();
     test_matrix_partition_along_y();
     test_block_add_padding();
     test_matrix_get_shape();

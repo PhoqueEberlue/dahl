@@ -3,6 +3,7 @@
 #include "starpu_data.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"
+#include "starpu_util.h"
 #include "sys/types.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -293,6 +294,79 @@ void block_partition_along_z_flat(dahl_block* block)
         block->sub_vectors[i].data = data;
         block->sub_vectors[i].is_sub_data = true;
     }
+}
+
+// Custom filter that picks the block as vector (flattened view of the block)
+static void starpu_block_filter_flatten_to_vector(
+    void* parent_interface, void* child_interface, 
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter* f,
+    unsigned id, STARPU_ATTRIBUTE_UNUSED unsigned nparts)
+{
+	struct starpu_block_interface* block_parent = (struct starpu_block_interface *) parent_interface;
+	struct starpu_vector_interface* vector_child = (struct starpu_vector_interface *) child_interface;
+
+	unsigned blocksize;
+
+	size_t nx = block_parent->nx;
+	size_t ny = block_parent->ny;
+	size_t nz = block_parent->nz;
+	
+    blocksize = block_parent->ldz;
+
+	size_t elemsize = block_parent->elemsize;
+
+	size_t chunk_pos = (size_t)f->filter_arg_ptr;
+
+	STARPU_ASSERT_MSG((chunk_pos + id) < nz, "the chosen vector should be in the block");
+
+	size_t offset = (chunk_pos + id) * blocksize * elemsize;
+
+	STARPU_ASSERT_MSG(block_parent->id == STARPU_BLOCK_INTERFACE_ID, "%s can only be applied on a block data", __func__);
+	vector_child->id = STARPU_VECTOR_INTERFACE_ID;
+
+    // We return only one vector, so it's equal to the product of every dimension size
+    vector_child->nx = nx*ny*nz;
+
+	vector_child->elemsize = elemsize;
+	vector_child->allocsize = vector_child->nx * elemsize;
+
+	if (block_parent->dev_handle)
+	{
+		if (block_parent->ptr)
+			vector_child->ptr = block_parent->ptr + offset;
+		
+		vector_child->dev_handle = block_parent->dev_handle;
+		vector_child->offset = block_parent->offset + offset;
+	}
+}
+
+void block_partition_flatten_to_vector(dahl_block* block)
+{
+    // The block shouldn't be already partitionned
+    assert(block->is_partitioned != true);
+
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_block_filter_flatten_to_vector,
+		.nchildren = 1,
+		.get_child_ops = starpu_block_filter_pick_vector_child_ops
+	};
+
+	starpu_data_partition(block->handle, &f);
+    
+    block->is_partitioned = true;
+    // Only one vector here
+    block->sub_vectors = dahl_arena_alloc(sizeof(dahl_vector));
+
+    assert(starpu_data_get_nb_children(block->handle) == 1);
+
+    starpu_data_handle_t flat_vector_handle = starpu_data_get_sub_data(block->handle, 1, 0);
+    dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(flat_vector_handle);
+    assert(data);
+
+    block->sub_vectors[0].handle = flat_vector_handle;
+    block->sub_vectors[0].data = data;
+    block->sub_vectors[0].is_sub_data = true;
 }
 
 void block_unpartition(dahl_block* block)
