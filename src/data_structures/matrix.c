@@ -87,6 +87,12 @@ starpu_data_handle_t _matrix_get_handle(void* matrix)
     return ((dahl_matrix*)matrix)->handle;
 }
 
+size_t _matrix_get_nb_elem(void* matrix)
+{
+    dahl_shape2d shape = matrix_get_shape((dahl_matrix*)matrix);
+    return shape.x * shape.y;
+}
+
 dahl_fp* matrix_data_acquire(dahl_matrix const* matrix)
 {
     starpu_data_acquire(matrix->handle, STARPU_RW);
@@ -174,7 +180,7 @@ void matrix_unpartition(dahl_matrix* const matrix)
     matrix->is_partitioned = false;
 }
 
-size_t matrix_get_sub_vector_nb(dahl_matrix const* matrix)
+size_t matrix_get_nb_children(dahl_matrix const* matrix)
 {
     return starpu_data_get_nb_children(matrix->handle);
 }

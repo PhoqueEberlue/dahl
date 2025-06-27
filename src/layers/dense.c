@@ -47,7 +47,7 @@ dahl_vector* dense_forward(dahl_dense* dense, dahl_block* input_data)
     block_partition_along_z(dense->weights);
     matrix_partition_along_y(tmp);
 
-    size_t const n_channels = block_get_sub_matrix_nb(input_data);
+    size_t const n_channels = block_get_nb_children(input_data);
 
     for (size_t i = 0; i < n_channels; i++)
     {
@@ -101,7 +101,7 @@ dahl_block* dense_backward(dahl_dense* dense, dahl_vector const* dl_dout, dahl_f
     // however we need to perform the partial computation on flattened views of the matrices.
     block_partition_along_z_flat(dense->dl_dinput);
 
-    size_t const n_channels = block_get_sub_matrix_nb(dense->input_data);
+    size_t const n_channels = block_get_nb_children(dense->input_data);
 
     for (size_t i = 0; i < n_channels; i++)
     {

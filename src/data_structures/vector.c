@@ -76,6 +76,11 @@ starpu_data_handle_t _vector_get_handle(void* vector)
     return ((dahl_vector*)vector)->handle;
 }
 
+size_t _vector_get_nb_elem(void* vector)
+{
+    return vector_get_len((dahl_vector*)vector);
+}
+
 dahl_fp* vector_data_acquire(dahl_vector const* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);

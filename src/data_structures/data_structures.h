@@ -44,11 +44,31 @@ typedef struct _dahl_block
     dahl_matrix* sub_matrices;
     dahl_vector* sub_vectors;
     bool is_partitioned;
+
+    // Wether this block is a tensor sub data // TODO: those fields may be useless after all
+    bool is_sub_data;
 } dahl_block;
 
+typedef struct _dahl_tensor
+{
+    starpu_data_handle_t handle;
+    dahl_fp* data;
 
-starpu_data_handle_t _block_get_handle(void* block);
-starpu_data_handle_t _matrix_get_handle(void* matrix);
+    dahl_block* sub_blocks;
+    dahl_matrix* sub_matrices;
+    dahl_vector* sub_vectors;
+    bool is_partitioned;
+} dahl_tensor;
+
+
 starpu_data_handle_t _vector_get_handle(void* vector);
+starpu_data_handle_t _matrix_get_handle(void* matrix);
+starpu_data_handle_t _block_get_handle(void* block);
+starpu_data_handle_t _tensor_get_handle(void* tensor);
+
+size_t _tensor_get_nb_elem(void* tensor);
+size_t _block_get_nb_elem(void* block);
+size_t _matrix_get_nb_elem(void* matrix);
+size_t _vector_get_nb_elem(void* vector);
 
 #endif //!DAHL_DATA_STRUCTURES_H

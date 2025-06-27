@@ -59,7 +59,7 @@ dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix* input)
     block_partition_along_z(conv->filters);
 
     // Every block should have the same number of sub matrices
-    size_t const n_channels = block_get_sub_matrix_nb(conv->filters);
+    size_t const n_channels = block_get_nb_children(conv->filters);
 
     for (int i = 0; i < n_channels; i++)
     {
@@ -106,7 +106,7 @@ dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, d
     block_partition_along_z(dl_dinput_tmp);
 
     // Every block should have the same number of sub matrices
-    size_t sub_matrix_nb = block_get_sub_matrix_nb(conv->filters);
+    size_t sub_matrix_nb = block_get_nb_children(conv->filters);
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {

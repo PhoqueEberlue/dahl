@@ -88,6 +88,7 @@ typedef const struct _dahl_traits dahl_traits;
 
 // Here we define our different traits associated to each types.
 // Those structures contains references to the implementation of each function matching with the correct type.
+extern dahl_traits dahl_traits_tensor;
 extern dahl_traits dahl_traits_block;
 extern dahl_traits dahl_traits_matrix;
 extern dahl_traits dahl_traits_vector;
@@ -104,6 +105,7 @@ void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
 // HELPER MACROS FOR THE COMMON TASKS
 // Get the traits structure of an object at compile time
 #define GET_TRAITS(OBJECT) _Generic((OBJECT), \
+    dahl_tensor*: &dahl_traits_tensor,        \
     dahl_block*:  &dahl_traits_block,         \
     dahl_matrix*: &dahl_traits_matrix,        \
     dahl_vector*: &dahl_traits_vector         \

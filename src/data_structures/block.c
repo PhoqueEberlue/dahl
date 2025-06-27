@@ -38,6 +38,7 @@ dahl_block* block_init(dahl_shape3d const shape)
     block->sub_matrices = nullptr;
     block->sub_vectors = nullptr;
     block->is_partitioned = false;
+    block->is_sub_data = false;
 
     return block;
 }
@@ -133,6 +134,12 @@ dahl_shape3d block_get_shape(dahl_block const* block)
 starpu_data_handle_t _block_get_handle(void* block)
 {
     return ((dahl_block*)block)->handle;
+}
+
+size_t _block_get_nb_elem(void* block)
+{
+    dahl_shape3d shape = block_get_shape((dahl_block*)block);
+    return shape.x * shape.y * shape.z;
 }
 
 dahl_fp* block_data_acquire(dahl_block const* block)
@@ -400,7 +407,7 @@ void block_unpartition(dahl_block* block)
     block->is_partitioned = false;
 }
 
-size_t block_get_sub_matrix_nb(dahl_block const* block)
+size_t block_get_nb_children(dahl_block const* block)
 {
     return starpu_data_get_nb_children(block->handle);
 }
@@ -412,11 +419,6 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* block, const size_t index)
         && index < starpu_data_get_nb_children(block->handle));
 
     return &block->sub_matrices[index];
-}
-
-size_t block_get_sub_vectors_nb(dahl_block const* block)
-{
-    return starpu_data_get_nb_children(block->handle);
 }
 
 dahl_vector* block_get_sub_vector(dahl_block const* block, const size_t index)

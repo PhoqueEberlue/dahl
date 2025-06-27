@@ -3,10 +3,73 @@
 
 #include "dahl_types.h"
 
-typedef struct _dahl_vector dahl_vector;
-typedef struct _dahl_matrix dahl_matrix;
+typedef struct _dahl_tensor dahl_tensor;
 typedef struct _dahl_block dahl_block;
+typedef struct _dahl_matrix dahl_matrix;
+typedef struct _dahl_vector dahl_vector;
 
+// ---------------------------------------- TENSOR ----------------------------------------
+// Initialize a dahl_tensor with every values at 0.
+// parameters:
+// - shape: dahl_shape4d object describing the dimensions of the tensor
+dahl_tensor* tensor_init(dahl_shape4d shape);
+
+// Initialize a dahl_tensor with random values.
+// parameters:
+// - shape: dahl_shape4d object describing the dimensions of the tensor
+dahl_tensor* tensor_init_random(dahl_shape4d shape);
+
+// Initialize a dahl_tensor by cloning an existing array.
+// Cloned memory will be freed upon calling `tensor_finalize`, however do not forget to free the original array.
+// - shape: dahl_shape4d object describing the dimensions of the tensor
+// - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
+dahl_tensor* tensor_init_from(dahl_shape4d shape, dahl_fp const* data);
+
+// Clone a tensor
+dahl_tensor* tensor_clone(dahl_tensor const* tensor);
+
+// Returns a new tensor with added padding. 
+// The new_shape should be larger than the previous tensor.
+// If it is exactly the same, it just produces a copy of the bolck.
+// If the new padding is even, the remainder is placed at the end of the axis.
+dahl_tensor* tensor_add_padding_init(dahl_tensor const* tensor, dahl_shape4d new_shape);
+
+// Returns the tensor shape
+dahl_shape4d tensor_get_shape(dahl_tensor const* tensor);
+
+// Compares two tensors value by value and returns wether or not they're equal.
+bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, u_int8_t precision);
+
+// Acquire the tensor data, will wait any associated tasks to finish.
+dahl_fp* tensor_data_acquire(dahl_tensor const* tensor);
+
+// Release the tensor data, tasks will be able to use the tensor again.
+void tensor_data_release(dahl_tensor const* tensor);
+
+// Partition data along z axis, the sub matrices can then be accesed with `tensor_get_sub_matrix`.
+// Exactly creates z sub matrices, so `tensor_get_sub_matrix_nb` should be equal to z.
+// Note the the tensor itself cannot be used as long as it is partitioned.
+void tensor_partition_along_t(dahl_tensor* tensor);
+
+// Unpartition a tensor
+void tensor_unpartition(dahl_tensor* tensor);
+
+// Get the number of children
+size_t tensor_get_nb_children(dahl_tensor const* tensor);
+
+// Get sub block at `index`. To be called after `tensor_partition_along_t`.
+dahl_block* tensor_get_sub_block(dahl_tensor const* tensor, size_t index);
+
+// Get sub matrix at `index`. To be called after `tensor_partition_along_z`.
+dahl_matrix* tensor_get_sub_matrix(dahl_tensor const* tensor, size_t index);
+
+// Get sub vector at `index`. To be called after `tensor_partition_along_z_flat`.
+dahl_vector* tensor_get_sub_vector(dahl_tensor const* tensor, size_t index);
+
+// Print a tensor
+void tensor_print(dahl_tensor const* tensor);
+
+// ---------------------------------------- BLOCK ----------------------------------------
 // Initialize a dahl_block with every values at 0.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
@@ -45,7 +108,7 @@ dahl_fp* block_data_acquire(dahl_block const* block);
 void block_data_release(dahl_block const* block);
 
 // Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
-// Exactly creates z sub matrices, so `block_get_sub_matrix_nb` should be equal to z.
+// Exactly creates z sub matrices, so `block_get_nb_children` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned.
 void block_partition_along_z(dahl_block* block);
 
@@ -58,19 +121,19 @@ void block_partition_flatten_to_vector(dahl_block* block);
 // Unpartition a block
 void block_unpartition(dahl_block* block);
 
-// Get the number of sub matrices
-size_t block_get_sub_matrix_nb(dahl_block const* block);
+// Get the number of children
+size_t block_get_nb_children(dahl_block const* block);
 
 // Get sub matrix at index. To be called after `block_partition_along_z`.
 dahl_matrix* block_get_sub_matrix(dahl_block const* block, size_t index);
 
-size_t block_get_sub_vectors_nb(dahl_block const* block);
 // Get sub vector at index. To be called after `block_partition_along_z_flat`.
 dahl_vector* block_get_sub_vector(dahl_block const* block, size_t index);
 
 // Print a block
 void block_print(dahl_block const* block);
 
+// ---------------------------------------- MATRIX ----------------------------------------
 // Initialize a dahl_matrix with every values at 0.
 // parameters:
 // - shape: dahl_shape2d object describing the dimensions of the matrix
@@ -103,15 +166,15 @@ void matrix_data_release(dahl_matrix const* matrix);
 bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_int8_t precision);
 
 // Partition data along y axis, the sub vectors can then be accesed with `matrix_get_sub_vector`.
-// Exactly creates y sub vectors, so `matrix_get_sub_vector_nb` should be equal to y.
+// Exactly creates y sub vectors, so `matrix_get_nb_children` should be equal to y.
 // Note the the vector itself cannot be used as long as it is partitioned.
 void matrix_partition_along_y(dahl_matrix* matrix);
 
 // Unpartition a matrix
 void matrix_unpartition(dahl_matrix* matrix);
 
-// Get the number of sub vectors
-size_t matrix_get_sub_vector_nb(dahl_matrix const* matrix);
+// Get the number of children
+size_t matrix_get_nb_children(dahl_matrix const* matrix);
 
 // Get the sub vector at index
 dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, size_t index);
@@ -122,6 +185,7 @@ void matrix_print(dahl_matrix const* matrix);
 // Print a matrix with ascii format, useful to print images in the terminal
 void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp threshold);
 
+// ---------------------------------------- VECTOR ----------------------------------------
 // Initialize a dahl_vector with every values at 0.
 // parameters:
 // - len: size_t lenght of the vector

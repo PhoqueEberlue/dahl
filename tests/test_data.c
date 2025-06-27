@@ -113,7 +113,7 @@ void test_matrix_partition_along_y()
 
     matrix_partition_along_y(matrix);
 
-    for (size_t i = 0; i < matrix_get_sub_vector_nb(matrix); i++)
+    for (size_t i = 0; i < matrix_get_nb_children(matrix); i++)
     {
         dahl_vector* sub_vector = matrix_get_sub_vector(matrix, i);
         size_t len = vector_get_len(sub_vector);

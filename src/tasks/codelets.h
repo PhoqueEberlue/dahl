@@ -46,49 +46,20 @@ DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
 
-// ---------------------------------------- TRAITS ----------------------------------------
-DEFINE_STARPU_CODELET(block_relu, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_relu, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_relu, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_scal, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_scal, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_scal, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_sub, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_sub, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_sub, 3, STARPU_R, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_add, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_add, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_add, 3, STARPU_R, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_add_value, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_add_value, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_add_value, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_clip, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_clip, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_clip, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_sum, 1, STARPU_R);
-DEFINE_STARPU_CODELET(matrix_sum, 1, STARPU_R);
-DEFINE_STARPU_CODELET(vector_sum, 1, STARPU_R);
-
-DEFINE_STARPU_CODELET(block_fill, 1, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_fill, 1, STARPU_W);
-DEFINE_STARPU_CODELET(vector_fill, 1, STARPU_W);
+// ---------------------------------------- ANY ----------------------------------------
+// Codelets that can be used with any type
+DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(add, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(add_value, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(clip, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(sum, 1, STARPU_R);
+DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
 
 typedef const struct _dahl_traits {
     starpu_data_handle_t (*get_handle)(void*);
-    struct starpu_codelet* cl_relu;
-    struct starpu_codelet* cl_scal;
-    struct starpu_codelet* cl_sub;
-    struct starpu_codelet* cl_add;
-    struct starpu_codelet* cl_add_value;
-    struct starpu_codelet* cl_clip;
-    struct starpu_codelet* cl_sum;
-    struct starpu_codelet* cl_fill;
-} dahl_traits ;
+    size_t (*get_nb_elem)(void*);
+} dahl_traits;
 
 #endif //!DAHL_CODELETS_H

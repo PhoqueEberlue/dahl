@@ -45,7 +45,7 @@ dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data)
     block_partition_along_z(pool->output);
     block_partition_along_z(pool->mask);
 
-    size_t sub_matrix_nb = block_get_sub_matrix_nb(input_data);
+    size_t sub_matrix_nb = block_get_nb_children(input_data);
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {
@@ -75,7 +75,7 @@ dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout)
     block_partition_along_z(pool->mask);
     block_partition_along_z(dl_dout);
 
-    size_t sub_matrix_nb = block_get_sub_matrix_nb(pool->mask);
+    size_t sub_matrix_nb = block_get_nb_children(pool->mask);
 
     for (int i = 0; i < sub_matrix_nb; i++)
     {

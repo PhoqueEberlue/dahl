@@ -324,44 +324,31 @@ dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* pre
 // ---------------------------------------- TRAITS ----------------------------------------
 // Tasks that can be applied to any data type are defined with traits.
 // Each trait links a type with the right codelets.
+dahl_traits dahl_traits_tensor = {
+    .get_handle = _tensor_get_handle,
+    .get_nb_elem = _tensor_get_nb_elem,
+};
+
 dahl_traits dahl_traits_block = {
     .get_handle = _block_get_handle,
-    .cl_relu = &cl_block_relu,
-    .cl_scal = &cl_block_scal,
-    .cl_sub = &cl_block_sub,
-    .cl_add = &cl_block_add,
-    .cl_add_value = &cl_block_add_value,
-    .cl_clip = &cl_block_clip,
-    .cl_sum = &cl_block_sum,
-    .cl_fill = &cl_block_fill,
+    .get_nb_elem = _block_get_nb_elem,
 };
 
 dahl_traits dahl_traits_matrix = {
     .get_handle = _matrix_get_handle,
-    .cl_relu = &cl_matrix_relu,
-    .cl_scal = &cl_matrix_scal,
-    .cl_sub = &cl_matrix_sub,
-    .cl_add = &cl_matrix_add,
-    .cl_add_value = &cl_matrix_add_value,
-    .cl_clip = &cl_matrix_clip,
-    .cl_sum = &cl_matrix_sum,
-    .cl_fill = &cl_matrix_fill,
+    .get_nb_elem = _matrix_get_nb_elem,
 };
 
 dahl_traits dahl_traits_vector = {
     .get_handle = _vector_get_handle,
-    .cl_scal = &cl_vector_scal,
-    .cl_sub = &cl_vector_sub,
-    .cl_add = &cl_vector_add,
-    .cl_add_value = &cl_vector_add_value,
-    .cl_clip = &cl_vector_clip,
-    .cl_sum = &cl_vector_sum,
-    .cl_fill = &cl_vector_fill,
+    .get_nb_elem = _vector_get_nb_elem,
 };
 
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_relu,
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_relu,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
                                  STARPU_R, traits->get_handle(in), 
                                  STARPU_W, traits->get_handle(out), 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
@@ -369,16 +356,20 @@ void task_relu(void const* in, void* out, dahl_traits* traits)
 
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_scal,
-                             STARPU_VALUE, &factor, sizeof(&factor),
-                             STARPU_R, traits->get_handle(in),
-                             STARPU_W, traits->get_handle(out), 0);
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_scal,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &factor, sizeof(&factor),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_sub,
+    size_t nb_elem = traits->get_nb_elem(c);
+    int ret = starpu_task_insert(&cl_sub,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  STARPU_W, traits->get_handle(c), 0);
@@ -387,7 +378,9 @@ void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_add,
+    size_t nb_elem = traits->get_nb_elem(c);
+    int ret = starpu_task_insert(&cl_add,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  STARPU_W, traits->get_handle(c), 0);
@@ -396,20 +389,24 @@ void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_add_value,
-                             STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_R, traits->get_handle(in),
-                             STARPU_W, traits->get_handle(out), 0);
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_add_value,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &value, sizeof(&value),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_clip,
-                             STARPU_VALUE, &min, sizeof(&min),
-                             STARPU_VALUE, &max, sizeof(&max),
-                             STARPU_R, traits->get_handle(in),
-                             STARPU_W, traits->get_handle(out), 0);
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_clip,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &min, sizeof(&min),
+                                 STARPU_VALUE, &max, sizeof(&max),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -418,13 +415,16 @@ dahl_fp task_sum(void const* object, dahl_traits* traits)
     dahl_fp res = 0.0F;
     dahl_fp* res_p = &res;
 
+    size_t nb_elem = traits->get_nb_elem(object);
+
     struct starpu_task* task = starpu_task_create();
-    task->cl = traits->cl_sum;
+    task->cl = &cl_sum;
 
     // Initialize argument buffer to obtain the return value with a pointer pointer
     char *arg_buffer;
     size_t arg_buffer_size;
     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
                         STARPU_VALUE, &res_p, sizeof(&res_p), 0);
 
     task->cl_arg = arg_buffer;
@@ -444,8 +444,10 @@ dahl_fp task_sum(void const* object, dahl_traits* traits)
 
 void task_fill(void const* object, dahl_fp value, dahl_traits* traits)
 {
-    int ret = starpu_task_insert(traits->cl_fill,
-                             STARPU_VALUE, &value, sizeof(&value),
-                             STARPU_W, traits->get_handle(object), 0);
+    size_t nb_elem = traits->get_nb_elem(object);
+    int ret = starpu_task_insert(&cl_fill,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &value, sizeof(&value),
+                                 STARPU_W, traits->get_handle(object), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
