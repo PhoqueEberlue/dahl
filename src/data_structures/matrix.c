@@ -82,6 +82,11 @@ dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
     return res;
 }
 
+starpu_data_handle_t _matrix_get_handle(void* matrix)
+{
+    return ((dahl_matrix*)matrix)->handle;
+}
+
 dahl_fp* matrix_data_acquire(dahl_matrix const* matrix)
 {
     starpu_data_acquire(matrix->handle, STARPU_RW);

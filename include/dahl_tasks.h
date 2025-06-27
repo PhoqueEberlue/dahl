@@ -8,9 +8,9 @@
 // - <type>: `block`, `matrix` or `vector` indicate the primary data structure used in the task
 // - <name>: name of the function
 // - <mode> defines how the result is returned:
-//   - `` default implementation, the user should instanciate the output data structure before calling the function
-//   - `self` writes the result in the same data structure that is used for input (usually the argument named *_self)
-//   - `init` the function instanciates and returns the result data structure
+//   - `` default implementation, the user should instanciate the output object before calling the function
+//   - `self` writes the result in the same object that is used for input (usually the argument named *_self)
+//   - `init` the function instanciates and returns the result object
 //
 // Functions common to the three data types have helper macros that infers the type at compilation.
 // The documentation for these functions is not repeated and only present in the macro definitions.
@@ -18,14 +18,7 @@
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
-void task_block_relu(dahl_block const* in, dahl_block* out);
-void task_block_scal(dahl_block const* in, dahl_block* out, dahl_fp factor);
-void task_block_sub(dahl_block const* a, dahl_block const* b, dahl_block* c);
-void task_block_add(dahl_block const* a, dahl_block const* b, dahl_block* c);
-void task_block_add_value(dahl_block const* in, dahl_block* out, dahl_fp value);
-void task_block_clip(dahl_block const* in, dahl_block* out, dahl_fp min, dahl_fp max);
-dahl_fp task_block_sum(dahl_block const* in);
-void task_block_fill(dahl_block* block, dahl_fp value);
+
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator
@@ -60,23 +53,12 @@ dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix c
 void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out);
 dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in);
 
-void task_matrix_relu(dahl_matrix const* in, dahl_matrix* out);
-void task_matrix_scal(dahl_matrix const* in, dahl_matrix* out, dahl_fp factor);
-
-void task_matrix_sub(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
-void task_matrix_add(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
-
-void task_matrix_add_value(dahl_matrix const* in, dahl_matrix* out, dahl_fp value);
-void task_matrix_clip(dahl_matrix const* in, dahl_matrix* out, dahl_fp min, dahl_fp max);
-
-dahl_fp task_matrix_sum(dahl_matrix const* in);
-
 // Flatten a matrix and consider it as a row matrix
 void task_matrix_to_flat_row(dahl_matrix* mat);
 
 // Flatten a matrix and consider it as a column matrix
 void task_matrix_to_flat_col(dahl_matrix* mat);
-void task_matrix_fill(dahl_matrix* matrix, dahl_fp value);
+
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
@@ -100,47 +82,64 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
 dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets);
 
-void task_vector_relu(dahl_vector const* in, dahl_vector* out);
+// ---------------------------- TASKS FOR ANY TYPES ----------------------------
+// Using a trait mechanism to group functions together
+typedef const struct _dahl_traits dahl_traits;
 
-void task_vector_scal(dahl_vector const* in, dahl_vector* out, dahl_fp factor);
+// Here we define our different traits associated to each types.
+// Those structures contains references to the implementation of each function matching with the correct type.
+extern dahl_traits dahl_traits_block;
+extern dahl_traits dahl_traits_matrix;
+extern dahl_traits dahl_traits_vector;
 
-void task_vector_sub(dahl_vector const* a, dahl_vector const* b, dahl_vector* c);
-void task_vector_add(dahl_vector const* a, dahl_vector const* b, dahl_vector* c);
+void task_relu(void const* in, void* out, dahl_traits* traits);
+void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
+void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
+void task_add(void const* a, void const* b, void* c, dahl_traits* traits);
+void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits);
+void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
+dahl_fp task_sum(void const* object, dahl_traits* traits);
+void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
 
-void task_vector_add_value(dahl_vector const* in, dahl_vector* out, dahl_fp value);
-
-void task_vector_clip(dahl_vector const* in, dahl_vector* out, dahl_fp min, dahl_fp max);
-dahl_fp task_vector_sum(dahl_vector const* in);
-void task_vector_fill(dahl_vector* vector, dahl_fp value);
-// ---------------------------- HELPER MACRO FOR TASKS COMMON TO ANY TYPES ----------------------------
+// HELPER MACROS FOR THE COMMON TASKS
+// Get the traits structure of an object at compile time
+#define GET_TRAITS(OBJECT) _Generic((OBJECT), \
+    dahl_block*:  &dahl_traits_block,         \
+    dahl_matrix*: &dahl_traits_matrix,        \
+    dahl_vector*: &dahl_traits_vector         \
+)
 
 // Type comparison without taking into account const qualifiers
 #define TYPES_MATCH(T1, T2) \
     (__builtin_types_compatible_p(typeof(*(T1)), typeof(*(T2))))
 
-#define TASK_RELU(IN, OUT)                                 \
-    _Generic((OUT),                                        \
-        dahl_block*: task_block_relu,                      \
-        dahl_matrix*: task_matrix_relu,                    \
-        dahl_vector*: task_vector_relu                     \
-    )(IN, OUT)
+// Apply a relu function to every value of `in` and store the result in `out`.
+#define TASK_RELU(IN, OUT)                                     \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),               \
+                       "IN and OUT must be of the same type"); \
+        task_relu(IN, OUT, GET_TRAITS(OUT));                   \
+    } while (0)
 
+// Update every value of `self` by applying a relu function.
 #define TASK_RELU_SELF(SELF) TASK_RELU(SELF, SELF)
 
-#define TASK_SCAL(IN, OUT, FACTOR)                         \
-    _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                   "IN and OUT must be of the same type"); \
-    _Generic((OUT),                                        \
-        dahl_block*: task_block_scal,                      \
-        dahl_matrix*: task_matrix_scal,                    \
-        dahl_vector*: task_vector_scal                     \
-    )(IN, OUT, FACTOR)
+// Multiply every value of `in` by `divisor` and store the result in `out`.
+#define TASK_SCAL(IN, OUT, FACTOR)                                   \
+    do {                                                             \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),                     \
+                       "IN and OUT must be of the same type");       \
+        task_scal(IN, OUT, FACTOR, GET_TRAITS(OUT));                 \
+    } while (0)
 
+// Update every value of `self`, multiplying by `divisor`.
 #define TASK_SCAL_SELF(SELF, FACTOR) TASK_SCAL(SELF, SELF, FACTOR)
 
+// Divide every value of `in` by `divisor` and store the result in `out`.
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two
 #define TASK_DIVIDE(IN, OUT, DIVISOR) TASK_SCAL(IN, OUT, 1/(DIVISOR))
 
+// Update every value of `self`, dividing by `divisor`.
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two
 #define TASK_DIVIDE_SELF(SELF, DIVISOR) TASK_DIVIDE(SELF, SELF, DIVISOR)
 
@@ -148,15 +147,13 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 // - `-` is the value by value substraction
 // - `a`, `b` and `c` are dahl_any objects of the same shape
 #define TASK_SUB(A, B, C)                               \
-    _Static_assert(TYPES_MATCH((A), (B)),               \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((A), (B)),           \
                    "A and B must be of the same type"); \
-    _Static_assert(TYPES_MATCH((A), (C)),               \
+        _Static_assert(TYPES_MATCH((A), (C)),           \
                    "A and C must be of the same type"); \
-    _Generic((C),                                       \
-        dahl_block*: task_block_sub,                    \
-        dahl_matrix*: task_matrix_sub,                  \
-        dahl_vector*: task_vector_sub                   \
-    )(A, B, C)
+        task_sub(A, B, C, GET_TRAITS(C));               \
+    } while (0)
 
 // Performs a_self -= b, where:
 // - `-` is the value by value substraction
@@ -168,15 +165,13 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 // - `+` is the value by value addition
 // - `a`, `b` and `c` are dahl_any objects of the same shape
 #define TASK_ADD(A, B, C)                               \
-    _Static_assert(TYPES_MATCH((A), (B)),               \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((A), (B)),           \
                    "A and B must be of the same type"); \
-    _Static_assert(TYPES_MATCH((A), (C)),               \
+        _Static_assert(TYPES_MATCH((A), (C)),           \
                    "A and C must be of the same type"); \
-    _Generic((C),                                       \
-        dahl_block*: task_block_add,                    \
-        dahl_matrix*: task_matrix_add,                  \
-        dahl_vector*: task_vector_add                   \
-    )(A, B, C)
+        task_add(A, B, C, GET_TRAITS(C));               \
+    } while (0)
 
 // Performs `a_self` += `b`, where:
 // - `+` is the value by value addition
@@ -185,14 +180,12 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 #define TASK_ADD_SELF(A_SELF, B) TASK_ADD(A_SELF, B, A_SELF)
 
 // Add `value` to every elements of `in` and put the result in `out`
-#define TASK_ADD_VALUE(IN, OUT, VALUE)                     \
-    _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                   "IN and OUT must be of the same type"); \
-    _Generic((OUT),                                        \
-        dahl_block*: task_block_add_value,                 \
-        dahl_matrix*: task_matrix_add_value,               \
-        dahl_vector*: task_vector_add_value                \
-    )(IN, OUT, VALUE)
+#define TASK_ADD_VALUE(IN, OUT, VALUE)                   \
+    do {                                                 \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),         \
+                   "A and B must be of the same type");  \
+        task_add_value(IN, OUT, VALUE, GET_TRAITS(OUT)); \
+    } while (0)
 
 // Add `value` to every elements of `self` writing directly in the same buffer
 #define TASK_ADD_VALUE_SELF(SELF, VALUE) TASK_ADD_VALUE(SELF, SELF, VALUE)
@@ -204,34 +197,22 @@ void task_vector_fill(dahl_vector* vector, dahl_fp value);
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) TASK_SUB_VALUE(SELF, SELF, VALUE)
 
 // Clip every elements of `in` between `min` and `max` and store to `out`.
-#define TASK_CLIP(IN, OUT, MIN, MAX)                       \
-    _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                   "IN and OUT must be of the same type"); \
-    _Generic((OUT),                                        \
-        dahl_block*: task_block_clip,                      \
-        dahl_matrix*: task_matrix_clip,                    \
-        dahl_vector*: task_vector_clip                     \
-    )(IN, OUT, MIN, MAX)
+#define TASK_CLIP(IN, OUT, MIN, MAX)                    \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),        \
+                   "A and B must be of the same type"); \
+        task_clip(IN, OUT, MIN, MAX, GET_TRAITS(OUT));  \
+    } while (0)
 
 // Clip and modify every elements of `self` between `min` and `max`.
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
 
 // Sum every elements of `object`.
 // No self version of this macro because this is obviously the default behavior.
-#define TASK_SUM(OBJECT, VALUE)        \
-    _Generic((OBJECT),                 \
-        dahl_block*: task_block_sum,   \
-        dahl_matrix*: task_matrix_sum, \
-        dahl_vector*: task_vector_sum  \
-    )(OBJECT, VALUE)
+#define TASK_SUM(OBJECT) task_sum(OBJECT, GET_TRAITS(OBJECT))
 
 // Fill every elements of `object` with `value`.
 // No self version of this macro because this is obviously the default behavior.
-#define TASK_FILL(OBJECT, VALUE)        \
-    _Generic((OBJECT),                  \
-        dahl_block*: task_block_fill,   \
-        dahl_matrix*: task_matrix_fill, \
-        dahl_vector*: task_vector_fill  \
-    )(OBJECT, VALUE)
+#define TASK_FILL(OBJECT, VALUE) task_fill(OBJECT, VALUE, GET_TRAITS(OBJECT))
 
 #endif //!DAHL_TASKS_H

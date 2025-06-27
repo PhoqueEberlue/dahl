@@ -1,6 +1,8 @@
 #ifndef DAHL_CODELETS_H
 #define DAHL_CODELETS_H
 
+#include "../../include/dahl_tasks.h"
+#include "../data_structures/data_structures.h"
 #include <starpu.h>
 
 // Helper macro to generate the three essentials codelets definitions:
@@ -24,16 +26,30 @@
         .model = &perf_model_##func_name                                           \
     };
 
+// Block
+DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
+
+// Matrix
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_max_pooling, 3, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_matrix_product, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
 
+// Vector
+DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_dot_product, 2, STARPU_R, STARPU_R);
+DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
+DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
+
+// ---------------------------------------- TRAITS ----------------------------------------
 DEFINE_STARPU_CODELET(block_relu, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_relu, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_relu, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
 
 DEFINE_STARPU_CODELET(block_scal, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_scal, 2, STARPU_R, STARPU_W);
@@ -47,27 +63,13 @@ DEFINE_STARPU_CODELET(block_add, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_add, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_add, 3, STARPU_R, STARPU_R, STARPU_W);
 
-DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_dot_product, 2, STARPU_R, STARPU_R);
-DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
-
 DEFINE_STARPU_CODELET(block_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_add_value, 2, STARPU_R, STARPU_W);
 
-DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
-
 DEFINE_STARPU_CODELET(block_clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_clip, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
-DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
-
-DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
 
 DEFINE_STARPU_CODELET(block_sum, 1, STARPU_R);
 DEFINE_STARPU_CODELET(matrix_sum, 1, STARPU_R);
@@ -76,5 +78,17 @@ DEFINE_STARPU_CODELET(vector_sum, 1, STARPU_R);
 DEFINE_STARPU_CODELET(block_fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(vector_fill, 1, STARPU_W);
+
+typedef const struct _dahl_traits {
+    starpu_data_handle_t (*get_handle)(void*);
+    struct starpu_codelet* cl_relu;
+    struct starpu_codelet* cl_scal;
+    struct starpu_codelet* cl_sub;
+    struct starpu_codelet* cl_add;
+    struct starpu_codelet* cl_add_value;
+    struct starpu_codelet* cl_clip;
+    struct starpu_codelet* cl_sum;
+    struct starpu_codelet* cl_fill;
+} dahl_traits ;
 
 #endif //!DAHL_CODELETS_H

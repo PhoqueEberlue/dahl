@@ -130,6 +130,11 @@ dahl_shape3d block_get_shape(dahl_block const* block)
     return res;
 }
 
+starpu_data_handle_t _block_get_handle(void* block)
+{
+    return ((dahl_block*)block)->handle;
+}
+
 dahl_fp* block_data_acquire(dahl_block const* block)
 {
     starpu_data_acquire(block->handle, STARPU_RW);

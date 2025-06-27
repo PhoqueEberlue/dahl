@@ -46,4 +46,9 @@ typedef struct _dahl_block
     bool is_partitioned;
 } dahl_block;
 
+
+starpu_data_handle_t _block_get_handle(void* block);
+starpu_data_handle_t _matrix_get_handle(void* matrix);
+starpu_data_handle_t _vector_get_handle(void* vector);
+
 #endif //!DAHL_DATA_STRUCTURES_H

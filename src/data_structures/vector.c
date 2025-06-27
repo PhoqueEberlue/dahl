@@ -71,6 +71,11 @@ size_t vector_get_len(dahl_vector const *const vector)
     return nx;
 }
 
+starpu_data_handle_t _vector_get_handle(void* vector)
+{
+    return ((dahl_vector*)vector)->handle;
+}
+
 dahl_fp* vector_data_acquire(dahl_vector const* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);
