@@ -131,12 +131,12 @@ dahl_shape3d block_get_shape(dahl_block const* block)
     return res;
 }
 
-starpu_data_handle_t _block_get_handle(void* block)
+starpu_data_handle_t _block_get_handle(void const* block)
 {
     return ((dahl_block*)block)->handle;
 }
 
-size_t _block_get_nb_elem(void* block)
+size_t _block_get_nb_elem(void const* block)
 {
     dahl_shape3d shape = block_get_shape((dahl_block*)block);
     return shape.x * shape.y * shape.z;

@@ -82,12 +82,12 @@ dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
     return res;
 }
 
-starpu_data_handle_t _matrix_get_handle(void* matrix)
+starpu_data_handle_t _matrix_get_handle(void const* matrix)
 {
     return ((dahl_matrix*)matrix)->handle;
 }
 
-size_t _matrix_get_nb_elem(void* matrix)
+size_t _matrix_get_nb_elem(void const* matrix)
 {
     dahl_shape2d shape = matrix_get_shape((dahl_matrix*)matrix);
     return shape.x * shape.y;

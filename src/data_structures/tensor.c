@@ -134,12 +134,12 @@ dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
     return res;
 }
 
-starpu_data_handle_t _tensor_get_handle(void* tensor)
+starpu_data_handle_t _tensor_get_handle(void const* tensor)
 {
     return ((dahl_tensor*)tensor)->handle;
 }
 
-size_t _tensor_get_nb_elem(void* tensor)
+size_t _tensor_get_nb_elem(void const* tensor)
 {
     dahl_shape4d shape = tensor_get_shape((dahl_tensor*)tensor);
     return shape.x * shape.y * shape.z * shape.t;

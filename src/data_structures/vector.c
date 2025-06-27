@@ -71,12 +71,12 @@ size_t vector_get_len(dahl_vector const *const vector)
     return nx;
 }
 
-starpu_data_handle_t _vector_get_handle(void* vector)
+starpu_data_handle_t _vector_get_handle(void const* vector)
 {
     return ((dahl_vector*)vector)->handle;
 }
 
-size_t _vector_get_nb_elem(void* vector)
+size_t _vector_get_nb_elem(void const* vector)
 {
     return vector_get_len((dahl_vector*)vector);
 }

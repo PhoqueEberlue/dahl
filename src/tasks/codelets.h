@@ -58,8 +58,8 @@ DEFINE_STARPU_CODELET(sum, 1, STARPU_R);
 DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
 
 typedef const struct _dahl_traits {
-    starpu_data_handle_t (*get_handle)(void*);
-    size_t (*get_nb_elem)(void*);
+    starpu_data_handle_t (*get_handle)(void const*);
+    size_t (*get_nb_elem)(void const*);
 } dahl_traits;
 
 #endif //!DAHL_CODELETS_H

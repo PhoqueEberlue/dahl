@@ -61,14 +61,14 @@ typedef struct _dahl_tensor
 } dahl_tensor;
 
 
-starpu_data_handle_t _vector_get_handle(void* vector);
-starpu_data_handle_t _matrix_get_handle(void* matrix);
-starpu_data_handle_t _block_get_handle(void* block);
-starpu_data_handle_t _tensor_get_handle(void* tensor);
+starpu_data_handle_t _vector_get_handle(void const* vector);
+starpu_data_handle_t _block_get_handle(void const* block);
+starpu_data_handle_t _matrix_get_handle(void const* matrix);
+starpu_data_handle_t _tensor_get_handle(void const* tensor);
 
-size_t _tensor_get_nb_elem(void* tensor);
-size_t _block_get_nb_elem(void* block);
-size_t _matrix_get_nb_elem(void* matrix);
-size_t _vector_get_nb_elem(void* vector);
+size_t _tensor_get_nb_elem(void const* tensor);
+size_t _block_get_nb_elem(void const* block);
+size_t _matrix_get_nb_elem(void const* matrix);
+size_t _vector_get_nb_elem(void const* vector);
 
 #endif //!DAHL_DATA_STRUCTURES_H
