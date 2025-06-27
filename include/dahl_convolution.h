@@ -30,6 +30,6 @@ typedef struct
 
 dahl_convolution* convolution_init(dahl_shape2d input_shape, size_t filter_size, size_t num_filters);
 dahl_block* convolution_forward(dahl_convolution* conv, dahl_matrix* input);
-dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double const learning_rate);
+dahl_matrix* convolution_backward(dahl_convolution* conv, dahl_block* dl_dout, double learning_rate);
 
 #endif //!DAHL_CONVOLUTION_H

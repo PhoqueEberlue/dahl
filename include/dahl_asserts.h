@@ -3,35 +3,35 @@
 
 #include "dahl_data.h"
 
-void assert_size_t_equals(size_t const a, size_t const b, 
+void assert_size_t_equals(size_t a, size_t b, 
                           char const* file, int line,
                           char const* a_expr, char const* b_expr);
 
-void assert_shape2d_equals(dahl_shape2d const a, dahl_shape2d const b,
-                           char const* file, int const line,
+void assert_shape2d_equals(dahl_shape2d a, dahl_shape2d b,
+                           char const* file, int line,
                            char const* a_expr, char const* b_expr);
 
-void assert_shape3d_equals(dahl_shape3d const a, dahl_shape3d const b,
-                           char const* file, int const line,
+void assert_shape3d_equals(dahl_shape3d a, dahl_shape3d b,
+                           char const* file, int line,
                            char const* a_expr, char const* b_expr);
 
-void assert_fp_equals(dahl_fp const a, dahl_fp const b,
-                          char const* file, int const line,
+void assert_fp_equals(dahl_fp a, dahl_fp b,
+                          char const* file, int line,
                           char const* a_expr, char const* b_expr);
 
 void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
-                          bool const rounding, u_int8_t const precision,
-                          char const* file, int const line,
+                          bool rounding, u_int8_t precision,
+                          char const* file, int line,
                           char const* a_expr, char const* b_expr);
 
 void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
-                          bool const rounding, u_int8_t const precision,
-                          char const* file, int const line,
+                          bool rounding, u_int8_t precision,
+                          char const* file, int line,
                           char const* a_expr, char const* b_expr);
 
 void assert_block_equals(dahl_block const* a, dahl_block const* b,
-                         bool const rounding, u_int8_t const precision,
-                         char const* file, int const line,
+                         bool rounding, u_int8_t precision,
+                         char const* file, int line,
                          char const* a_expr, char const* b_expr);
 
 #define ASSERT_SIZE_T_EQUALS(a, b) assert_size_t_equals((a), (b), __FILE__, __LINE__, #a, #b)
