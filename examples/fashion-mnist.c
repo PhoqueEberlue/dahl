@@ -41,7 +41,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
     block_partition_along_z(image_block);
     matrix_partition_along_y(y_categorical);
 
-    // size_t const n_samples = block_get_sub_matrix_nb(image_block);
+    // size_t const n_samples = block_get_nb_children(image_block);
     size_t const n_samples = 5000; // Let's only use the first 5k for now
 
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)
