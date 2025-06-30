@@ -27,9 +27,8 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
     dahl_matrix* matrix = dahl_arena_alloc(sizeof(dahl_matrix));
     matrix->handle = handle;
     matrix->data = data;
-    matrix->is_sub_data = false;
-    matrix->is_partitioned = false;
-    matrix->sub_vectors = nullptr;
+    matrix->partition_type = DAHL_NONE;
+    matrix->partition_level = 0;
 
     return matrix;
 }
@@ -145,6 +144,9 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const roundi
 
 void matrix_partition_along_y(dahl_matrix* const matrix)
 {
+    // The data shouldn't be already partionned
+    assert(matrix->partition_type == DAHL_NONE);
+
     dahl_shape2d const shape = matrix_get_shape(matrix);
 
     struct starpu_data_filter f =
@@ -156,28 +158,46 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
 
 	starpu_data_partition(matrix->handle, &f);
     
-    matrix->is_partitioned = true;
-    matrix->sub_vectors = dahl_arena_alloc(shape.y * sizeof(dahl_vector));
+    matrix->partition_type = DAHL_VECTOR;
+    matrix->sub_data.vectors = dahl_arena_alloc(shape.y * sizeof(dahl_vector));
+    // The new level is equal to the father's level + 1
+    uint8_t const new_level = matrix->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
     {
-		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
+		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, new_level, i);
 
         dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
         assert(data);
 
-        matrix->sub_vectors[i].handle = sub_vector_handle;
-        matrix->sub_vectors[i].data = data;
-        matrix->sub_vectors[i].is_sub_data = true;
+        matrix->sub_data.vectors[i].handle = sub_vector_handle;
+        matrix->sub_data.vectors[i].data = data;
+        matrix->sub_data.vectors[i].partition_level = new_level;
     }
 }
 
 void matrix_unpartition(dahl_matrix* const matrix)
 {
+    switch (matrix->partition_type)
+    {
+        case DAHL_NONE:
+            printf("ERROR: Tried calling %s but the object is not partitioned", __func__);
+            abort();
+            break;
+        case DAHL_TENSOR:
+        case DAHL_BLOCK:
+        case DAHL_MATRIX:
+            printf("ERROR: got value %i in function %s, however matrix should only be partioned into vector", 
+                   matrix->partition_type, __func__);
+            abort();
+            break;
+        case DAHL_VECTOR:
+            matrix->sub_data.vectors = nullptr;
+            break;
+    }
+
+    matrix->partition_type = DAHL_NONE;
     starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
-    // No need to free the subvectors, they are managed by the arena, however we can reset the pointer
-    matrix->sub_vectors = nullptr;
-    matrix->is_partitioned = false;
 }
 
 size_t matrix_get_nb_children(dahl_matrix const* matrix)
@@ -187,11 +207,11 @@ size_t matrix_get_nb_children(dahl_matrix const* matrix)
 
 dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, const size_t index)
 {
-    assert(matrix->is_partitioned 
-        && matrix->sub_vectors != nullptr 
+    assert(matrix->partition_type == DAHL_VECTOR 
+        && matrix->sub_data.vectors != nullptr 
         && index < starpu_data_get_nb_children(matrix->handle));
 
-    return &matrix->sub_vectors[index];
+    return &matrix->sub_data.vectors[index];
 }
 
 void matrix_print(dahl_matrix const* matrix)

@@ -37,10 +37,8 @@ dahl_tensor* tensor_init(dahl_shape4d const shape)
     dahl_tensor* tensor = dahl_arena_alloc(sizeof(dahl_tensor));
     tensor->handle = handle;
     tensor->data = data;
-    tensor->sub_blocks = nullptr;
-    tensor->sub_matrices = nullptr;
-    tensor->sub_vectors = nullptr;
-    tensor->is_partitioned = false;
+    tensor->partition_type = DAHL_NONE;
+    tensor->partition_level = 0;
 
     return tensor;
 }
@@ -200,7 +198,7 @@ bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool const roundi
 void tensor_partition_along_t(dahl_tensor* tensor)
 {
     // The tensor shouldn't be already partitionned
-    assert(tensor->is_partitioned != true);
+    assert(tensor->partition_type == DAHL_NONE);
 
     dahl_shape4d const shape = tensor_get_shape(tensor);
 
@@ -213,52 +211,53 @@ void tensor_partition_along_t(dahl_tensor* tensor)
 
 	starpu_data_partition(tensor->handle, &f);
     
-    tensor->is_partitioned = true;
-    tensor->sub_blocks = dahl_arena_alloc(shape.t * sizeof(dahl_block));
+    tensor->partition_type = DAHL_BLOCK;
+    tensor->sub_data.blocks = dahl_arena_alloc(shape.t * sizeof(dahl_block));
+    // The new level is equal to the father's level + 1
+    uint8_t const new_level = tensor->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(tensor->handle); i++)
     {
-		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(tensor->handle, 1, i);
+		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(tensor->handle, new_level, i);
 
         dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_block_handle);
         assert(data);
 
-        tensor->sub_blocks[i].handle = sub_block_handle;
-        tensor->sub_blocks[i].data = data;
-        tensor->sub_blocks[i].is_sub_data = true;
-        tensor->sub_blocks[i].is_partitioned = false;
+        tensor->sub_data.blocks[i].handle = sub_block_handle;
+        tensor->sub_data.blocks[i].data = data;
+        // The partition level of children is equal to the current block partition level + 1
+        tensor->sub_data.blocks[i].partition_level = new_level;
+        // Children are not yet partitioned
+        tensor->sub_data.blocks[i].partition_type = DAHL_NONE;
     }
 }
 
 void tensor_unpartition(dahl_tensor* tensor)
 {
-    assert(tensor->is_partitioned);
+    switch (tensor->partition_type)
+    {
+        case DAHL_NONE:
+            printf("ERROR: Tried calling %s but the object is not partitioned", __func__);
+            abort();
+            break;
+        case DAHL_TENSOR:
+            printf("ERROR: got value %i in function %s, however tensor should only be partioned into block, matrix or vector", 
+                   tensor->partition_type, __func__);
+            abort();
+            break;
+        case DAHL_BLOCK:
+            tensor->sub_data.blocks = nullptr;
+            break;
+        case DAHL_MATRIX:
+            tensor->sub_data.matrices = nullptr;
+            break;
+        case DAHL_VECTOR:
+            tensor->sub_data.vectors = nullptr;
+            break;
+    }
 
+    tensor->partition_type = DAHL_NONE;
     starpu_data_unpartition(tensor->handle, STARPU_MAIN_RAM);
-
-    // Only one of sub_blocks, sub_matrices or sub_vectors should be defined
-    if (tensor->sub_blocks != nullptr)
-    {
-        // Will be freed by the arena
-        tensor->sub_blocks = nullptr;
-    }
-    else if (tensor->sub_matrices != nullptr)
-    {
-        // Will be freed by the arena
-        tensor->sub_matrices = nullptr;
-    }
-    else if (tensor->sub_vectors != nullptr)
-    {
-        // Will be freed by the arena
-        tensor->sub_vectors = nullptr;
-    }
-    else 
-    {
-        printf("ERROR: Neither sub_matrices or sub_vectors were defined, this is weird");
-        abort();
-    }
-
-    tensor->is_partitioned = false;
 }
 
 size_t tensor_get_nb_children(dahl_tensor const* tensor)
@@ -268,29 +267,29 @@ size_t tensor_get_nb_children(dahl_tensor const* tensor)
 
 dahl_block* tensor_get_sub_block(dahl_tensor const* tensor, const size_t index)
 {
-    assert(tensor->is_partitioned 
-        && tensor->sub_blocks != nullptr 
+    assert(tensor->partition_type == DAHL_BLOCK 
+        && tensor->sub_data.blocks != nullptr 
         && index < starpu_data_get_nb_children(tensor->handle));
 
-    return &tensor->sub_blocks[index];
+    return &tensor->sub_data.blocks[index];
 }
 
 dahl_matrix* tensor_get_sub_matrix(dahl_tensor const* tensor, const size_t index)
 {
-    assert(tensor->is_partitioned 
-        && tensor->sub_matrices != nullptr 
+    assert(tensor->partition_type == DAHL_MATRIX 
+        && tensor->sub_data.matrices != nullptr 
         && index < starpu_data_get_nb_children(tensor->handle));
 
-    return &tensor->sub_matrices[index];
+    return &tensor->sub_data.matrices[index];
 }
 
 dahl_vector* tensor_get_sub_vector(dahl_tensor const* tensor, const size_t index)
 {
-    assert(tensor->is_partitioned 
-        && tensor->sub_vectors != nullptr 
+    assert(tensor->partition_type == DAHL_VECTOR 
+        && tensor->sub_data.vectors != nullptr 
         && index < starpu_data_get_nb_children(tensor->handle));
 
-    return &tensor->sub_vectors[index];
+    return &tensor->sub_data.vectors[index];
 }
 
 void tensor_print(dahl_tensor const* tensor)

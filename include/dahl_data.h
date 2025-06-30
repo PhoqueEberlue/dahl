@@ -118,11 +118,17 @@ void block_partition_along_z_flat(dahl_block* block);
 
 void block_partition_flatten_to_vector(dahl_block* block);
 
+// Partition along z but by batch, so it creates sub blocks.
+void block_partition_along_z_batch(dahl_block* block, size_t batch_size);
+
 // Unpartition a block
 void block_unpartition(dahl_block* block);
 
 // Get the number of children
 size_t block_get_nb_children(dahl_block const* block);
+
+// Get sub block at index. To be called after `block_partition_along_z_batch`.
+dahl_block* block_get_sub_block(dahl_block const* block, size_t index);
 
 // Get sub matrix at index. To be called after `block_partition_along_z`.
 dahl_matrix* block_get_sub_matrix(dahl_block const* block, size_t index);

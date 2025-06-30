@@ -23,7 +23,7 @@ dahl_vector* vector_init(size_t const len)
     dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
-    vector->is_sub_data = false;
+    vector->partition_level = 0;
 
     return vector;
 }
