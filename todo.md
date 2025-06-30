@@ -6,6 +6,7 @@
 
 ## Later
 
+- Make dahl_temporary_arena and persistent arena pointer const. This requires being able to instanciate the arenas on the stack.
 - Investigate why filling arenas buffer in block/matrix/vector works and not with a memset directly inside the arena_alloc function
 - propagate precision passed in the asserts to the block/matirx/vector prints
 - Add compilation condition to enable/disable debugg asserts
