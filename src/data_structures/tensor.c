@@ -11,7 +11,7 @@
 
 dahl_tensor* tensor_init(dahl_shape4d const shape)
 {
-    size_t n_elems = shape.x * shape.y * shape.z;
+    size_t n_elems = shape.x * shape.y * shape.z * shape.t;
     dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
 
     for (size_t i = 0; i < n_elems; i++)
@@ -38,7 +38,6 @@ dahl_tensor* tensor_init(dahl_shape4d const shape)
     tensor->handle = handle;
     tensor->data = data;
     tensor->partition_type = DAHL_NONE;
-    tensor->partition_level = 0;
 
     return tensor;
 }
@@ -75,9 +74,9 @@ dahl_tensor* tensor_clone(dahl_tensor const* tensor)
 {
     dahl_shape4d shape = tensor_get_shape(tensor);
 
-    dahl_fp* data = tensor_data_acquire(tensor);
-    dahl_tensor* res = tensor_init_from(shape, data);
-    tensor_data_release(tensor);
+    starpu_data_acquire(tensor->handle, STARPU_R);
+    dahl_tensor* res = tensor_init_from(shape, tensor->data);
+    starpu_data_release(tensor->handle);
 
     return res;
 }
@@ -121,13 +120,11 @@ dahl_tensor* tensor_add_padding_init(dahl_tensor const* tensor, dahl_shape4d con
 
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
 {
-    starpu_data_acquire(tensor->handle, STARPU_R);
     size_t nx = starpu_tensor_get_nx(tensor->handle);
 	size_t ny = starpu_tensor_get_ny(tensor->handle);
 	size_t nz = starpu_tensor_get_nz(tensor->handle);
 	size_t nt = starpu_tensor_get_nt(tensor->handle);
     dahl_shape4d res = { .x = nx, .y = ny, .z = nz, .t = nt };
-    starpu_data_release(tensor->handle);
 
     return res;
 }
@@ -143,7 +140,13 @@ size_t _tensor_get_nb_elem(void const* tensor)
     return shape.x * shape.y * shape.z * shape.t;
 }
 
-dahl_fp* tensor_data_acquire(dahl_tensor const* tensor)
+dahl_fp const* tensor_data_acquire(dahl_tensor const* tensor)
+{
+    starpu_data_acquire(tensor->handle, STARPU_R);
+    return tensor->data;
+}
+
+dahl_fp* tensor_data_acquire_mutable(dahl_tensor* tensor)
 {
     starpu_data_acquire(tensor->handle, STARPU_RW);
     return tensor->data;
@@ -213,20 +216,16 @@ void tensor_partition_along_t(dahl_tensor* tensor)
     
     tensor->partition_type = DAHL_BLOCK;
     tensor->sub_data.blocks = dahl_arena_alloc(shape.t * sizeof(dahl_block));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = tensor->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(tensor->handle); i++)
     {
-		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(tensor->handle, new_level, i);
+		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(tensor->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_block_handle);
         assert(data);
 
         tensor->sub_data.blocks[i].handle = sub_block_handle;
         tensor->sub_data.blocks[i].data = data;
-        // The partition level of children is equal to the current block partition level + 1
-        tensor->sub_data.blocks[i].partition_level = new_level;
         // Children are not yet partitioned
         tensor->sub_data.blocks[i].partition_type = DAHL_NONE;
     }
@@ -262,6 +261,7 @@ void tensor_unpartition(dahl_tensor* tensor)
 
 size_t tensor_get_nb_children(dahl_tensor const* tensor)
 {
+    assert(tensor->partition_type != DAHL_NONE);
     return starpu_data_get_nb_children(tensor->handle);
 }
 

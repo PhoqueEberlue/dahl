@@ -28,7 +28,6 @@ typedef struct _dahl_vector
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
-    uint8_t partition_level;
 } dahl_vector;
 
 typedef struct _dahl_matrix
@@ -42,8 +41,6 @@ typedef struct _dahl_matrix
     } sub_data;
 
     dahl_type partition_type;
-
-    uint8_t partition_level;
 } dahl_matrix;
 
 typedef struct _dahl_block
@@ -59,10 +56,6 @@ typedef struct _dahl_block
 
     // The type inside the sub_data union.
     dahl_type partition_type;
-
-    // Describes the current object partition level, the father data is always at 0, and the children at 1+.
-    // 0 = Not sub data, 1 = sub data of one parent data, 2+ sub data of more than one parent
-    uint8_t partition_level;
 } dahl_block;
 
 typedef struct _dahl_tensor
@@ -78,8 +71,6 @@ typedef struct _dahl_tensor
     } sub_data;
 
     dahl_type partition_type;
-
-    uint8_t partition_level;
 } dahl_tensor;
 
 

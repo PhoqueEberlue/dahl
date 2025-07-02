@@ -19,6 +19,12 @@
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
 
+// Sum the block values over the z axis and initialize + return a matrix of the same x,y shape.
+dahl_matrix* task_block_sum_z_axis_init(dahl_block const* in);
+
+dahl_matrix* task_block_sum_y_axis_init(dahl_block const* in);
+void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out);
+
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator
@@ -75,7 +81,8 @@ dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b);
 // Create and return a diagonal dahl_matrix of the input dahl_vector
 dahl_matrix* task_vector_diag(dahl_vector const* in);
 
-dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in);
+void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out);
+dahl_matrix* task_vector_softmax_derivative_init(dahl_vector const* in);
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
 

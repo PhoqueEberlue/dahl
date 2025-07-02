@@ -1,5 +1,7 @@
 #include "data_structures.h"
+#include "starpu_data.h"
 #include "starpu_data_filters.h"
+#include "starpu_data_interfaces.h"
 #include "sys/types.h"
 #include <math.h>
 
@@ -28,7 +30,6 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
     matrix->handle = handle;
     matrix->data = data;
     matrix->partition_type = DAHL_NONE;
-    matrix->partition_level = 0;
 
     return matrix;
 }
@@ -63,19 +64,17 @@ dahl_matrix* matrix_clone(dahl_matrix const* matrix)
 {
     dahl_shape2d shape = matrix_get_shape(matrix);
 
-    dahl_fp* data = matrix_data_acquire(matrix);
-    dahl_matrix* res = matrix_init_from(shape, data);
-    matrix_data_release(matrix);
+    starpu_data_acquire(matrix->handle, STARPU_R);
+    dahl_matrix* res = matrix_init_from(shape, matrix->data);
+    starpu_data_release(matrix->handle);
 
     return res;
 }
 
 dahl_shape2d matrix_get_shape(dahl_matrix const *const matrix)
 {
-    starpu_data_acquire(matrix->handle, STARPU_R);
     size_t nx = starpu_matrix_get_nx(matrix->handle);
     size_t ny = starpu_matrix_get_ny(matrix->handle);
-    starpu_data_release(matrix->handle);
     
     dahl_shape2d res = { .x = nx, .y = ny };
     return res;
@@ -92,7 +91,13 @@ size_t _matrix_get_nb_elem(void const* matrix)
     return shape.x * shape.y;
 }
 
-dahl_fp* matrix_data_acquire(dahl_matrix const* matrix)
+dahl_fp const* matrix_data_acquire(dahl_matrix const* matrix)
+{
+    starpu_data_acquire(matrix->handle, STARPU_R);
+    return matrix->data;
+}
+
+dahl_fp* matrix_data_acquire_mutable(dahl_matrix* matrix)
 {
     starpu_data_acquire(matrix->handle, STARPU_RW);
     return matrix->data;
@@ -160,19 +165,101 @@ void matrix_partition_along_y(dahl_matrix* const matrix)
     
     matrix->partition_type = DAHL_VECTOR;
     matrix->sub_data.vectors = dahl_arena_alloc(shape.y * sizeof(dahl_vector));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = matrix->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
     {
-		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, new_level, i);
+		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
         assert(data);
 
         matrix->sub_data.vectors[i].handle = sub_vector_handle;
         matrix->sub_data.vectors[i].data = data;
-        matrix->sub_data.vectors[i].partition_level = new_level;
+    }
+}
+
+// Custom filter
+static void starpu_matrix_filter_vertical_matrix(
+    void* parent_interface, void* child_interface, 
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter* f,
+    unsigned id, unsigned nparts)
+{
+	struct starpu_matrix_interface* matrix_parent = (struct starpu_matrix_interface *) parent_interface;
+	struct starpu_matrix_interface* matrix_child = (struct starpu_matrix_interface *) child_interface;
+
+	unsigned blocksize;
+
+	size_t nx = matrix_parent->nx;
+	size_t ny = matrix_parent->ny;
+	
+    blocksize = matrix_parent->ld;
+
+	size_t elemsize = matrix_parent->elemsize;
+
+	size_t chunk_pos = (size_t)f->filter_arg_ptr;
+
+	size_t new_ny = matrix_parent->ny / nparts;
+
+	STARPU_ASSERT_MSG(nparts <= ny, "cannot get %u vectors", nparts);
+	STARPU_ASSERT_MSG((chunk_pos + id) < ny, "the chosen sub matrix should be in the matrix");
+
+	size_t offset = (chunk_pos + id) * blocksize * elemsize;
+
+	STARPU_ASSERT_MSG(matrix_parent->id == STARPU_MATRIX_INTERFACE_ID, "%s can only be applied on a block data", __func__);
+	matrix_child->id = STARPU_MATRIX_INTERFACE_ID;
+
+    matrix_child->nx = nx;
+    matrix_child->ny = new_ny;
+
+	matrix_child->elemsize = elemsize;
+	matrix_child->allocsize = matrix_child->nx * matrix_child->ny * elemsize;
+
+	if (matrix_parent->dev_handle)
+	{
+		if (matrix_parent->ptr)
+			matrix_child->ptr = matrix_parent->ptr + offset;
+		
+		matrix_child->dev_handle = matrix_parent->dev_handle;
+		matrix_child->offset = matrix_parent->offset + offset;
+	}
+}
+
+struct starpu_data_interface_ops *starpu_matrix_filter_pick_matrix_child_ops(
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter *f, STARPU_ATTRIBUTE_UNUSED unsigned child)
+{
+	return &starpu_interface_matrix_ops;
+}
+
+void matrix_partition_along_y_batch(dahl_matrix* const matrix, size_t batch_size)
+{
+    // The data shouldn't be already partionned
+    assert(matrix->partition_type == DAHL_NONE);
+
+    dahl_shape2d const shape = matrix_get_shape(matrix);
+    size_t nparts = shape.y / batch_size;
+
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_matrix_filter_vertical_matrix,
+		.nchildren = nparts,
+		.get_child_ops = starpu_matrix_filter_pick_matrix_child_ops
+	};
+
+	starpu_data_partition(matrix->handle, &f);
+    
+    matrix->partition_type = DAHL_MATRIX;
+    matrix->sub_data.matrices = dahl_arena_alloc(nparts * sizeof(dahl_matrix));
+
+    for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
+    {
+		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
+
+        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
+        assert(data);
+
+        matrix->sub_data.matrices[i].handle = sub_matrix_handle;
+        matrix->sub_data.matrices[i].data = data;
+        matrix->sub_data.matrices[i].partition_type = DAHL_NONE;
     }
 }
 
@@ -186,13 +273,15 @@ void matrix_unpartition(dahl_matrix* const matrix)
             break;
         case DAHL_TENSOR:
         case DAHL_BLOCK:
-        case DAHL_MATRIX:
-            printf("ERROR: got value %i in function %s, however matrix should only be partioned into vector", 
+            printf("ERROR: got value %i in function %s, however matrix should only be partioned into vector or matrix", 
                    matrix->partition_type, __func__);
             abort();
             break;
         case DAHL_VECTOR:
             matrix->sub_data.vectors = nullptr;
+            break;
+        case DAHL_MATRIX:
+            matrix->sub_data.matrices = nullptr;
             break;
     }
 
@@ -202,6 +291,7 @@ void matrix_unpartition(dahl_matrix* const matrix)
 
 size_t matrix_get_nb_children(dahl_matrix const* matrix)
 {
+    assert(matrix->partition_type != DAHL_NONE);
     return starpu_data_get_nb_children(matrix->handle);
 }
 
@@ -212,6 +302,15 @@ dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, const size_t index
         && index < starpu_data_get_nb_children(matrix->handle));
 
     return &matrix->sub_data.vectors[index];
+}
+
+dahl_matrix* matrix_get_sub_matrix(dahl_matrix const* matrix, size_t index)
+{
+    assert(matrix->partition_type == DAHL_MATRIX 
+        && matrix->sub_data.matrices != nullptr 
+        && index < starpu_data_get_nb_children(matrix->handle));
+
+    return &matrix->sub_data.matrices[index];
 }
 
 void matrix_print(dahl_matrix const* matrix)

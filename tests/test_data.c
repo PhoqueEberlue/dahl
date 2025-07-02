@@ -225,6 +225,8 @@ void test_matrix_get_shape()
 
     dahl_matrix* matrix = matrix_init_from(shape, (dahl_fp*)&data);
 
+    // TODO: could be nice to inject a sleep in this particular task codelet, but only when testing
+    // this way we could detect concurency issues. (If the task takes too long, `matrix_get_shape` could read an incorrect value).
     task_matrix_to_flat_col(matrix);
 
     dahl_shape2d expect_shape = { .x = 1, .y = 12 };
@@ -236,6 +238,58 @@ void test_matrix_get_shape()
     dahl_arena_reset(testing_arena);
 }
 
+void test_recursive_partitionning()
+{
+    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp data[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+
+    dahl_vector* expect[2][3] = {
+        {
+            vector_init_from(4, (dahl_fp[4]){-2.0F, 1.0F, 2.0F,-1.0F }),
+            vector_init_from(4, (dahl_fp[4]){ 3.0F, 1.0F,-3.0F, 1.0F }),
+            vector_init_from(4, (dahl_fp[4]){ 4.0F,-1.0F, 4.0F,-1.0F }),
+        },
+        {
+            vector_init_from(4, (dahl_fp[4]){ 3.0F, 1.0F,-8.0F,-3.0F }),
+            vector_init_from(4, (dahl_fp[4]){-7.0F,-3.0F, 3.0F, 2.0F }),
+            vector_init_from(4, (dahl_fp[4]){ 1.0F, 1.0F, 9.0F, 1.0F }),
+        }
+    };
+
+    block_partition_along_z(block);
+
+    for (size_t i = 0; i < block_get_nb_children(block); i++)
+    {
+        dahl_matrix* matrix = block_get_sub_matrix(block, i);
+
+        matrix_partition_along_y(matrix);
+
+        for (size_t j = 0; j < matrix_get_nb_children(matrix); j++)
+        {
+            dahl_vector* vector = matrix_get_sub_vector(matrix, j);
+            ASSERT_VECTOR_EQUALS(expect[i][j], vector);
+        }
+
+        matrix_unpartition(matrix);
+    }
+
+    block_unpartition(block);
+}
+
 void test_data()
 {
     test_block_partition_along_z();
@@ -243,4 +297,5 @@ void test_data()
     test_matrix_partition_along_y();
     test_block_add_padding();
     test_matrix_get_shape();
+    test_recursive_partitionning();
 }

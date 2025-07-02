@@ -7,22 +7,21 @@ typedef struct
 {
     size_t const pool_size;
 
-    // not to be confound with dahl_convolution's input data which is 2d image,
-    // here it's the result of the previous layer, so a 3d matrix (conv.forward return value)
-    dahl_shape3d const input_shape;
+    // Input shape with a batch dimension
+    dahl_shape4d const input_shape;
 
     // Mask storing the max values indexes from the last input data, act as dl_dinput
-    dahl_block* mask;
+    dahl_tensor* mask_batch;
 
-    dahl_shape3d const output_shape;
+    dahl_shape4d const output_shape;
 
     // Forward output data. Overwritten each pooling_forward() call
-    dahl_block* output;
+    dahl_tensor* output_batch;
 
 } dahl_pooling;
 
-dahl_pooling* pooling_init(size_t pool_size, dahl_shape3d input_shape);
-dahl_block* pooling_forward(dahl_pooling* pool, dahl_block* input_data);
-dahl_block* pooling_backward(dahl_pooling* pool, dahl_block* dl_dout);
+dahl_pooling* pooling_init(size_t pool_size, dahl_shape4d input_shape);
+dahl_tensor* pooling_forward(dahl_pooling* pool, dahl_tensor* input_batch);
+dahl_tensor* pooling_backward(dahl_pooling* pool, dahl_tensor* dl_dout);
 
 #endif //!DAHL_POOLING_H

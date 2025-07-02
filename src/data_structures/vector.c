@@ -23,7 +23,6 @@ dahl_vector* vector_init(size_t const len)
     dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
-    vector->partition_level = 0;
 
     return vector;
 }
@@ -65,10 +64,7 @@ dahl_vector* vector_clone(dahl_vector const* vector)
 
 size_t vector_get_len(dahl_vector const *const vector)
 {
-    starpu_data_acquire(vector->handle, STARPU_R);
-    size_t nx = starpu_vector_get_nx(vector->handle);
-    starpu_data_release(vector->handle);
-    return nx;
+    return starpu_vector_get_nx(vector->handle);
 }
 
 starpu_data_handle_t _vector_get_handle(void const* vector)
@@ -81,7 +77,13 @@ size_t _vector_get_nb_elem(void const* vector)
     return vector_get_len((dahl_vector*)vector);
 }
 
-dahl_fp* vector_data_acquire(dahl_vector const* vector)
+dahl_fp const* vector_data_acquire(dahl_vector const* vector)
+{
+    starpu_data_acquire(vector->handle, STARPU_R);
+    return vector->data;
+}
+
+dahl_fp* vector_data_acquire_mutable(dahl_vector* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);
     return vector->data;

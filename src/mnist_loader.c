@@ -35,7 +35,7 @@ dahl_block* load_mnist_images(char const* filename)
     dahl_shape3d shape_image_block = { .x = rows, .y = cols, .z = num_images };
     dahl_block* image_block = block_init(shape_image_block);
 
-    dahl_fp* images = block_data_acquire(image_block);
+    dahl_fp* images = block_data_acquire_mutable(image_block);
 
     for (size_t z = 0; z < num_images; z++)
     {
@@ -76,7 +76,7 @@ dahl_vector* load_mnist_labels(char const* filename)
     printf("Loaded %lu labels from %s\n", num_labels, filename);
 
     dahl_vector* label_vec = vector_init(num_labels);
-    dahl_fp* labels = vector_data_acquire(label_vec);
+    dahl_fp* labels = vector_data_acquire_mutable(label_vec);
 
     for (size_t i = 0; i < num_labels; i++)
     {

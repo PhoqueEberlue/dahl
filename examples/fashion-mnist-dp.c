@@ -4,6 +4,7 @@
 #define LEARNING_RATE 0.05F
 #define N_EPOCHS 200
 
+/*
 void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense)
 {
     // TODO: set num_classes (atm 10)
@@ -57,6 +58,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
     block_unpartition(image_block);
     matrix_unpartition(y_categorical);
 }
+*/
 
 int main(int argc, char **argv)
 {
@@ -73,11 +75,13 @@ int main(int argc, char **argv)
     size_t const filter_size = 6;
     size_t const pool_size = 2;
 
+    /*
     dahl_convolution* conv = convolution_init(img_shape, filter_size, num_channels);
     dahl_pooling* pool = pooling_init(pool_size, conv->output_shape);
     dahl_dense* dense = dense_init(pool->output_shape, num_classes);
     
     train_network(set, conv, pool, dense);
+    */
 
     dahl_shutdown();
     return 0;

@@ -28,6 +28,7 @@
 
 // Block
 DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(block_sum_y_axis, 2, STARPU_R, STARPU_W);
 
 // Matrix
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W);

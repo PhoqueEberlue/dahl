@@ -36,7 +36,6 @@ dahl_block* block_init(dahl_shape3d const shape)
     block->handle = handle;
     block->data = data;
     block->partition_type = DAHL_NONE;
-    block->partition_level = 0;
 
     return block;
 }
@@ -119,12 +118,10 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
 
 dahl_shape3d block_get_shape(dahl_block const* block)
 {
-    starpu_data_acquire(block->handle, STARPU_R);
     size_t nx = starpu_block_get_nx(block->handle);
 	size_t ny = starpu_block_get_ny(block->handle);
 	size_t nz = starpu_block_get_nz(block->handle);
     dahl_shape3d res = { .x = nx, .y = ny, .z = nz };
-    starpu_data_release(block->handle);
 
     return res;
 }
@@ -140,7 +137,13 @@ size_t _block_get_nb_elem(void const* block)
     return shape.x * shape.y * shape.z;
 }
 
-dahl_fp* block_data_acquire(dahl_block const* block)
+dahl_fp const* block_data_acquire(dahl_block const* block)
+{
+    starpu_data_acquire(block->handle, STARPU_R);
+    return block->data;
+}
+
+dahl_fp* block_data_acquire_mutable(dahl_block* block)
 {
     starpu_data_acquire(block->handle, STARPU_RW);
     return block->data;
@@ -209,19 +212,16 @@ void block_partition_along_z(dahl_block* block)
     
     block->partition_type = DAHL_MATRIX;
     block->sub_data.matrices = dahl_arena_alloc(shape.z * sizeof(dahl_matrix));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = block->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
     {
-		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, new_level, i);
+		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
         assert(data);
 
         block->sub_data.matrices[i].handle = sub_matrix_handle;
         block->sub_data.matrices[i].data = data;
-        block->sub_data.matrices[i].partition_level = new_level;
         block->sub_data.matrices[i].partition_type = DAHL_NONE;
     }
 }
@@ -294,19 +294,16 @@ void block_partition_along_z_flat(dahl_block* block)
     
     block->partition_type = DAHL_VECTOR;
     block->sub_data.vectors = dahl_arena_alloc(shape.z * sizeof(dahl_vector));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = block->partition_level + 1;
 
     for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
     {
-		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(block->handle, new_level, i);
+		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
         assert(data);
 
         block->sub_data.vectors[i].handle = sub_vector_handle;
         block->sub_data.vectors[i].data = data;
-        block->sub_data.vectors[i].partition_level = new_level;
     }
 }
 
@@ -371,18 +368,15 @@ void block_partition_flatten_to_vector(dahl_block* block)
     block->partition_type = DAHL_VECTOR;
     // Only one vector here
     block->sub_data.vectors = dahl_arena_alloc(sizeof(dahl_vector));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = block->partition_level + 1;
 
     assert(starpu_data_get_nb_children(block->handle) == 1);
 
-    starpu_data_handle_t flat_vector_handle = starpu_data_get_sub_data(block->handle, new_level, 0);
+    starpu_data_handle_t flat_vector_handle = starpu_data_get_sub_data(block->handle, 1, 0);
     dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(flat_vector_handle);
     assert(data);
 
     block->sub_data.vectors[0].handle = flat_vector_handle;
     block->sub_data.vectors[0].data = data;
-    block->sub_data.vectors[0].partition_level = new_level;
 }
 
 void block_partition_along_z_batch(dahl_block* block, size_t batch_size)
@@ -391,30 +385,28 @@ void block_partition_along_z_batch(dahl_block* block, size_t batch_size)
     assert(block->partition_type == DAHL_NONE);
 
     dahl_shape3d const shape = block_get_shape(block);
+    size_t nparts = shape.z / batch_size;
 
     struct starpu_data_filter f =
 	{
-		.filter_func = starpu_block_filter_block,
-		.nchildren = shape.z / batch_size,
+		.filter_func = starpu_block_filter_depth_block,
+		.nchildren = nparts,
 	};
 
 	starpu_data_partition(block->handle, &f);
     
     block->partition_type = DAHL_BLOCK;
-    block->sub_data.blocks = dahl_arena_alloc(shape.z * sizeof(dahl_block));
-    // The new level is equal to the father's level + 1
-    uint8_t const new_level = block->partition_level + 1;
+    block->sub_data.blocks = dahl_arena_alloc(nparts * sizeof(dahl_block));
 
     for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
     {
-		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(block->handle, new_level, i);
+		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(block->handle, 1, i);
 
         dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_block_handle);
         assert(data);
 
         block->sub_data.blocks[i].handle = sub_block_handle;
         block->sub_data.blocks[i].data = data;
-        block->sub_data.blocks[i].partition_level = new_level;
         // Children are not yet partitioned
         block->sub_data.blocks[i].partition_type = DAHL_NONE;
     }
@@ -450,6 +442,7 @@ void block_unpartition(dahl_block* block)
 
 size_t block_get_nb_children(dahl_block const* block)
 {
+    assert(block->partition_type != DAHL_NONE);
     return starpu_data_get_nb_children(block->handle);
 }
 

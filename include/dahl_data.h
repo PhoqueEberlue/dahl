@@ -41,7 +41,11 @@ dahl_shape4d tensor_get_shape(dahl_tensor const* tensor);
 bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, u_int8_t precision);
 
 // Acquire the tensor data, will wait any associated tasks to finish.
-dahl_fp* tensor_data_acquire(dahl_tensor const* tensor);
+dahl_fp const* tensor_data_acquire(dahl_tensor const* tensor);
+
+// Acquire the tensor data as mutable, will wait any associated tasks to finish.
+// Caution: will cause dead lock if the data is already partitionned.
+dahl_fp* tensor_data_acquire_mutable(dahl_tensor* tensor);
 
 // Release the tensor data, tasks will be able to use the tensor again.
 void tensor_data_release(dahl_tensor const* tensor);
@@ -102,7 +106,11 @@ dahl_shape3d block_get_shape(dahl_block const* block);
 bool block_equals(dahl_block const* a, dahl_block const* b, bool rounding, u_int8_t precision);
 
 // Acquire the block data, will wait any associated tasks to finish.
-dahl_fp* block_data_acquire(dahl_block const* block);
+dahl_fp const* block_data_acquire(dahl_block const* block);
+
+// Acquire the block data as mutable, will wait any associated tasks to finish.
+// Caution: will cause dead lock if the data is already partitionned.
+dahl_fp* block_data_acquire_mutable(dahl_block* block);
 
 // Release the block data, tasks will be able to use the block again.
 void block_data_release(dahl_block const* block);
@@ -119,6 +127,7 @@ void block_partition_along_z_flat(dahl_block* block);
 void block_partition_flatten_to_vector(dahl_block* block);
 
 // Partition along z but by batch, so it creates sub blocks.
+// TODO: support or return an error if the batch size does not divide properly the block
 void block_partition_along_z_batch(dahl_block* block, size_t batch_size);
 
 // Unpartition a block
@@ -163,7 +172,11 @@ dahl_matrix* matrix_clone(dahl_matrix const* matrix);
 dahl_shape2d matrix_get_shape(dahl_matrix const* matrix);
 
 // Acquire the matrix data, will wait any associated tasks to finish.
-dahl_fp* matrix_data_acquire(dahl_matrix const* matrix);
+dahl_fp const* matrix_data_acquire(dahl_matrix const* matrix);
+
+// Acquire the matrix data as mutable, will wait any associated tasks to finish.
+// Caution: will cause dead lock if the data is already partitionned.
+dahl_fp* matrix_data_acquire_mutable(dahl_matrix* matrix);
 
 // Release the matrix data, tasks will be able to use the block again.
 void matrix_data_release(dahl_matrix const* matrix);
@@ -176,6 +189,12 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_
 // Note the the vector itself cannot be used as long as it is partitioned.
 void matrix_partition_along_y(dahl_matrix* matrix);
 
+// Partition data along y axis, and produces sub matrices of shape (x, y / batch_size).
+// Exactly creates y / batch_size sub matrices that can be accessed with `matrix_get_sub_matrix`.
+// Note the the vector itself cannot be used as long as it is partitioned.
+// TODO: support or return an error if the batch size does not divide properly the matrix
+void matrix_partition_along_y_batch(dahl_matrix* const matrix, size_t batch_size);
+
 // Unpartition a matrix
 void matrix_unpartition(dahl_matrix* matrix);
 
@@ -184,6 +203,9 @@ size_t matrix_get_nb_children(dahl_matrix const* matrix);
 
 // Get the sub vector at index
 dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, size_t index);
+
+// Get the sub matrix at index
+dahl_matrix* matrix_get_sub_matrix(dahl_matrix const* matrix, size_t index);
 
 // Print a matrix
 void matrix_print(dahl_matrix const* matrix);
@@ -215,7 +237,11 @@ dahl_vector* vector_clone(dahl_vector const* vector);
 size_t vector_get_len(dahl_vector const* vector);
 
 // Acquire the vector data, will wait any associated tasks to finish.
-dahl_fp* vector_data_acquire(dahl_vector const* vector);
+dahl_fp const* vector_data_acquire(dahl_vector const* vector);
+
+// Acquire the vector data as mutable, will wait any associated tasks to finish.
+// Caution: will cause dead lock if the data is already partitionned.
+dahl_fp* vector_data_acquire_mutable(dahl_vector* vector);
 
 // Release the vector data, tasks will be able to use the block again.
 void vector_data_release(dahl_vector const* vector);

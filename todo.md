@@ -2,6 +2,13 @@
 
 ## Important
 
+- Fix mini-batch: we should not update weights per sample but rather accumulate dl_dw and dl_dy to update the weights once.
+  Also note that we could simply fill dl_dw_batch then do tensor_sum_axis_t but:
+  - the advantage of doing that is that we can fully go parallel because the buffers are not shared as we use sub partitions
+    BUT this makes us store those partial result and leads to useless memory access
+  - instead we could leverage starpu redux system, however I wonder how it deals with parallelism? Especially if the whole batch
+    does try to increment the same buffer at the same time
+    -> Should try this in a separate project
 
 - What I can do is defining multiple implementations for a single codelet, for example I could keep my actual version of the cross correlation,
   but I could also write a vectorized version. This way I keep the naive, and perf oriented implem, and StarPU will be able to chose between the two.
@@ -12,6 +19,8 @@
 - benchmark with different batch sizes?
 - Implementing the 3 other parallelizable dimensions
 - Implement PipeDream algorithm
+- One problem with the current acquire is that  it cannot be used if the actual data is partitionned. 
+  However it does work if we require a read only data.
 
 ## Later
 

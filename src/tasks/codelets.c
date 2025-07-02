@@ -2,6 +2,7 @@
 #include "starpu_data_interfaces.h"
 #include "starpu_task_util.h"
 #include "../../include/dahl_types.h"
+#include "unistd.h"
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>
@@ -34,6 +35,35 @@ void block_sum_z_axis(void* buffers[2], void* cl_arg)
             {
                 // FIX ME
                 out[(y * out_ld) + x] += in[(z * in_ldz) + (y * in_ldy) + x];
+            }
+        }
+    }
+}
+
+void block_sum_y_axis(void* buffers[2], void* cl_arg)
+{
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    size_t const in_ldy = STARPU_BLOCK_GET_LDY(buffers[0]);
+    size_t const in_ldz = STARPU_BLOCK_GET_LDZ(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    assert(in_nx == out_nx);
+    assert(in_nz == out_ny);
+
+    for (int y = 0; y < in_ny; y++)
+    {
+        for (int z = 0; z < in_nz; z++)
+        {
+            for (int x = 0; x < in_nx; x++)
+            {
+                out[(z * out_ld) + x] += in[(z * in_ldz) + (y * in_ldy) + x];
             }
         }
     }
@@ -465,7 +495,7 @@ void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
 
 // ---------------------------------------- ANY ----------------------------------------
 // Get the ptr of any StarPU data type. Does not perform any check.
-// This works because ptr is always the third field in the struct for vector, matrix, block and tensor,
+// This works because ptr is always the second field in the struct for vector, matrix, block and tensor,
 // so it does not matter what we cast `interface` into. 
 // This may be risky though, especially if the field order changes...
 #define STARPU_ANY_GET_PTR(interface) (((struct starpu_vector_interface *)(interface))->ptr)

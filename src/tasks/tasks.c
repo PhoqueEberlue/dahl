@@ -15,6 +15,47 @@ void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+dahl_matrix* task_block_sum_z_axis_init(dahl_block const* in)
+{
+    dahl_shape3d in_shape = block_get_shape(in);
+
+    dahl_shape2d out_shape = {
+        .x = in_shape.x,
+        .y = in_shape.y,
+    };
+
+    dahl_matrix* out = matrix_init(out_shape);
+    
+    task_block_sum_z_axis(in, out);
+
+    return out;
+}
+
+void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out)
+{
+    int ret = starpu_task_insert(&cl_block_sum_y_axis,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_matrix* task_block_sum_y_axis_init(dahl_block const* in)
+{
+    dahl_shape3d in_shape = block_get_shape(in);
+
+    // Here we obtain the x, z dimension because y is summed up
+    dahl_shape2d out_shape = {
+        .x = in_shape.x,
+        .y = in_shape.z,
+    };
+
+    dahl_matrix* out = matrix_init(out_shape);
+    
+    task_block_sum_y_axis(in, out);
+
+    return out;
+}
+
 // ---------------------------------------- MATRIX ----------------------------------------
 void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* kernel, dahl_matrix* out)
 {
@@ -134,14 +175,25 @@ dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in)
 
 void task_matrix_resize(dahl_matrix* mat, size_t new_nx, size_t new_ny, size_t new_ld)
 {
-    // It is important that the matrix should be passed with write, because otherwise other tasks
-    // won't wait for the resize to occur.
-    int ret = starpu_task_insert(&cl_matrix_resize,
-                             STARPU_VALUE, &new_nx, sizeof(&new_nx),
-                             STARPU_VALUE, &new_ny, sizeof(&new_ny),
-                             STARPU_VALUE, &new_ld, sizeof(&new_ld),
-                             STARPU_W, mat->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    struct starpu_task *task = starpu_task_create();
+ 
+    task->cl = &cl_matrix_resize;
+    task->synchronous = 1; // Set to synchronous to prevent any problems.
+    
+    char *arg_buffer;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                         STARPU_VALUE, &new_nx, sizeof(&new_nx),
+                         STARPU_VALUE, &new_ny, sizeof(&new_ny),
+                         STARPU_VALUE, &new_ld, sizeof(&new_ld), 0);
+
+    task->cl_arg = arg_buffer;
+    task->cl_arg_size = arg_buffer_size;
+    task->nbuffers = 1;
+    task->handles[0] = mat->handle;
+ 
+    /* submit the task to StarPU */
+    starpu_task_submit(task);
 }
 
 void task_matrix_to_flat_row(dahl_matrix* mat)
@@ -230,10 +282,8 @@ dahl_matrix* task_vector_diag(dahl_vector const* in)
 }
 
 // TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
-dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in)
+void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out)
 {
-    dahl_matrix* result = task_vector_diag(in);
-
     // Init in the temporary arena 
     dahl_arena* const save_arena = dahl_context_arena;
     dahl_context_arena = dahl_temporary_arena;
@@ -245,8 +295,13 @@ dahl_matrix* task_vector_softmax_derivative(dahl_vector const* in)
     // Then switch to previous context.
     dahl_context_arena = save_arena;
 
-    TASK_SUB_SELF(result, tmp);
+    TASK_SUB_SELF(out, tmp);
+}
 
+dahl_matrix* task_vector_softmax_derivative_init(dahl_vector const* in)
+{
+    dahl_matrix* result = task_vector_diag(in);
+    task_vector_softmax_derivative(in, result);
     return result;
 }
 
