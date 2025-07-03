@@ -28,12 +28,6 @@ dahl_tensor* tensor_init_from(dahl_shape4d shape, dahl_fp const* data);
 // Clone a tensor
 dahl_tensor* tensor_clone(dahl_tensor const* tensor);
 
-// Returns a new tensor with added padding. 
-// The new_shape should be larger than the previous tensor.
-// If it is exactly the same, it just produces a copy of the bolck.
-// If the new padding is even, the remainder is placed at the end of the axis.
-dahl_tensor* tensor_add_padding_init(dahl_tensor const* tensor, dahl_shape4d new_shape);
-
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor);
 

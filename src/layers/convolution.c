@@ -124,7 +124,14 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_ba
 
     dahl_tensor* dl_dinput_batch_tmp = tensor_init(tmp_shape);
 
-    dahl_block* dl_dfilters = block_init(conv->filter_shape);
+    dahl_shape4d dl_dfilters_shape = {
+        conv->filter_shape.x,
+        conv->filter_shape.y,
+        conv->filter_shape.z,
+        conv->input_shape.z,  // batch size
+    };
+
+    dahl_tensor* dl_dfilters_batch = tensor_init(dl_dfilters_shape);
 
     // Partition by batch dimension
     tensor_partition_along_t(dl_dout_batch);
@@ -133,7 +140,7 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_ba
     block_partition_along_z(conv->dl_dinput_batch);
 
     // Partition by channel dimension
-    block_partition_along_z(dl_dfilters);
+    tensor_partition_along_t(dl_dfilters_batch);
     block_partition_along_z(conv->filters);
 
     size_t const batch_size = tensor_get_nb_children(dl_dout_batch);
@@ -145,6 +152,7 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_ba
         dahl_block* dl_dinput_tmp = tensor_get_sub_block(dl_dinput_batch_tmp, i);
         dahl_matrix* input = block_get_sub_matrix(conv->input_batch, i);
         dahl_matrix* dl_dinput = block_get_sub_matrix(conv->dl_dinput_batch, i);
+        dahl_block* dl_dfilters = tensor_get_sub_block(dl_dfilters_batch, i);
 
         // Here we need padding on dl_dout
         size_t padding = (conv->filter_size - 1) * 2;
@@ -157,6 +165,7 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_ba
         block_partition_along_z(dl_dout_padded);
         block_partition_along_z(dl_dout);
         block_partition_along_z(dl_dinput_tmp);
+        block_partition_along_z(dl_dfilters);
 
         // Every block should have the same number of sub matrices
         size_t sub_matrix_nb = block_get_nb_children(conv->filters);
@@ -179,36 +188,32 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_ba
 
         block_unpartition(dl_dout_padded);
         block_unpartition(dl_dout);
-        block_unpartition(dl_dinput_tmp); 
+        block_unpartition(dl_dinput_tmp);
+        block_unpartition(dl_dfilters);
 
-        block_get_shape(dl_dinput_tmp);
-        matrix_get_shape(dl_dinput);
         // Sum the temporary results that were computed just before
-        task_block_sum_z_axis(dl_dinput_tmp, dl_dinput);
+        // task_block_sum_z_axis(dl_dinput_tmp, dl_dinput); // FIXME what?
     }
 
     tensor_unpartition(dl_dinput_batch_tmp);
+    tensor_unpartition(dl_dfilters_batch);
+    tensor_unpartition(dl_dout_batch);
     block_unpartition(conv->input_batch);
     block_unpartition(conv->dl_dinput_batch);
-    block_unpartition(dl_dfilters);
     block_unpartition(conv->filters);
-    // unpartition dl_dout_batch after
+    
+    dahl_block* tmp_filters = task_tensor_sum_t_axis_init(dl_dfilters_batch);
+    dahl_block* tmp_dout = task_tensor_sum_t_axis_init(dl_dout_batch);
 
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
     // biases -= dl_dout * learning_rate
-    TASK_SCAL_SELF(dl_dfilters, learning_rate);
+    TASK_SCAL_SELF(tmp_filters, learning_rate / (dahl_fp)conv->input_shape.z);
+    TASK_SUB_SELF(conv->filters, tmp_filters);
 
-    TASK_SUB_SELF(conv->filters, dl_dfilters);
+    TASK_SCAL_SELF(tmp_dout, learning_rate / (dahl_fp)conv->input_shape.z);
+    TASK_SUB_SELF(conv->biases, tmp_dout);
 
-    for (size_t i = 0; i < batch_size; i++)
-    {
-        dahl_block* dl_dout = tensor_get_sub_block(dl_dout_batch, i);
-        TASK_SCAL_SELF(dl_dout, learning_rate);
-        TASK_SUB_SELF(conv->biases, dl_dout);
-    }
-
-    tensor_unpartition(dl_dout_batch);
 
     dahl_arena_reset(dahl_temporary_arena);
     dahl_context_arena = save_arena;

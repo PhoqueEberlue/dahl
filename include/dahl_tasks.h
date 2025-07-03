@@ -15,6 +15,13 @@
 // Functions common to the three data types have helper macros that infers the type at compilation.
 // The documentation for these functions is not repeated and only present in the macro definitions.
 
+// ------------------------------------ TASKS FOR DAHL_TENSOR TYPE ------------------------------------
+// Sum the tensor values over the t axis and return it as a block of the same x,y shape.
+void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out);
+
+// Sum the tensor values over the t axis and initialize + return a block of the same x,y shape.
+dahl_block* task_tensor_sum_t_axis_init(dahl_tensor const* in);
+
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);

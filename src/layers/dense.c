@@ -137,8 +137,7 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix* dl_dout_batch, dahl_
 
     matrix_unpartition(dl_dout_batch);
     matrix_unpartition(dense->output_batch);
-    // dl_dy_batch will be unpartitionned after
-
+    // unpartition dl_dy later
 
     dahl_shape4d dl_dw_shape = { 
         .x = dense->input_shape.x * dense->input_shape.y, // Image size after flattening
@@ -194,11 +193,7 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix* dl_dout_batch, dahl_
             dahl_matrix const* sub_weights_t = task_matrix_transpose_init(sub_weights);
 
             dahl_vector* sub_output = block_get_sub_vector(dl_dinput, j);
-            task_matrix_vector_product(sub_weights_t, sub_dl_dy, sub_output);
-
-            // Updating weights
-            TASK_SCAL_SELF(sub_dl_dw, learning_rate);
-            TASK_SUB_SELF(sub_weights, sub_dl_dw);
+            task_matrix_vector_product(sub_weights_t, sub_dl_dy, sub_output);  
         }
 
         block_unpartition(input);
@@ -207,19 +202,21 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix* dl_dout_batch, dahl_
     }
 
     tensor_unpartition(dense->input_batch);
-    tensor_unpartition(dl_dw_batch);
     tensor_unpartition(dense->dl_dinput_batch);
     block_unpartition(dense->weights);
-
-    for (size_t i = 0; i < matrix_get_nb_children(dl_dy_batch); i++)
-    {
-        dahl_vector* sub_dl_dy = matrix_get_sub_vector(dl_dy_batch, i); // dl_dy for this current batch
-        TASK_SCAL_SELF(sub_dl_dy, learning_rate);
-        // Updating biases
-        TASK_SUB_SELF(dense->biases, sub_dl_dy);
-    }
-    
+    tensor_unpartition(dl_dw_batch);
     matrix_unpartition(dl_dy_batch); // unpartition dl_dy that was partitionned earlier
+    
+    dahl_vector* summed_dl_dy = task_matrix_sum_y_axis_init(dl_dy_batch);
+    dahl_block* summed_dl_dw = task_tensor_sum_t_axis_init(dl_dw_batch);
+
+    // Updating weights
+    TASK_SCAL_SELF(summed_dl_dw, learning_rate / dense->input_shape.t); // dl_dw * lr / batch_size
+    TASK_SUB_SELF(dense->weights, summed_dl_dw);
+
+    // Updating biases
+    TASK_SCAL_SELF(summed_dl_dy, learning_rate / dense->input_shape.t); // dl_dy * lr / batch_size
+    TASK_SUB_SELF(dense->biases, summed_dl_dy);
 
     dahl_arena_reset(dahl_temporary_arena);
     dahl_context_arena = save_arena;

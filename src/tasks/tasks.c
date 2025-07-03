@@ -5,7 +5,33 @@
 #include "../data_structures/data_structures.h"
 #include "starpu_data.h"
 #include "starpu_task.h"
+#include <stdio.h>
 
+// ---------------------------------------- TENSOR ----------------------------------------
+void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out)
+{
+    int ret = starpu_task_insert(&cl_tensor_sum_t_axis,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_block* task_tensor_sum_t_axis_init(dahl_tensor const* in)
+{
+    dahl_shape4d in_shape = tensor_get_shape(in);
+
+    dahl_shape3d out_shape = {
+        .x = in_shape.x,
+        .y = in_shape.y,
+        .z = in_shape.z,
+    };
+
+    dahl_block* out = block_init(out_shape);
+    
+    task_tensor_sum_t_axis(in, out);
+
+    return out;
+}
 // ---------------------------------------- BLOCK ----------------------------------------
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
 {

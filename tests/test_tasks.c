@@ -119,6 +119,61 @@ void test_relu()
     // TODO: add test for other types and task relu without self
 }
 
+void test_tensor_sum_t_axis()
+{
+    dahl_shape4d a_shape = { .x = 4, .y = 3, .z = 2, .t = 2 };
+    dahl_shape3d expect_shape = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp a[2][2][3][4] = {
+        {
+            {
+                {-2.0F, 1.0F, 2.0F,-1.0F },
+                { 3.0F, 1.0F,-3.0F, 1.0F },
+                { 4.0F,-1.0F, 4.0F,-1.0F },
+            },
+            {
+                { 3.0F, 1.0F,-8.0F,-3.0F },
+                {-7.0F,-3.0F, 3.0F, 2.0F },
+                { 1.0F, 1.0F, 9.0F, 1.0F },
+            },
+        },
+        {
+            {
+                {-2.0F, 1.0F, 2.0F,-1.0F },
+                { 3.0F, 1.0F,-3.0F, 1.0F },
+                { 4.0F,-1.0F, 4.0F,-1.0F },
+            },
+            {
+                { 3.0F, 1.0F,-8.0F,-3.0F },
+                {-7.0F,-3.0F, 3.0F, 2.0F },
+                { 1.0F, 1.0F, 9.0F, 1.0F },
+            },
+        }
+    };
+
+    dahl_fp expect[2][3][4] = {
+        {
+            {-4.0F, 2.0F, 4.0F,-2.0F },
+            { 6.0F, 2.0F,-6.0F, 2.0F },
+            { 8.0F,-2.0F, 8.0F,-2.0F },
+        },
+        {
+            { 6.0F, 2.0F,-16.0F,-6.0F },
+            {-14.0F,-6.0F, 6.0F, 4.0F },
+            { 2.0F, 2.0F, 18.0F, 2.0F },
+        }
+    };
+
+    dahl_tensor* a_block = tensor_init_from(a_shape, (dahl_fp*)&a);
+    dahl_block* expect_block = block_init_from(expect_shape, (dahl_fp*)&expect);
+    dahl_block* result_block = block_init(expect_shape);
+    task_tensor_sum_t_axis(a_block, result_block);
+
+    ASSERT_BLOCK_EQUALS(expect_block, result_block);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_block_sum_z_axis()
 {
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
@@ -686,6 +741,7 @@ void test_tasks()
     test_matrix_cross_correlation_1();
     test_matrix_cross_correlation_2();
     test_relu();
+    test_tensor_sum_t_axis();
     test_block_sum_z_axis();
     test_matrix_sum_y_axis();
     test_scal();

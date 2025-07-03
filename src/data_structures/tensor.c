@@ -45,7 +45,7 @@ dahl_tensor* tensor_init(dahl_shape4d const shape)
 dahl_tensor* tensor_init_from(dahl_shape4d const shape, dahl_fp const* data)
 {
     dahl_tensor* tensor = tensor_init(shape);
-    size_t const n_elems = shape.x * shape.y * shape.z;
+    size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
 
     for (int i = 0; i < n_elems; i++)
     {
@@ -58,7 +58,7 @@ dahl_tensor* tensor_init_from(dahl_shape4d const shape, dahl_fp const* data)
 dahl_tensor* tensor_init_random(dahl_shape4d const shape)
 {
     dahl_tensor* tensor = tensor_init(shape);
-    size_t const n_elems = shape.x * shape.y * shape.z;
+    size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
 
     for (int i = 0; i < n_elems; i += 1)
     {
@@ -77,43 +77,6 @@ dahl_tensor* tensor_clone(dahl_tensor const* tensor)
     starpu_data_acquire(tensor->handle, STARPU_R);
     dahl_tensor* res = tensor_init_from(shape, tensor->data);
     starpu_data_release(tensor->handle);
-
-    return res;
-}
-
-dahl_tensor* tensor_add_padding_init(dahl_tensor const* tensor, dahl_shape4d const new_shape)
-{
-    dahl_shape4d shape = tensor_get_shape(tensor);
-
-    starpu_data_acquire(tensor->handle, STARPU_R);
-    dahl_fp* data = tensor->data;
-
-    assert(new_shape.x >= shape.x && new_shape.y >= shape.y && new_shape.z >= shape.z);
-
-    size_t diff_z = (new_shape.z - shape.z) / 2;
-    size_t diff_y = (new_shape.y - shape.y) / 2;
-    size_t diff_x = (new_shape.x - shape.x) / 2;
-
-    dahl_tensor* res = tensor_init(new_shape);
-    starpu_data_acquire(res->handle, STARPU_W);
-    dahl_fp* res_data = res->data;
-
-    for (size_t z = 0; z < shape.z; z++)
-    {
-        for (size_t y = 0; y < shape.y; y++)
-        {
-            for (size_t x = 0; x < shape.x; x++)
-            {
-                dahl_fp value = data[(z * shape.x * shape.y) + (y * shape.x) + x];
-                // FIX PLEASE JUST DO AN ACCESSOR FUNCTION WITH X, Y, Z AS PARAMETERS SO WE CAN IGNORE LD
-                res_data[((z + diff_z) * new_shape.x * new_shape.y) + ((y + diff_y) * new_shape.x) + (x + diff_x)] = value;
-            }
-        }
-
-    }
-
-    starpu_data_release(tensor->handle);
-    starpu_data_release(res->handle);
 
     return res;
 }
@@ -297,10 +260,11 @@ void tensor_print(dahl_tensor const* tensor)
     const dahl_shape4d shape = tensor_get_shape(tensor);
 	const size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
 	const size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
+	const size_t ldt = starpu_tensor_get_local_ldt(tensor->handle);
 
 	starpu_data_acquire(tensor->handle, STARPU_R);
 
-    printf("tensor=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu\n", tensor->data, shape.x, shape.y, shape.z, ldy, ldz);
+    printf("tensor=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu ldt=%zu\n", tensor->data, shape.x, shape.y, shape.z, ldy, ldz, ldt);
 
 	for(size_t t = 0; t < shape.t; t++)
     {
@@ -310,7 +274,7 @@ void tensor_print(dahl_tensor const* tensor)
             {
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    printf("%f ", tensor->data[(z*ldz)+(y*ldy)+x]);
+                    printf("%f ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
                 }
                 printf("\n");
             }

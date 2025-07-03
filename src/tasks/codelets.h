@@ -26,6 +26,9 @@
         .model = &perf_model_##func_name                                           \
     };
 
+// Tensor
+DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
+
 // Block
 DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_y_axis, 2, STARPU_R, STARPU_W);

@@ -21,7 +21,8 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
     matrix_partition_along_y_batch(y_categorical, batch_size);
 
     // size_t const n_samples = block_get_nb_children(image_block);
-    size_t const n_batches = block_get_shape(image_block).z / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
+    size_t const n_samples = 5000; // block_get_shape(image_block).z
+    size_t const n_batches = n_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)
     {
@@ -73,8 +74,8 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n",
-           total_loss / (dahl_fp)(n_batches * batch_size),
-           correct_predictions / (float)(n_batches * batch_size) * 100.0F);
+           total_loss / (dahl_fp)n_samples,
+           correct_predictions / (float)n_samples * 100.0F);
     }
 
     block_unpartition(image_block);
@@ -93,8 +94,8 @@ int main(int argc, char **argv)
     size_t const num_channels = 1;
     size_t const num_classes = 10;
     size_t const filter_size = 6;
-    size_t const pool_size = 2;
-    size_t constexpr batch_size = 50;
+    size_t const pool_size = 16;
+    size_t constexpr batch_size = 2;
     dahl_shape3d constexpr input_shape = { .x = 28, .y = 28, .z = batch_size };
 
     dahl_convolution* conv = convolution_init(input_shape, filter_size, num_channels);
