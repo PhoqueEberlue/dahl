@@ -187,7 +187,7 @@ void matrix_partition_along_y(dahl_matrix* matrix);
 // Exactly creates y / batch_size sub matrices that can be accessed with `matrix_get_sub_matrix`.
 // Note the the vector itself cannot be used as long as it is partitioned.
 // TODO: support or return an error if the batch size does not divide properly the matrix
-void matrix_partition_along_y_batch(dahl_matrix* const matrix, size_t batch_size);
+void matrix_partition_along_y_batch(dahl_matrix* matrix, size_t batch_size);
 
 // Unpartition a matrix
 void matrix_unpartition(dahl_matrix* matrix);

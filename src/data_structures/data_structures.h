@@ -4,6 +4,7 @@
 #include "../../include/dahl_data.h"
 
 #include "../arena/arena.h"
+#include "starpu_data.h"
 #include <starpu.h>
 
 // In case we want to fix the value for the tests
@@ -12,15 +13,6 @@
 #else
 #define DAHL_MAX_RANDOM_VALUES 1
 #endif
-
-// Different types
-typedef enum {
-    DAHL_NONE, // Nothing
-    DAHL_TENSOR,
-    DAHL_BLOCK,
-    DAHL_MATRIX,
-    DAHL_VECTOR,
-} dahl_type;
 
 // Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
 // so their fields are not accessible from the public API.
@@ -35,12 +27,16 @@ typedef struct _dahl_matrix
     starpu_data_handle_t handle;
     dahl_fp* data;
 
-    union {
+    // Partitionning meta data
+    dahl_type partition_type;
+    union
+    {
         dahl_matrix* matrices;
         dahl_vector* vectors;
     } sub_data;
 
-    dahl_type partition_type;
+    starpu_data_handle_t* sub_handles;
+    size_t nb_sub_handles;
 } dahl_matrix;
 
 typedef struct _dahl_block
@@ -48,14 +44,18 @@ typedef struct _dahl_block
     starpu_data_handle_t handle;
     dahl_fp* data;
 
-    union {
+    // Partitionning meta data
+    dahl_type partition_type;
+
+    union
+    {
         dahl_block* blocks;
         dahl_matrix* matrices;
         dahl_vector* vectors;
     } sub_data;
 
-    // The type inside the sub_data union.
-    dahl_type partition_type;
+    starpu_data_handle_t* sub_handles;
+    size_t nb_sub_handles;
 } dahl_block;
 
 typedef struct _dahl_tensor
@@ -63,14 +63,19 @@ typedef struct _dahl_tensor
     starpu_data_handle_t handle;
     dahl_fp* data;
 
-    union {
+    // Partitionning meta data
+    dahl_type partition_type;
+
+    union
+    {
         dahl_tensor* tensors;
         dahl_block* blocks;
         dahl_matrix* matrices;
         dahl_vector* vectors;
     } sub_data;
 
-    dahl_type partition_type;
+    starpu_data_handle_t* sub_handles;
+    size_t nb_sub_handles;
 } dahl_tensor;
 
 

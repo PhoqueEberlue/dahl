@@ -4,6 +4,15 @@
 #include "sys/types.h"
 #include <stddef.h>
 
+// Different types
+typedef enum {
+    DAHL_NONE, // Nothing
+    DAHL_TENSOR,
+    DAHL_BLOCK,
+    DAHL_MATRIX,
+    DAHL_VECTOR,
+} dahl_type;
+
 typedef double dahl_fp;
 
 typedef struct

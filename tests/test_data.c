@@ -225,8 +225,8 @@ void test_matrix_get_shape()
 
     dahl_matrix* matrix = matrix_init_from(shape, (dahl_fp*)&data);
 
-    // TODO: could be nice to inject a sleep in this particular task codelet, but only when testing
-    // this way we could detect concurency issues. (If the task takes too long, `matrix_get_shape` could read an incorrect value).
+    // Inject sleep on the matrix to verify that the resize task is really synchronous
+    TASK_WAIT(matrix, 1000);
     task_matrix_to_flat_col(matrix);
 
     dahl_shape2d expect_shape = { .x = 1, .y = 12 };

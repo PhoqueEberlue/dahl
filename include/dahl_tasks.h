@@ -115,6 +115,7 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
 dahl_fp task_sum(void const* object, dahl_traits* traits);
 void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
+void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 
 // HELPER MACROS FOR THE COMMON TASKS
 // Get the traits structure of an object at compile time
@@ -230,5 +231,9 @@ void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
 // Fill every elements of `object` with `value`.
 // No self version of this macro because this is obviously the default behavior.
 #define TASK_FILL(OBJECT, VALUE) task_fill(OBJECT, VALUE, GET_TRAITS(OBJECT))
+
+// Acquire `object` and wait for `duration` in microseconds.
+// Useful for debug purposes to investigate possible synchronization issues.
+#define TASK_WAIT(OBJECT, DURATION) task_wait(OBJECT, DURATION, GET_TRAITS(OBJECT))
 
 #endif //!DAHL_TASKS_H

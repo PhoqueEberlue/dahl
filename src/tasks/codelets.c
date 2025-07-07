@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 // ---------------------------------------- TENSOR ----------------------------------------
 void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
@@ -673,4 +674,12 @@ void fill(void* buffers[1], void* cl_arg)
     {
         buf[i] = value;
     }
+}
+
+// For debug purposes
+void wait(void* buffers[1], void* cl_arg)
+{
+    unsigned int duration;
+    starpu_codelet_unpack_args(cl_arg, &duration);
+    usleep(duration);
 }

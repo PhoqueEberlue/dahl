@@ -60,6 +60,7 @@ DEFINE_STARPU_CODELET(add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(sum, 1, STARPU_R);
 DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
+DEFINE_STARPU_CODELET(wait, 1, STARPU_W);
 
 typedef const struct _dahl_traits {
     starpu_data_handle_t (*get_handle)(void const*);

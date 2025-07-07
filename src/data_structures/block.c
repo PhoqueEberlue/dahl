@@ -36,6 +36,8 @@ dahl_block* block_init(dahl_shape3d const shape)
     block->handle = handle;
     block->data = data;
     block->partition_type = DAHL_NONE;
+    block->sub_handles = nullptr;
+    block->nb_sub_handles = 0;
 
     return block;
 }
@@ -199,31 +201,30 @@ void block_partition_along_z(dahl_block* block)
     // The block shouldn't be already partitionned
     assert(block->partition_type == DAHL_NONE);
 
-    dahl_shape3d const shape = block_get_shape(block);
+    size_t const nparts = block_get_shape(block).z;
+
+    block->partition_type = DAHL_MATRIX;
+    block->sub_data.matrices = dahl_arena_alloc(nparts * sizeof(dahl_matrix));
+    block->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    block->nb_sub_handles = nparts;
 
     struct starpu_data_filter f =
 	{
 		.filter_func = starpu_block_filter_pick_matrix_z,
-		.nchildren = shape.z,
+		.nchildren = nparts,
 		.get_child_ops = starpu_block_filter_pick_matrix_child_ops
 	};
 
-	starpu_data_partition(block->handle, &f);
-    
-    block->partition_type = DAHL_MATRIX;
-    block->sub_data.matrices = dahl_arena_alloc(shape.z * sizeof(dahl_matrix));
+	starpu_data_partition_plan(block->handle, &f, block->sub_handles);
 
-    for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(block->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
-        assert(data);
-
-        block->sub_data.matrices[i].handle = sub_matrix_handle;
-        block->sub_data.matrices[i].data = data;
+        block->sub_data.matrices[i].handle = block->sub_handles[i];
+        block->sub_data.matrices[i].data = (dahl_fp*)starpu_matrix_get_local_ptr(block->sub_handles[i]);
         block->sub_data.matrices[i].partition_type = DAHL_NONE;
     }
+
+    starpu_data_partition_submit(block->handle, nparts, block->sub_handles);
 }
 
 // Custom filter
@@ -281,30 +282,29 @@ void block_partition_along_z_flat(dahl_block* block)
     // The block shouldn't be already partitionned
     assert(block->partition_type == DAHL_NONE);
 
-    dahl_shape3d const shape = block_get_shape(block);
+    size_t const nparts = block_get_shape(block).z;
+
+    block->partition_type = DAHL_VECTOR;
+    block->sub_data.vectors = dahl_arena_alloc(nparts * sizeof(dahl_vector));
+    block->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    block->nb_sub_handles = nparts;
 
     struct starpu_data_filter f =
 	{
 		.filter_func = starpu_block_filter_pick_matrix_z_as_flat_vector,
-		.nchildren = shape.z,
+		.nchildren = nparts,
 		.get_child_ops = starpu_block_filter_pick_vector_child_ops
 	};
 
-	starpu_data_partition(block->handle, &f);
-    
-    block->partition_type = DAHL_VECTOR;
-    block->sub_data.vectors = dahl_arena_alloc(shape.z * sizeof(dahl_vector));
+	starpu_data_partition_plan(block->handle, &f, block->sub_handles);
 
-    for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(block->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
-        assert(data);
-
-        block->sub_data.vectors[i].handle = sub_vector_handle;
-        block->sub_data.vectors[i].data = data;
+        block->sub_data.vectors[i].handle = block->sub_handles[i];
+        block->sub_data.vectors[i].data = (dahl_fp*)starpu_vector_get_local_ptr(block->sub_handles[i]);
     }
+
+    starpu_data_partition_submit(block->handle, nparts, block->sub_handles);
 }
 
 // Custom filter that picks the block as vector (flattened view of the block)
@@ -356,27 +356,26 @@ void block_partition_flatten_to_vector(dahl_block* block)
     // The block shouldn't be already partitionned
     assert(block->partition_type == DAHL_NONE);
 
+    // Only one vector here because we flatten the whole block into a vector
+    size_t const nparts = 1;
+    block->partition_type = DAHL_VECTOR;
+    block->sub_data.vectors = dahl_arena_alloc(nparts * sizeof(dahl_vector));
+    block->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    block->nb_sub_handles = nparts;
+
     struct starpu_data_filter f =
 	{
 		.filter_func = starpu_block_filter_flatten_to_vector,
-		.nchildren = 1,
+		.nchildren = nparts,
 		.get_child_ops = starpu_block_filter_pick_vector_child_ops
 	};
 
-	starpu_data_partition(block->handle, &f);
+	starpu_data_partition_plan(block->handle, &f, block->sub_handles);
     
-    block->partition_type = DAHL_VECTOR;
-    // Only one vector here
-    block->sub_data.vectors = dahl_arena_alloc(sizeof(dahl_vector));
-
-    assert(starpu_data_get_nb_children(block->handle) == 1);
-
-    starpu_data_handle_t flat_vector_handle = starpu_data_get_sub_data(block->handle, 1, 0);
-    dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(flat_vector_handle);
-    assert(data);
-
-    block->sub_data.vectors[0].handle = flat_vector_handle;
-    block->sub_data.vectors[0].data = data;
+    block->sub_data.vectors[0].handle = block->sub_handles[0];
+    block->sub_data.vectors[0].data = (dahl_fp*)starpu_vector_get_local_ptr(block->sub_handles[0]);
+    
+    starpu_data_partition_submit(block->handle, nparts, block->sub_handles);
 }
 
 void block_partition_along_z_batch(dahl_block* block, size_t batch_size)
@@ -384,8 +383,12 @@ void block_partition_along_z_batch(dahl_block* block, size_t batch_size)
     // The block shouldn't be already partitionned
     assert(block->partition_type == DAHL_NONE);
 
-    dahl_shape3d const shape = block_get_shape(block);
-    size_t nparts = shape.z / batch_size;
+    size_t const nparts = block_get_shape(block).z / batch_size;
+
+    block->partition_type = DAHL_BLOCK;
+    block->sub_data.blocks = dahl_arena_alloc(nparts * sizeof(dahl_block));
+    block->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    block->nb_sub_handles = nparts;
 
     struct starpu_data_filter f =
 	{
@@ -393,23 +396,17 @@ void block_partition_along_z_batch(dahl_block* block, size_t batch_size)
 		.nchildren = nparts,
 	};
 
-	starpu_data_partition(block->handle, &f);
-    
-    block->partition_type = DAHL_BLOCK;
-    block->sub_data.blocks = dahl_arena_alloc(nparts * sizeof(dahl_block));
+	starpu_data_partition_plan(block->handle, &f, block->sub_handles);
 
-    for (int i = 0; i < starpu_data_get_nb_children(block->handle); i++)
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(block->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_block_handle);
-        assert(data);
-
-        block->sub_data.blocks[i].handle = sub_block_handle;
-        block->sub_data.blocks[i].data = data;
+        block->sub_data.blocks[i].handle = block->sub_handles[i];
+        block->sub_data.blocks[i].data = (dahl_fp*)starpu_block_get_local_ptr(block->sub_handles[i]);
         // Children are not yet partitioned
         block->sub_data.blocks[i].partition_type = DAHL_NONE;
     }
+
+    starpu_data_partition_submit(block->handle, nparts, block->sub_handles);
 }
 
 void block_unpartition(dahl_block* block)
@@ -437,20 +434,22 @@ void block_unpartition(dahl_block* block)
     }
 
     block->partition_type = DAHL_NONE;
-    starpu_data_unpartition(block->handle, STARPU_MAIN_RAM);
+    starpu_data_unpartition_submit(block->handle, block->nb_sub_handles,
+                                   block->sub_handles, STARPU_MAIN_RAM);
+    starpu_data_partition_clean(block->handle, block->nb_sub_handles, block->sub_handles);
 }
 
 size_t block_get_nb_children(dahl_block const* block)
 {
     assert(block->partition_type != DAHL_NONE);
-    return starpu_data_get_nb_children(block->handle);
+    return block->nb_sub_handles;
 }
 
 dahl_block* block_get_sub_block(dahl_block const* block, size_t index)
 {
     assert(block->partition_type == DAHL_BLOCK 
         && block->sub_data.blocks != nullptr 
-        && index < starpu_data_get_nb_children(block->handle));
+        && index < block->nb_sub_handles);
 
     return &block->sub_data.blocks[index];
 }
@@ -459,7 +458,7 @@ dahl_matrix* block_get_sub_matrix(dahl_block const* block, size_t index)
 {
     assert(block->partition_type == DAHL_MATRIX 
         && block->sub_data.matrices != nullptr 
-        && index < starpu_data_get_nb_children(block->handle));
+        && index < block->nb_sub_handles);
 
     return &block->sub_data.matrices[index];
 }
@@ -468,7 +467,7 @@ dahl_vector* block_get_sub_vector(dahl_block const* block, size_t index)
 {
     assert(block->partition_type == DAHL_VECTOR 
         && block->sub_data.vectors != nullptr 
-        && index < starpu_data_get_nb_children(block->handle));
+        && index < block->nb_sub_handles);
 
     return &block->sub_data.vectors[index];
 }

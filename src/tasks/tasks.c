@@ -5,6 +5,7 @@
 #include "../data_structures/data_structures.h"
 #include "starpu_data.h"
 #include "starpu_task.h"
+#include <stdint.h>
 #include <stdio.h>
 
 // ---------------------------------------- TENSOR ----------------------------------------
@@ -528,7 +529,16 @@ void task_fill(void const* object, dahl_fp value, dahl_traits* traits)
     size_t nb_elem = traits->get_nb_elem(object);
     int ret = starpu_task_insert(&cl_fill,
                                  STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 // FIXME: sizeof(&value) is probably a mistake
                                  STARPU_VALUE, &value, sizeof(&value),
+                                 STARPU_W, traits->get_handle(object), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
+{
+    int ret = starpu_task_insert(&cl_wait,
+                                 STARPU_VALUE, &duration, sizeof(duration),
                                  STARPU_W, traits->get_handle(object), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }

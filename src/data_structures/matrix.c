@@ -4,6 +4,7 @@
 #include "starpu_data_interfaces.h"
 #include "sys/types.h"
 #include <math.h>
+#include <stdio.h>
 
 dahl_matrix* matrix_init(dahl_shape2d const shape)
 {
@@ -30,6 +31,8 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
     matrix->handle = handle;
     matrix->data = data;
     matrix->partition_type = DAHL_NONE;
+    matrix->sub_handles = nullptr;
+    matrix->nb_sub_handles = 0;
 
     return matrix;
 }
@@ -147,35 +150,40 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const roundi
     return res;
 }
 
-void matrix_partition_along_y(dahl_matrix* const matrix)
+void matrix_partition_along_y(dahl_matrix* matrix)
 {
     // The data shouldn't be already partionned
     assert(matrix->partition_type == DAHL_NONE);
 
-    dahl_shape2d const shape = matrix_get_shape(matrix);
+    size_t const nparts = matrix_get_shape(matrix).y;
 
+    matrix->partition_type = DAHL_VECTOR;
+    // Alloc space for the sub vectors
+    matrix->sub_data.vectors = dahl_arena_alloc(nparts * sizeof(dahl_vector));
+    // Pre allocate the data handles because they will be partitionned asynchronously
+    matrix->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    matrix->nb_sub_handles = nparts; 
+
+    // Now create the partition plan
     struct starpu_data_filter f =
 	{
 		.filter_func = starpu_matrix_filter_pick_vector_y,
-		.nchildren = shape.y,
+		.nchildren = nparts,
 		.get_child_ops = starpu_matrix_filter_pick_vector_child_ops
 	};
 
-	starpu_data_partition(matrix->handle, &f);
-    
-    matrix->partition_type = DAHL_VECTOR;
-    matrix->sub_data.vectors = dahl_arena_alloc(shape.y * sizeof(dahl_vector));
+    // This call will update the sub_handles
+	starpu_data_partition_plan(matrix->handle, &f, matrix->sub_handles);
 
-    for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
+    // Now we can copy the sub_handles in the vector wrappers
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_vector_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_vector_get_local_ptr(sub_vector_handle);
-        assert(data);
-
-        matrix->sub_data.vectors[i].handle = sub_vector_handle;
-        matrix->sub_data.vectors[i].data = data;
+        matrix->sub_data.vectors[i].handle = matrix->sub_handles[i];
+        matrix->sub_data.vectors[i].data = (dahl_fp*)starpu_vector_get_local_ptr(matrix->sub_handles[i]);
     }
+
+    // And asynchronously submit
+	starpu_data_partition_submit(matrix->handle, nparts, matrix->sub_handles);
 }
 
 // Custom filter
@@ -230,13 +238,19 @@ struct starpu_data_interface_ops *starpu_matrix_filter_pick_matrix_child_ops(
 	return &starpu_interface_matrix_ops;
 }
 
-void matrix_partition_along_y_batch(dahl_matrix* const matrix, size_t batch_size)
+// FIXME: make it asynchronous
+void matrix_partition_along_y_batch(dahl_matrix* matrix, size_t batch_size)
 {
     // The data shouldn't be already partionned
     assert(matrix->partition_type == DAHL_NONE);
 
     dahl_shape2d const shape = matrix_get_shape(matrix);
-    size_t nparts = shape.y / batch_size;
+    size_t const nparts = shape.y / batch_size;
+
+    matrix->partition_type = DAHL_MATRIX;
+    matrix->sub_data.matrices = dahl_arena_alloc(nparts * sizeof(dahl_matrix));
+    matrix->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    matrix->nb_sub_handles = nparts;
 
     struct starpu_data_filter f =
 	{
@@ -245,25 +259,19 @@ void matrix_partition_along_y_batch(dahl_matrix* const matrix, size_t batch_size
 		.get_child_ops = starpu_matrix_filter_pick_matrix_child_ops
 	};
 
-	starpu_data_partition(matrix->handle, &f);
+	starpu_data_partition_plan(matrix->handle, &f, matrix->sub_handles);
     
-    matrix->partition_type = DAHL_MATRIX;
-    matrix->sub_data.matrices = dahl_arena_alloc(nparts * sizeof(dahl_matrix));
-
-    for (int i = 0; i < starpu_data_get_nb_children(matrix->handle); i++)
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_matrix_handle = starpu_data_get_sub_data(matrix->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_matrix_get_local_ptr(sub_matrix_handle);
-        assert(data);
-
-        matrix->sub_data.matrices[i].handle = sub_matrix_handle;
-        matrix->sub_data.matrices[i].data = data;
+        matrix->sub_data.matrices[i].handle = matrix->sub_handles[i];
+        matrix->sub_data.matrices[i].data = (dahl_fp*)starpu_matrix_get_local_ptr(matrix->sub_handles[i]);
         matrix->sub_data.matrices[i].partition_type = DAHL_NONE;
     }
+
+    starpu_data_partition_submit(matrix->handle, nparts, matrix->sub_handles);
 }
 
-void matrix_unpartition(dahl_matrix* const matrix)
+void matrix_unpartition(dahl_matrix* matrix)
 {
     switch (matrix->partition_type)
     {
@@ -286,20 +294,27 @@ void matrix_unpartition(dahl_matrix* const matrix)
     }
 
     matrix->partition_type = DAHL_NONE;
-    starpu_data_unpartition(matrix->handle, STARPU_MAIN_RAM);
+    starpu_data_unpartition_submit(matrix->handle, matrix->nb_sub_handles,
+                                   matrix->sub_handles, STARPU_MAIN_RAM);
+
+    // Clean the sub handles.
+    // One improvement would be to reuse those for multiple partitionning call and only clean
+    // when the application gets stopped. However, if we need a different number of handles it
+    // makes it harder.
+    starpu_data_partition_clean(matrix->handle, matrix->nb_sub_handles, matrix->sub_handles);
 }
 
 size_t matrix_get_nb_children(dahl_matrix const* matrix)
 {
     assert(matrix->partition_type != DAHL_NONE);
-    return starpu_data_get_nb_children(matrix->handle);
+    return matrix->nb_sub_handles;
 }
 
 dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, const size_t index)
 {
     assert(matrix->partition_type == DAHL_VECTOR 
         && matrix->sub_data.vectors != nullptr 
-        && index < starpu_data_get_nb_children(matrix->handle));
+        && index < matrix->nb_sub_handles);
 
     return &matrix->sub_data.vectors[index];
 }
@@ -308,7 +323,7 @@ dahl_matrix* matrix_get_sub_matrix(dahl_matrix const* matrix, size_t index)
 {
     assert(matrix->partition_type == DAHL_MATRIX 
         && matrix->sub_data.matrices != nullptr 
-        && index < starpu_data_get_nb_children(matrix->handle));
+        && index < matrix->nb_sub_handles);
 
     return &matrix->sub_data.matrices[index];
 }

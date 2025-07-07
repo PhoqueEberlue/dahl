@@ -38,6 +38,8 @@ dahl_tensor* tensor_init(dahl_shape4d const shape)
     tensor->handle = handle;
     tensor->data = data;
     tensor->partition_type = DAHL_NONE;
+    tensor->sub_handles = nullptr;
+    tensor->nb_sub_handles = 0;
 
     return tensor;
 }
@@ -166,32 +168,31 @@ void tensor_partition_along_t(dahl_tensor* tensor)
     // The tensor shouldn't be already partitionned
     assert(tensor->partition_type == DAHL_NONE);
 
-    dahl_shape4d const shape = tensor_get_shape(tensor);
+    size_t const nparts = tensor_get_shape(tensor).t;
+
+    tensor->partition_type = DAHL_BLOCK;
+    tensor->sub_data.blocks = dahl_arena_alloc(nparts * sizeof(dahl_block));
+    tensor->sub_handles = (starpu_data_handle_t*)dahl_arena_alloc(nparts * sizeof(starpu_data_handle_t));
+    tensor->nb_sub_handles = nparts;
 
     struct starpu_data_filter f =
 	{
 		.filter_func = starpu_tensor_filter_pick_block_t,
-		.nchildren = shape.t,
+		.nchildren = nparts,
 		.get_child_ops = starpu_tensor_filter_pick_block_child_ops
 	};
 
-	starpu_data_partition(tensor->handle, &f);
+	starpu_data_partition_plan(tensor->handle, &f, tensor->sub_handles);
     
-    tensor->partition_type = DAHL_BLOCK;
-    tensor->sub_data.blocks = dahl_arena_alloc(shape.t * sizeof(dahl_block));
-
-    for (int i = 0; i < starpu_data_get_nb_children(tensor->handle); i++)
+    for (int i = 0; i < nparts; i++)
     {
-		starpu_data_handle_t sub_block_handle = starpu_data_get_sub_data(tensor->handle, 1, i);
-
-        dahl_fp* data = (dahl_fp*)starpu_block_get_local_ptr(sub_block_handle);
-        assert(data);
-
-        tensor->sub_data.blocks[i].handle = sub_block_handle;
-        tensor->sub_data.blocks[i].data = data;
+        tensor->sub_data.blocks[i].handle = tensor->sub_handles[i];
+        tensor->sub_data.blocks[i].data = (dahl_fp*)starpu_block_get_local_ptr(tensor->sub_handles[i]);
         // Children are not yet partitioned
         tensor->sub_data.blocks[i].partition_type = DAHL_NONE;
     }
+
+    starpu_data_partition_submit(tensor->handle, nparts, tensor->sub_handles);
 }
 
 void tensor_unpartition(dahl_tensor* tensor)
@@ -219,20 +220,23 @@ void tensor_unpartition(dahl_tensor* tensor)
     }
 
     tensor->partition_type = DAHL_NONE;
-    starpu_data_unpartition(tensor->handle, STARPU_MAIN_RAM);
+    starpu_data_unpartition_submit(tensor->handle, tensor->nb_sub_handles,
+                            tensor->sub_handles, STARPU_MAIN_RAM);
+
+    starpu_data_partition_clean(tensor->handle, tensor->nb_sub_handles, tensor->sub_handles);
 }
 
 size_t tensor_get_nb_children(dahl_tensor const* tensor)
 {
     assert(tensor->partition_type != DAHL_NONE);
-    return starpu_data_get_nb_children(tensor->handle);
+    return tensor->nb_sub_handles;
 }
 
 dahl_block* tensor_get_sub_block(dahl_tensor const* tensor, const size_t index)
 {
     assert(tensor->partition_type == DAHL_BLOCK 
         && tensor->sub_data.blocks != nullptr 
-        && index < starpu_data_get_nb_children(tensor->handle));
+        && index < tensor->nb_sub_handles);
 
     return &tensor->sub_data.blocks[index];
 }
@@ -241,7 +245,7 @@ dahl_matrix* tensor_get_sub_matrix(dahl_tensor const* tensor, const size_t index
 {
     assert(tensor->partition_type == DAHL_MATRIX 
         && tensor->sub_data.matrices != nullptr 
-        && index < starpu_data_get_nb_children(tensor->handle));
+        && index < tensor->nb_sub_handles);
 
     return &tensor->sub_data.matrices[index];
 }
@@ -250,7 +254,7 @@ dahl_vector* tensor_get_sub_vector(dahl_tensor const* tensor, const size_t index
 {
     assert(tensor->partition_type == DAHL_VECTOR 
         && tensor->sub_data.vectors != nullptr 
-        && index < starpu_data_get_nb_children(tensor->handle));
+        && index < tensor->nb_sub_handles);
 
     return &tensor->sub_data.vectors[index];
 }
