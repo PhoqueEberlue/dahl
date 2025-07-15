@@ -51,7 +51,7 @@
             # Tracing libs
             fxt = fxt;
             pajeng = pajeng;
-            enableTracing = true;
+            enableDebug = true;
           };
         in
           {

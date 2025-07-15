@@ -18,6 +18,7 @@
   simgrid,
   mpi,
   cudaPackages,
+  valgrind,
   fxt,
   pajeng,
   python3,
@@ -26,7 +27,7 @@
   enableSimgrid ? false,
   enableMPI ? false,
   enableCUDA ? false,
-  enableTracing ? false,
+  enableDebug ? false,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -36,7 +37,7 @@ stdenv.mkDerivation (finalAttrs: {
   inherit enableSimgrid;
   inherit enableMPI;
   inherit enableCUDA;
-  inherit enableTracing;
+  inherit enableDebug;
 
   # src = fetchzip {
   #   url = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/starpu-${finalAttrs.version}.tar.gz";
@@ -58,12 +59,12 @@ stdenv.mkDerivation (finalAttrs: {
     ++ lib.optional finalAttrs.enableSimgrid simgrid
     ++ lib.optional finalAttrs.enableMPI mpi
     ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit
-    ++ lib.optional finalAttrs.enableTracing [ fxt ];
+    ++ lib.optional finalAttrs.enableDebug [ fxt valgrind ];
 
   nativeCheckInputs = 
     [
     ]
-    ++ lib.optional finalAttrs.enableTracing [ pajeng python3 fxt ];
+    ++ lib.optional finalAttrs.enableDebug [ pajeng python3 fxt ];
 
   buildInputs =
     [
@@ -79,11 +80,11 @@ stdenv.mkDerivation (finalAttrs: {
     ]
     ++ lib.optional finalAttrs.enableSimgrid simgrid
     ++ lib.optional finalAttrs.enableMPI mpi
-    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit;
+    ++ lib.optional finalAttrs.enableCUDA cudaPackages.cudatoolkit
+    ++ lib.optional finalAttrs.enableDebug valgrind;
 
   configureFlags =
     [
-      "--enable-debug"
       "--enable-quick-check"
       "--disable-build-examples"
       "--enable-blocking-drivers"
@@ -93,7 +94,9 @@ stdenv.mkDerivation (finalAttrs: {
       "--enable-mpi"
       "--enable-mpi-check"
       "--disable-shared"
-    ];
+    ]
+    ++ lib.optional finalAttrs.enableDebug "--enable-debug";
+
   # Last arg enables static linking which is mandatory for smpi
   # No need to add flags for CUDA, it should be detected by ./configure
 
