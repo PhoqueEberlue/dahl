@@ -16,6 +16,7 @@ Checks: "*,
         -readability-identifier-length,
         -readability-magic-numbers,
         -readability-function-cognitive-complexity,
+        -readability-braces-around-statements,
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
