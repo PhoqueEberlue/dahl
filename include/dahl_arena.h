@@ -16,13 +16,13 @@ extern dahl_arena* dahl_persistent_arena;
 // Temporary arena, it can be reseted at any time.
 // Created automatically by dahl
 extern dahl_arena* dahl_temporary_arena;
-// Context arena is a global parameter that controls where `dahl_arena_alloc()` performs its allocations.
-// It alleviate the api by avoiding to pass the arena to every function.
-// By default it is set to the persistent arena.
-extern dahl_arena* dahl_context_arena;
 
 // Return the pointer to a new arena
 dahl_arena* dahl_arena_new();
+
+void dahl_arena_set_context(dahl_arena* arena);
+dahl_arena* dahl_arena_get_context();
+void dahl_arena_restore_context();
 
 // Allocate memory in the current context arena
 void* dahl_arena_alloc(size_t size);

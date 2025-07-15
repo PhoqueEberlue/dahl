@@ -4,7 +4,6 @@
 
 dahl_arena* dahl_persistent_arena = nullptr;
 dahl_arena* dahl_temporary_arena = nullptr;
-dahl_arena* dahl_context_arena = nullptr;
 
 void dahl_init()
 {
@@ -16,11 +15,12 @@ void dahl_init()
 
     dahl_persistent_arena = dahl_arena_new();
     dahl_temporary_arena = dahl_arena_new();
-    dahl_context_arena = dahl_persistent_arena;
+    dahl_arena_set_context(dahl_persistent_arena);
 }
 
 void dahl_shutdown()
 {
+    dahl_arena_restore_context();
     dahl_arena_delete(dahl_persistent_arena);
     dahl_arena_delete(dahl_temporary_arena);
 	/* terminate StarPU, no task can be submitted after */

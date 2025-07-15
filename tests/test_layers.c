@@ -4,9 +4,8 @@
 #include "../include/dahl_convolution.h"
 #include <stdio.h>
 
-/*
 // First image of the fashion mnist dataset
-static constexpr dahl_fp sample[28][28] = {
+static constexpr dahl_fp sample[1][28][28] = {{
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
@@ -35,14 +34,14 @@ static constexpr dahl_fp sample[28][28] = {
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.156863, 0.239216, 0.172549, 0.282353, 0.160784, 0.137255, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
-};
+}};
 
 // Class of the first sample, here in categorical format
-static constexpr dahl_fp img_targets[10] = {
+static constexpr dahl_fp img_targets[1][10] = {{
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000
-};
+}};
 
-static constexpr dahl_fp expect_conv_forward[2][23][23] = {
+static constexpr dahl_fp expect_conv_forward[1][2][23][23] = {{
     {
         { 0.464870, 0.436084, 0.713466, 0.000000, 0.000000, 0.000000, 0.000000, 0.956951, 0.769605, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.411431, 0.416501, 0.872151, 0.499443, 0.808694, 0.000000, 0.000000 },
         { 0.812104, 0.117336, 0.734616, 0.000000, 0.000000, 0.000000, 0.000000, 0.655547, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.436628, 0.000000, 0.000000, 0.618658 },
@@ -93,9 +92,9 @@ static constexpr dahl_fp expect_conv_forward[2][23][23] = {
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     }
-};
+}};
 
-static constexpr dahl_fp expect_pool_forward[2][11][11] = {
+static constexpr dahl_fp expect_pool_forward[1][2][11][11] = {{
     {
         { 0.812104, 0.734616, 0.000000, 0.956951, 0.769605, 0.000000, 0.000000, 0.000000, 0.416501, 0.872151, 0.808694 },
         { 0.954936, 0.978046, 0.366463, 0.546050, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
@@ -122,9 +121,9 @@ static constexpr dahl_fp expect_pool_forward[2][11][11] = {
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     }
-};
+}};
 
-static constexpr dahl_fp expect_pool_mask[2][23][23] = {
+static constexpr dahl_fp expect_pool_mask[1][2][23][23] = {{
 {
     { 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 1.000000, 0.000000, 1.000000, 0.000000, 0.000000 },
     { 1.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
@@ -175,13 +174,13 @@ static constexpr dahl_fp expect_pool_mask[2][23][23] = {
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
     }
-};
+}};
 
-static constexpr dahl_fp expect_dense_forward[10] = {
+static constexpr dahl_fp expect_dense_forward[1][10] = {{
         0.000360, 0.000000, 0.000009, 0.000082, 0.980728, 0.000000, 0.000001, 0.000027, 0.000000, 0.018793
-};
+}};
 
-static constexpr dahl_fp expect_dense_backward[2][11][11] = {
+static constexpr dahl_fp expect_dense_backward[1][2][11][11] = {{
     {
         { 0.001984, 0.014873, 0.114389, -0.045691, 0.049997, 0.030292, -0.059127, -0.105068, -0.137993, 0.033868, -0.009037 },
         { 0.032375, -0.034380, 0.118108, 0.118637, -0.081059, -0.026291, -0.114210, -0.046313, -0.098590, -0.071777, -0.036747 },
@@ -208,7 +207,7 @@ static constexpr dahl_fp expect_dense_backward[2][11][11] = {
         { 0.027324, -0.024976, -0.110678, -0.097336, 0.066439, 0.134979, -0.072729, -0.074836, -0.022385, -0.002140, 0.010884 },
         { 0.104199, -0.174781, 0.075856, 0.015909, -0.022304, 0.024720, -0.069594, 0.011202, -0.126146, -0.031751, 0.115340 },
     }
-};
+}};
 
 static constexpr dahl_fp expect_dense_weights[2][10][121] = {
     {
@@ -241,7 +240,7 @@ static constexpr dahl_fp expect_dense_biases[10] = {
     0.252725, 0.694263, -0.200022, 0.996660, -0.127086, -0.429259, -0.255980, 0.835992, -0.753606, 0.507053
 };
 
-static constexpr dahl_fp expect_pool_backward[2][23][23] = {
+static constexpr dahl_fp expect_pool_backward[1][2][23][23] = {{
     {
         { 0.001984, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, -0.000000, -0.045691, 0.049997, 0.000000, 0.000000, 0.000000, -0.000000, -0.000000, -0.000000, -0.000000, -0.000000, -0.137993, 0.033868, 0.000000, -0.009037, -0.000000, 0.000000 },
         { 0.001984, 0.000000, 0.014873, 0.000000, 0.000000, 0.000000, -0.000000, -0.000000, 0.000000, 0.000000, 0.000000, 0.000000, -0.000000, -0.000000, -0.000000, -0.000000, -0.000000, -0.000000, 0.000000, 0.000000, -0.000000, -0.000000, 0.000000 },
@@ -292,9 +291,9 @@ static constexpr dahl_fp expect_pool_backward[2][23][23] = {
         { 0.000000, 0.000000, -0.000000, -0.000000, 0.000000, 0.000000, 0.000000, 0.000000, -0.000000, -0.000000, 0.000000, 0.000000, -0.000000, -0.000000, 0.000000, 0.000000, -0.000000, -0.000000, -0.000000, -0.000000, 0.000000, 0.000000, 0.000000 },
         { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 }
     }
-};
+}};
 
-static constexpr dahl_fp expect_conv_backward[28][28] = {
+static constexpr dahl_fp expect_conv_backward[1][28][28] = {{
     { -0.027476, -0.008650, 0.005229, -0.016204, 0.028388, -0.011851, 0.014708, 0.044351, -0.019673, -0.015726, -0.034235, -0.019412, 0.141718, 0.046164, -0.098005, 0.058704, -0.070685, 0.162022, 0.072444, 0.033808, -0.032811, -0.078369, -0.008424, 0.006794, -0.006024, -0.002287, 0.000000, 0.000000 },
     { -0.014763, -0.025516, -0.012432, -0.025693, -0.020039, 0.002906, -0.006703, 0.045664, -0.019218, 0.052342, -0.059146, -0.033628, 0.109677, 0.042047, -0.005864, -0.004421, 0.120458, -0.162039, -0.030698, -0.013769, 0.062510, 0.248813, 0.038996, -0.042153, 0.036981, -0.046402, 0.017597, 0.000000 },
     { -0.052530, -0.004685, -0.002971, 0.017907, -0.100107, -0.128269, -0.105697, -0.113188, -0.018080, -0.026242, 0.065910, 0.013129, 0.142170, -0.116943, -0.158228, -0.016682, 0.079279, 0.072335, -0.045620, -0.042984, -0.112391, -0.014129, 0.223922, -0.126603, 0.073361, 0.075565, -0.101682, 0.000000 },
@@ -323,7 +322,7 @@ static constexpr dahl_fp expect_conv_backward[28][28] = {
     { 0.000000, -0.086498, 0.002817, 0.028265, -0.072478, 0.140799, 0.072389, 0.123733, 0.028115, -0.000327, -0.089625, -0.045669, -0.061516, 0.041098, -0.034066, -0.058705, 0.082775, 0.031598, 0.119532, -0.013957, -0.228756, -0.106014, -0.087801, 0.063081, 0.052762, -0.009414, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.102318, 0.018736, -0.116170, -0.013001, -0.048566, -0.010534, 0.004649, 0.092213, -0.031268, 0.031230, -0.065035, 0.072048, 0.042495, -0.152352, 0.046806, -0.132882, 0.017666, 0.242748, -0.072110, 0.017497, -0.043100, -0.029305, 0.022887, 0.000000, 0.000000 },
     { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 },
-};
+}};
 
 static constexpr dahl_fp expect_conv_filters[2][6][6] = {
     {
@@ -400,41 +399,42 @@ static constexpr dahl_fp expect_conv_biases[2][23][23] = {
 void test_convolution()
 {
     // ----------- Forward -----------
-    dahl_shape2d constexpr input_shape = { .x = 28, .y = 28 };
+    dahl_shape3d constexpr input_shape = { .x = 28, .y = 28, .z = 1 }; // We test with a one batch input
     size_t const num_channels = 2;
     dahl_convolution* conv = convolution_init(input_shape, 6, num_channels);
 
-    dahl_matrix const* img_matrix = matrix_init_from(input_shape, (dahl_fp*)&sample);
+    dahl_block* img_batch = block_init_from(input_shape, (dahl_fp*)&sample);
 
-    dahl_block* conv_forward_out = convolution_forward(conv, img_matrix);
+    dahl_tensor* conv_forward_out = convolution_forward(conv, img_batch);
 
-    dahl_shape3d constexpr expect_shape = { .x = 23, .y = 23, .z = 2 };
-    dahl_block const* expect_forward = block_init_from(expect_shape, (dahl_fp*)&expect_conv_forward);
+    dahl_shape4d constexpr expect_shape = { .x = 23, .y = 23, .z = 2, .t = 1 };
+    dahl_tensor const* expect_forward = tensor_init_from(expect_shape, (dahl_fp*)&expect_conv_forward);
 
-    ASSERT_SHAPE3D_EQUALS(expect_shape, block_get_shape(conv_forward_out));
-    ASSERT_BLOCK_EQUALS_ROUND(expect_forward, conv_forward_out, 6);
+    ASSERT_SHAPE4D_EQUALS(expect_shape, tensor_get_shape(conv_forward_out));
+    ASSERT_TENSOR_EQUALS_ROUND(expect_forward, conv_forward_out, 6);
 
     // ----------- Backward -----------
     dahl_fp const learning_rate = 0.05F;
     
-    dahl_block* input_backward = block_init_from(expect_shape, (dahl_fp*)&expect_pool_backward);
+    dahl_tensor* input_backward = tensor_init_from(expect_shape, (dahl_fp*)&expect_pool_backward);
 
-    dahl_matrix* conv_backward_out = convolution_backward(conv, input_backward, learning_rate);
+    dahl_block* conv_backward_out = convolution_backward(conv, input_backward, learning_rate);
 
-    dahl_matrix const* expect_backward = matrix_init_from(input_shape, (dahl_fp*)&expect_conv_backward);
+    dahl_block const* expect_backward = block_init_from(input_shape, (dahl_fp*)&expect_conv_backward);
 
-    ASSERT_SHAPE2D_EQUALS(input_shape, matrix_get_shape(conv_backward_out));
-    ASSERT_MATRIX_EQUALS_ROUND(expect_backward, conv_backward_out, 6);
+    ASSERT_SHAPE3D_EQUALS(input_shape, block_get_shape(conv_backward_out));
+    ASSERT_BLOCK_EQUALS_ROUND(expect_backward, conv_backward_out, 6);
 
     // testing that weights and biases are correctly updated
     dahl_shape3d const expect_filters_shape = { .x = 6, .y = 6, .z = 2 };
+    dahl_shape3d constexpr expect_biases_shape = { .x = 23, .y = 23, .z = 2 };
     dahl_block const* expect_filters = block_init_from(expect_filters_shape, (dahl_fp*)&expect_conv_filters);
-    dahl_block const* expect_biases = block_init_from(expect_shape, (dahl_fp*)&expect_conv_biases);
+    dahl_block const* expect_biases = block_init_from(expect_biases_shape, (dahl_fp*)&expect_conv_biases);
 
     ASSERT_SHAPE3D_EQUALS(expect_filters_shape, block_get_shape(conv->filters));
     ASSERT_BLOCK_EQUALS_ROUND(expect_filters, conv->filters, 6);
 
-    ASSERT_SHAPE3D_EQUALS(expect_shape, block_get_shape(conv->biases));
+    ASSERT_SHAPE3D_EQUALS(expect_biases_shape, block_get_shape(conv->biases));
     ASSERT_BLOCK_EQUALS_ROUND(expect_biases, conv->biases, 6);
 
     dahl_arena_reset(testing_arena);
@@ -443,32 +443,32 @@ void test_convolution()
 void test_pool()
 {
     // ----------- Forward -----------
-    dahl_shape3d constexpr input_shape = { .x = 23, .y = 23, .z = 2 };
+    dahl_shape4d constexpr input_shape = { .x = 23, .y = 23, .z = 2, .t = 1 };
     dahl_pooling* pool = pooling_init(2, input_shape);
-    dahl_block* input = block_init_from(input_shape, (dahl_fp*)&expect_conv_forward);
+    dahl_tensor* input = tensor_init_from(input_shape, (dahl_fp*)&expect_conv_forward);
 
-    dahl_block* pool_forward_out = pooling_forward(pool, input);
+    dahl_tensor* pool_forward_out = pooling_forward(pool, input);
 
-    dahl_shape3d constexpr expect_shape = { .x = 11, .y = 11, .z = 2 };
-    dahl_block const* expect_forward = block_init_from(expect_shape, (dahl_fp*)&expect_pool_forward);
+    dahl_shape4d constexpr expect_shape = { .x = 11, .y = 11, .z = 2, .t = 1 };
+    dahl_tensor const* expect_forward = tensor_init_from(expect_shape, (dahl_fp*)&expect_pool_forward);
 
-    ASSERT_SHAPE3D_EQUALS(expect_shape, block_get_shape(pool_forward_out));
-    ASSERT_BLOCK_EQUALS_ROUND(expect_forward, pool_forward_out, 6);
+    ASSERT_SHAPE4D_EQUALS(expect_shape, tensor_get_shape(pool_forward_out));
+    ASSERT_TENSOR_EQUALS_ROUND(expect_forward, pool_forward_out, 6);
 
-    dahl_shape3d constexpr expect_mask_shape = { .x = 23, .y = 23, .z = 2 };
-    dahl_block const* expect_mask = block_init_from(expect_mask_shape, (dahl_fp*)&expect_pool_mask);
+    dahl_shape4d constexpr expect_mask_shape = { .x = 23, .y = 23, .z = 2, .t = 1 };
+    dahl_tensor const* expect_mask = tensor_init_from(expect_mask_shape, (dahl_fp*)&expect_pool_mask);
 
-    ASSERT_BLOCK_EQUALS(expect_mask, pool->mask_batch);
+    ASSERT_TENSOR_EQUALS(expect_mask, pool->mask_batch);
 
     // ----------- Backward -----------
-    dahl_block* input_backward = block_init_from(expect_shape, (dahl_fp*)&expect_dense_backward);
+    dahl_tensor* input_backward = tensor_init_from(expect_shape, (dahl_fp*)&expect_dense_backward);
 
-    dahl_block* pool_backward_out = pooling_backward(pool, input_backward); 
+    dahl_tensor* pool_backward_out = pooling_backward(pool, input_backward); 
 
-    dahl_block const* expect_backward = block_init_from(input_shape, (dahl_fp*)&expect_pool_backward);
+    dahl_tensor const* expect_backward = tensor_init_from(input_shape, (dahl_fp*)&expect_pool_backward);
 
-    ASSERT_SHAPE3D_EQUALS(input_shape, block_get_shape(pool_backward_out));
-    ASSERT_BLOCK_EQUALS_ROUND(expect_backward, pool_backward_out, 6);
+    ASSERT_SHAPE4D_EQUALS(input_shape, tensor_get_shape(pool_backward_out));
+    ASSERT_TENSOR_EQUALS_ROUND(expect_backward, pool_backward_out, 6);
 
     // No weights/biases on this layer
     
@@ -478,29 +478,31 @@ void test_pool()
 void test_dense()
 {
     // ----------- Forward -----------
-    size_t const num_classes = 10;
+    size_t constexpr num_classes = 10;
     size_t constexpr num_channels = 2;
-    dahl_shape3d constexpr input_shape = { .x = 11, .y = 11, .z = num_channels };
+    dahl_shape4d constexpr input_shape = { .x = 11, .y = 11, .z = num_channels, .t = 1 };
     dahl_dense* dense = dense_init(input_shape, num_classes);
-    dahl_block* input = block_init_from(input_shape, (dahl_fp*)&expect_pool_forward);
+    dahl_tensor* input = tensor_init_from(input_shape, (dahl_fp*)&expect_pool_forward);
 
-    dahl_vector* dense_forward_out = dense_forward(dense, input);
+    dahl_matrix* dense_forward_out = dense_forward(dense, input);
 
-    dahl_vector const* expect_forward = vector_init_from(num_classes, (dahl_fp*)&expect_dense_forward);
+    dahl_shape2d constexpr expect_forward_shape = { .x = num_classes, .y = 1 };
+    dahl_matrix const* expect_forward = matrix_init_from(expect_forward_shape, (dahl_fp*)&expect_dense_forward);
 
-    ASSERT_VECTOR_EQUALS_ROUND(expect_forward, dense_forward_out, 6);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_forward, dense_forward_out, 6);
 
     // ----------- Backward -----------
     dahl_fp const learning_rate = 0.05F;
-    dahl_vector const* targets = vector_init_from(num_classes, (dahl_fp*)&img_targets);
-    dahl_vector* gradients = task_vector_cross_entropy_loss_gradient_init(dense_forward_out, targets);
+    dahl_matrix const* targets = matrix_init_from(expect_forward_shape, (dahl_fp*)&img_targets);
+    dahl_matrix* gradient_batch = matrix_init(expect_forward_shape);
+    task_vector_cross_entropy_loss_gradient_batch(dense_forward_out, targets, gradient_batch);
 
-    dahl_block* dense_backward_out = dense_backward(dense, gradients, learning_rate);
+    dahl_tensor* dense_backward_out = dense_backward(dense, gradient_batch, learning_rate);
 
-    dahl_block const* expect_backward = block_init_from(input_shape, (dahl_fp*)&expect_dense_backward);
+    dahl_tensor const* expect_backward = tensor_init_from(input_shape, (dahl_fp*)&expect_dense_backward);
 
-    ASSERT_SHAPE3D_EQUALS(input_shape, block_get_shape(dense_backward_out));
-    ASSERT_BLOCK_EQUALS_ROUND(expect_backward, dense_backward_out, 6);
+    ASSERT_SHAPE4D_EQUALS(input_shape, tensor_get_shape(dense_backward_out));
+    ASSERT_TENSOR_EQUALS_ROUND(expect_backward, dense_backward_out, 6);
 
     // testing that weights and biases are correctly updated
     dahl_shape3d const expect_weighs_shape = { .x = 121, .y = num_classes, .z = num_channels };
@@ -515,11 +517,9 @@ void test_dense()
     dahl_arena_reset(testing_arena);
 }
 
-*/
-
 void test_layers()
 {
-    // test_convolution();
-    // test_pool();
-    // test_dense();
+    test_convolution();
+    test_pool();
+    test_dense();
 }

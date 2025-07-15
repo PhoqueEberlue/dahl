@@ -10,8 +10,8 @@ typedef struct
 {
     // img width * img height * batch size
     dahl_shape3d const input_shape;
-    // Last batch of input data
-    dahl_block* input_batch;
+    // Last batch of input data. Note: the pointer can be modified, the data cannot.
+    dahl_block const* input_batch;
 
     size_t const num_filters;
     size_t const filter_size;
@@ -30,7 +30,7 @@ typedef struct
 } dahl_convolution;
 
 dahl_convolution* convolution_init(dahl_shape3d input_shape, size_t filter_size, size_t num_filters);
-dahl_tensor* convolution_forward(dahl_convolution* conv, dahl_block* input_batch);
-dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor* dl_dout_batch, double learning_rate);
+dahl_tensor* convolution_forward(dahl_convolution* conv, dahl_block const* input_batch);
+dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor const* dl_dout_batch, double learning_rate);
 
 #endif //!DAHL_CONVOLUTION_H

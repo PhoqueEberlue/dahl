@@ -49,6 +49,7 @@ DEFINE_STARPU_CODELET(vector_dot_product, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_check_predictions, 2, STARPU_R, STARPU_R);
 
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type
@@ -61,10 +62,5 @@ DEFINE_STARPU_CODELET(clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(sum, 1, STARPU_R);
 DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(wait, 1, STARPU_W);
-
-typedef const struct _dahl_traits {
-    starpu_data_handle_t (*get_handle)(void const*);
-    size_t (*get_nb_elem)(void const*);
-} dahl_traits;
 
 #endif //!DAHL_CODELETS_H

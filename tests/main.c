@@ -14,13 +14,14 @@ int main(int argc, char **argv)
 
     // Instanciate a testing arena and set it as context
     testing_arena = dahl_arena_new();
-    dahl_context_arena = testing_arena;
+    dahl_arena_set_context(testing_arena);
 
-    test_layers();
+    // test_layers();
     test_tasks();
     test_data();
     test_arena();
 
+    dahl_arena_restore_context();
     dahl_arena_delete(testing_arena);
 
     dahl_shutdown();

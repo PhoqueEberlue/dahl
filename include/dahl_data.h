@@ -8,6 +8,34 @@ typedef struct _dahl_block dahl_block;
 typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_vector dahl_vector;
 
+typedef struct _dahl_partition dahl_partition;
+
+// Using a trait mechanism to group functions together
+typedef const struct _dahl_traits dahl_traits;
+
+// Here we define our different traits associated to each types.
+// Those structures contains references to the implementation of each function matching with the correct type.
+extern dahl_traits dahl_traits_tensor;
+extern dahl_traits dahl_traits_block;
+extern dahl_traits dahl_traits_matrix;
+extern dahl_traits dahl_traits_vector;
+
+// Get the traits structure of an object at compile time
+#define GET_TRAITS(OBJECT) _Generic((OBJECT), \
+    dahl_tensor*: &dahl_traits_tensor,        \
+    dahl_block*:  &dahl_traits_block,         \
+    dahl_matrix*: &dahl_traits_matrix,        \
+    dahl_vector*: &dahl_traits_vector,        \
+    dahl_tensor const*: &dahl_traits_tensor,  \
+    dahl_block const*:  &dahl_traits_block,   \
+    dahl_matrix const*: &dahl_traits_matrix,  \
+    dahl_vector const*: &dahl_traits_vector   \
+)
+
+// Type comparison without taking into account const qualifiers
+#define TYPES_MATCH(T1, T2) \
+    (__builtin_types_compatible_p(typeof(*(T1)), typeof(*(T2))))
+
 // ---------------------------------------- TENSOR ----------------------------------------
 // Initialize a dahl_tensor with every values at 0.
 // parameters:
@@ -37,32 +65,21 @@ bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, u_
 // Acquire the tensor data, will wait any associated tasks to finish.
 dahl_fp const* tensor_data_acquire(dahl_tensor const* tensor);
 
-// Acquire the tensor data as mutable, will wait any associated tasks to finish.
+// Acquire the tensor data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* tensor_data_acquire_mutable(dahl_tensor* tensor);
+dahl_fp* tensor_data_acquire_mut(dahl_tensor* tensor);
 
 // Release the tensor data, tasks will be able to use the tensor again.
 void tensor_data_release(dahl_tensor const* tensor);
 
-// Partition data along z axis, the sub matrices can then be accesed with `tensor_get_sub_matrix`.
-// Exactly creates z sub matrices, so `tensor_get_sub_matrix_nb` should be equal to z.
+// Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
+// Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the tensor itself cannot be used as long as it is partitioned.
-void tensor_partition_along_t(dahl_tensor* tensor);
+void tensor_partition_along_t(dahl_tensor const* tensor);
+void tensor_partition_along_t_mut(dahl_tensor* tensor);
 
 // Unpartition a tensor
-void tensor_unpartition(dahl_tensor* tensor);
-
-// Get the number of children
-size_t tensor_get_nb_children(dahl_tensor const* tensor);
-
-// Get sub block at `index`. To be called after `tensor_partition_along_t`.
-dahl_block* tensor_get_sub_block(dahl_tensor const* tensor, size_t index);
-
-// Get sub matrix at `index`. To be called after `tensor_partition_along_z`.
-dahl_matrix* tensor_get_sub_matrix(dahl_tensor const* tensor, size_t index);
-
-// Get sub vector at `index`. To be called after `tensor_partition_along_z_flat`.
-dahl_vector* tensor_get_sub_vector(dahl_tensor const* tensor, size_t index);
+void tensor_unpartition(dahl_tensor const* tensor);
 
 // Print a tensor
 void tensor_print(dahl_tensor const* tensor);
@@ -102,42 +119,40 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool rounding, u_int
 // Acquire the block data, will wait any associated tasks to finish.
 dahl_fp const* block_data_acquire(dahl_block const* block);
 
-// Acquire the block data as mutable, will wait any associated tasks to finish.
+// Acquire the block data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* block_data_acquire_mutable(dahl_block* block);
+dahl_fp* block_data_acquire_mut(dahl_block* block);
 
 // Release the block data, tasks will be able to use the block again.
 void block_data_release(dahl_block const* block);
 
-// Partition data along z axis, the sub matrices can then be accesed with `block_get_sub_matrix`.
-// Exactly creates z sub matrices, so `block_get_nb_children` should be equal to z.
+// Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
+// Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned.
-void block_partition_along_z(dahl_block* block);
+void block_partition_along_z(dahl_block const* block);
+void block_partition_along_z_mut(dahl_block* block);
+
+// Same that `block_partition_along_z` but actually produces flattened matrices of the matrices on x,y.
+// Chose wether the flattened matrices are row matrices or column matrices with `is_row`.
+// Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
+void block_partition_along_z_flat_matrices(dahl_block const* block, bool is_row);
+void block_partition_along_z_flat_matrices_mut(dahl_block* block, bool is_row);
 
 // Same that `block_partition_along_z` but actually produces flattened vectors of the matrices on x,y.
-// Exactly creates z sub vectors, so `block_get_sub_vector_nb` should be equal to z.
-void block_partition_along_z_flat(dahl_block* block);
+// Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
+void block_partition_along_z_flat_vectors(dahl_block const* block);
+void block_partition_along_z_flat_vectors_mut(dahl_block* block);
 
-void block_partition_flatten_to_vector(dahl_block* block);
+void block_partition_flatten_to_vector(dahl_block const* block);
+void block_partition_flatten_to_vector_mut(dahl_block* block);
 
 // Partition along z but by batch, so it creates sub blocks.
 // TODO: support or return an error if the batch size does not divide properly the block
-void block_partition_along_z_batch(dahl_block* block, size_t batch_size);
+void block_partition_along_z_batch(dahl_block const* block, size_t batch_size);
+void block_partition_along_z_batch_mut(dahl_block* block, size_t batch_size);
 
 // Unpartition a block
-void block_unpartition(dahl_block* block);
-
-// Get the number of children
-size_t block_get_nb_children(dahl_block const* block);
-
-// Get sub block at index. To be called after `block_partition_along_z_batch`.
-dahl_block* block_get_sub_block(dahl_block const* block, size_t index);
-
-// Get sub matrix at index. To be called after `block_partition_along_z`.
-dahl_matrix* block_get_sub_matrix(dahl_block const* block, size_t index);
-
-// Get sub vector at index. To be called after `block_partition_along_z_flat`.
-dahl_vector* block_get_sub_vector(dahl_block const* block, size_t index);
+void block_unpartition(dahl_block const* block);
 
 // Print a block
 void block_print(dahl_block const* block);
@@ -168,9 +183,9 @@ dahl_shape2d matrix_get_shape(dahl_matrix const* matrix);
 // Acquire the matrix data, will wait any associated tasks to finish.
 dahl_fp const* matrix_data_acquire(dahl_matrix const* matrix);
 
-// Acquire the matrix data as mutable, will wait any associated tasks to finish.
+// Acquire the matrix data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* matrix_data_acquire_mutable(dahl_matrix* matrix);
+dahl_fp* matrix_data_acquire_mut(dahl_matrix* matrix);
 
 // Release the matrix data, tasks will be able to use the block again.
 void matrix_data_release(dahl_matrix const* matrix);
@@ -178,28 +193,25 @@ void matrix_data_release(dahl_matrix const* matrix);
 // Compares two matrices value by value and returns wether or not they're equal.
 bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_int8_t precision);
 
-// Partition data along y axis, the sub vectors can then be accesed with `matrix_get_sub_vector`.
-// Exactly creates y sub vectors, so `matrix_get_nb_children` should be equal to y.
+// Partition data along y axis, the sub vectors can then be accesed with `GET_SUB_VECTOR`.
+// Exactly creates y sub vectors, so `GET_NB_CHILDREN` should be equal to y.
 // Note the the vector itself cannot be used as long as it is partitioned.
-void matrix_partition_along_y(dahl_matrix* matrix);
+void matrix_partition_along_y(dahl_matrix const* matrix);
+
+// Same as `matrix_partition_along_y` but mutably acquires the data.
+void matrix_partition_along_y_mut(dahl_matrix* matrix);
 
 // Partition data along y axis, and produces sub matrices of shape (x, y / batch_size).
-// Exactly creates y / batch_size sub matrices that can be accessed with `matrix_get_sub_matrix`.
+// Exactly creates y / batch_size sub matrices that can be accessed with `GET_SUB_MATRIX`.
 // Note the the vector itself cannot be used as long as it is partitioned.
 // TODO: support or return an error if the batch size does not divide properly the matrix
-void matrix_partition_along_y_batch(dahl_matrix* matrix, size_t batch_size);
+void matrix_partition_along_y_batch(dahl_matrix const* matrix, size_t batch_size);
+
+// Same as `matrix_partition_along_y_batch` but mutably acquires the data.
+void matrix_partition_along_y_batch_mut(dahl_matrix* matrix, size_t batch_size);
 
 // Unpartition a matrix
-void matrix_unpartition(dahl_matrix* matrix);
-
-// Get the number of children
-size_t matrix_get_nb_children(dahl_matrix const* matrix);
-
-// Get the sub vector at index
-dahl_vector* matrix_get_sub_vector(dahl_matrix const* matrix, size_t index);
-
-// Get the sub matrix at index
-dahl_matrix* matrix_get_sub_matrix(dahl_matrix const* matrix, size_t index);
+void matrix_unpartition(dahl_matrix const* matrix);
 
 // Print a matrix
 void matrix_print(dahl_matrix const* matrix);
@@ -233,9 +245,9 @@ size_t vector_get_len(dahl_vector const* vector);
 // Acquire the vector data, will wait any associated tasks to finish.
 dahl_fp const* vector_data_acquire(dahl_vector const* vector);
 
-// Acquire the vector data as mutable, will wait any associated tasks to finish.
+// Acquire the vector data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* vector_data_acquire_mutable(dahl_vector* vector);
+dahl_fp* vector_data_acquire_mut(dahl_vector* vector);
 
 // Release the vector data, tasks will be able to use the block again.
 void vector_data_release(dahl_vector const* vector);
@@ -264,5 +276,30 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool rounding, u_
 
 // Print a vector
 void vector_print(dahl_vector const* vector);
+
+// ---------------------------------------- PARTITION ----------------------------------------
+
+size_t get_nb_children(void const* object, dahl_traits* traits);
+
+dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits* traits);
+dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits* traits);
+
+dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits* traits);
+dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits* traits);
+
+dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits* traits);
+dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits);
+
+#define GET_NB_CHILDREN(OBJECT) get_nb_children(OBJECT, GET_TRAITS(OBJECT))
+
+#define GET_SUB_BLOCK(OBJECT, INDEX) get_sub_block(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_BLOCK_MUT(OBJECT, INDEX) get_sub_block_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+
+#define GET_SUB_MATRIX(OBJECT, INDEX) get_sub_matrix(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_MATRIX_MUT(OBJECT, INDEX) get_sub_matrix_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+
+#define GET_SUB_VECTOR(OBJECT, INDEX) get_sub_vector(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_VECTOR_MUT(OBJECT, INDEX) get_sub_vector_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+
 
 #endif //!DAHL_DATA_H

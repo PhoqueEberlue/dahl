@@ -533,6 +533,33 @@ void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     }
 }
 
+void vector_check_predictions(void* buffers[2], void* cl_arg)
+{
+    bool *res_p;
+    starpu_codelet_unpack_args(cl_arg, &res_p);
+
+    size_t const pred_len = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp const* pred = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    // Targets vector
+    size_t const targ_len = STARPU_VECTOR_GET_NX(buffers[1]);
+    dahl_fp const* targ = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+
+    dahl_fp max_val = 0.0F;
+    size_t max_index = 0;
+
+    for (size_t i = 0; i < pred_len; i++)
+    {
+        if (pred[i] > max_val)
+        {
+            max_val = pred[i];
+            max_index = i;
+        }
+    }
+
+    *res_p = (bool)(targ[max_index] == 1);
+}
+
 // ---------------------------------------- ANY ----------------------------------------
 // Get the ptr of any StarPU data type. Does not perform any check.
 // This works because ptr is always the second field in the struct for vector, matrix, block and tensor,

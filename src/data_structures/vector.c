@@ -2,6 +2,20 @@
 #include "starpu_data.h"
 #include <math.h>
 
+void* _vector_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
+{
+    // The vector cannot be partitioned so we don't allocate space for the partition list
+    metadata* md = dahl_arena_alloc(sizeof(metadata));
+    md->current_partition = -1;
+    md->origin_arena = dahl_arena_get_context();
+
+    dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
+    vector->handle = handle;
+    vector->data = data;
+
+    return vector;
+}
+
 dahl_vector* vector_init(size_t const len)
 {
     dahl_fp* data = dahl_arena_alloc(len * sizeof(dahl_fp));
@@ -20,11 +34,7 @@ dahl_vector* vector_init(size_t const len)
 
     dahl_arena_attach_handle(handle);
 
-    dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
-    vector->handle = handle;
-    vector->data = data;
-
-    return vector;
+    return _vector_init_from_ptr(handle, data);
 }
 
 dahl_vector* vector_init_from(size_t const len, dahl_fp const* data)
@@ -83,7 +93,7 @@ dahl_fp const* vector_data_acquire(dahl_vector const* vector)
     return vector->data;
 }
 
-dahl_fp* vector_data_acquire_mutable(dahl_vector* vector)
+dahl_fp* vector_data_acquire_mut(dahl_vector* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);
     return vector->data;

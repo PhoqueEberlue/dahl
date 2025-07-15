@@ -14,9 +14,6 @@ int read_int(FILE *file)
 // Function to load MNIST images
 dahl_block* load_mnist_images(char const* filename)
 {
-    // All the allocations in this function will be performed in the persistent arena
-    dahl_context_arena = dahl_persistent_arena;
-
     FILE *file = fopen(filename, "rb");
     if (!file)
     {
@@ -35,7 +32,7 @@ dahl_block* load_mnist_images(char const* filename)
     dahl_shape3d shape_image_block = { .x = rows, .y = cols, .z = num_images };
     dahl_block* image_block = block_init(shape_image_block);
 
-    dahl_fp* images = block_data_acquire_mutable(image_block);
+    dahl_fp* images = block_data_acquire_mut(image_block);
 
     for (size_t z = 0; z < num_images; z++)
     {
@@ -51,17 +48,14 @@ dahl_block* load_mnist_images(char const* filename)
     }
 
     block_data_release(image_block);
-
     fclose(file);
+
     return image_block;
 }
 
 // Function to load MNIST labels
 dahl_vector* load_mnist_labels(char const* filename)
 {
-    // All the allocations in this function will be performed in the persistent arena
-    dahl_context_arena = dahl_persistent_arena;
-
     FILE *file = fopen(filename, "rb");
     if (!file)
     {
@@ -76,7 +70,7 @@ dahl_vector* load_mnist_labels(char const* filename)
     printf("Loaded %lu labels from %s\n", num_labels, filename);
 
     dahl_vector* label_vec = vector_init(num_labels);
-    dahl_fp* labels = vector_data_acquire_mutable(label_vec);
+    dahl_fp* labels = vector_data_acquire_mut(label_vec);
 
     for (size_t i = 0; i < num_labels; i++)
     {
@@ -93,10 +87,15 @@ dahl_vector* load_mnist_labels(char const* filename)
 
 dataset* load_mnist(char const* image_file, char const* label_file)
 {
+    // All the allocations in this function will be performed in the persistent arena
+    dahl_arena_set_context(dahl_persistent_arena);
+
     dataset* res = dahl_arena_alloc(sizeof(dataset));
     // Load training images & labels
     res->train_images = load_mnist_images(image_file);
     res->train_labels = load_mnist_labels(label_file); 
+
+    dahl_arena_restore_context();
 
     return res;
 }

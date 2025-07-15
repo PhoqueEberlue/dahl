@@ -156,7 +156,7 @@ void arena_trim(Arena *a);
 // It should be up to new_region() to decide the actual capacity to allocate
 Region *new_region(size_t capacity)
 {
-    size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
+    size_t size_bytes = sizeof(Region) + (sizeof(uintptr_t) * capacity);
     // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
     Region *r = (Region*)malloc(size_bytes); 
     starpu_memory_pin(r->data, capacity * sizeof(uintptr_t));

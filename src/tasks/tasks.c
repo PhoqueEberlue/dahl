@@ -200,9 +200,13 @@ dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in)
     return out;
 }
 
-void task_matrix_resize(dahl_matrix* mat, size_t new_nx, size_t new_ny, size_t new_ld)
+void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape)
 {
     struct starpu_task *task = starpu_task_create();
+
+    size_t new_nx = shape.x;
+    size_t new_ny = shape.y;
+    size_t new_ld = new_nx * new_ny;
  
     task->cl = &cl_matrix_resize;
     task->synchronous = 1; // Set to synchronous to prevent any problems.
@@ -223,24 +227,22 @@ void task_matrix_resize(dahl_matrix* mat, size_t new_nx, size_t new_ny, size_t n
     starpu_task_submit(task);
 }
 
-void task_matrix_to_flat_row(dahl_matrix* mat)
+void task_matrix_as_flat_row(dahl_matrix* mat)
 {
     dahl_shape2d shape = matrix_get_shape(mat);
-    size_t new_nx = shape.x * shape.y;
-    size_t new_ny = 1;
-    size_t new_ld = new_nx;
+    shape.x = shape.x * shape.y;
+    shape.y = 1;
 
-    task_matrix_resize(mat, new_nx, new_ny, new_ld);
+    task_matrix_resize(mat, shape);
 }
 
-void task_matrix_to_flat_col(dahl_matrix* mat)
+void task_matrix_as_flat_col(dahl_matrix* mat)
 {
     dahl_shape2d shape = matrix_get_shape(mat);
-    size_t new_nx = 1;
-    size_t new_ny = shape.x * shape.y;
-    size_t new_ld = 1;
+    shape.y = shape.x * shape.y;
+    shape.x = 1;
 
-    task_matrix_resize(mat, new_nx, new_ny, new_ld);
+    task_matrix_resize(mat, shape);
 }
 
 // ---------------------------------------- VECTOR ----------------------------------------
@@ -312,15 +314,14 @@ dahl_matrix* task_vector_diag(dahl_vector const* in)
 void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out)
 {
     // Init in the temporary arena 
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = dahl_temporary_arena;
+    dahl_arena_set_context(dahl_temporary_arena);
 
     dahl_matrix* in_col = vector_to_column_matrix(in);
     dahl_matrix* in_row = vector_to_row_matrix(in);
     dahl_matrix* tmp = task_matrix_matrix_product_init(in_col, in_row);
 
     // Then switch to previous context.
-    dahl_context_arena = save_arena;
+    dahl_arena_restore_context();
 
     TASK_SUB_SELF(out, tmp);
 }
@@ -338,13 +339,12 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
     size_t const n_classes = vector_get_len(predictions);
 
     // Init in the temporary arena 
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = dahl_temporary_arena;
+    dahl_arena_set_context(dahl_temporary_arena);
 
     dahl_vector* tmp = vector_init(n_classes);
 
     // Then switch to previous context.
-    dahl_context_arena = save_arena;
+    dahl_arena_restore_context();
 
     TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
 
@@ -376,6 +376,28 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
     return res;
 }
 
+// TODO: We should vectorize this to prevent partitionning
+dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
+{
+    dahl_fp total_loss = 0.0F;
+
+    matrix_partition_along_y(prediction_batch);
+    matrix_partition_along_y(target_batch);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
+    {
+        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
+        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
+
+        total_loss += task_vector_cross_entropy_loss(predictions, targets);
+    }
+
+    matrix_unpartition(prediction_batch);
+    matrix_unpartition(target_batch);
+
+    return total_loss;
+}
+
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
 {
     int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
@@ -385,47 +407,100 @@ void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dah
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+// TODO: We should vectorize this to prevent partitionning / or at least support batch in the kernel
+void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch)
+{
+    matrix_partition_along_y(prediction_batch);
+    matrix_partition_along_y(target_batch);
+    matrix_partition_along_y_mut(gradient_batch);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
+    {
+        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
+        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
+        dahl_vector* gradients = GET_SUB_VECTOR_MUT(gradient_batch, i);
+
+        task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
+    }
+
+    matrix_unpartition(prediction_batch);
+    matrix_unpartition(target_batch);
+    matrix_unpartition(gradient_batch);
+}
+
 dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets)
 {
     size_t len = vector_get_len(predictions);
 
     // Init in the temporary arena 
-    dahl_arena* const save_arena = dahl_context_arena;
-    dahl_context_arena = dahl_temporary_arena;
+    dahl_arena_set_context(dahl_temporary_arena);
 
     dahl_vector* gradients = vector_init(len);
 
     // Then switch to previous context.
-    dahl_context_arena = save_arena;
+    dahl_arena_restore_context();
 
     task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
 
     return gradients;
 }
 
+bool task_vector_check_predictions(dahl_vector const* predictions, dahl_vector const* targets)
+{
+    bool res = false;
+    bool* res_p = &res;
+
+    struct starpu_task* task = starpu_task_create();
+    task->cl = &cl_vector_check_predictions;
+
+    // Initialize argument buffer to obtain the return value with a pointer pointer
+    char *arg_buffer;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
+
+    task->cl_arg = arg_buffer;
+    task->cl_arg_size = arg_buffer_size;
+    task->nbuffers = 2;
+    task->handles[0] = predictions->handle;
+    task->handles[1] = targets->handle;
+    task->detach = 0;
+
+    int ret = starpu_task_submit(task); 
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    ret = starpu_task_wait(task);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    return res;
+}
+
+// TODO: We should vectorize this to prevent partitionning / or at least support batch in the kernel
+unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
+{
+    unsigned int correct_predictions = 0;
+
+    matrix_partition_along_y(prediction_batch);
+    matrix_partition_along_y(target_batch);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
+    {
+        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
+        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
+
+        if (task_vector_check_predictions(predictions, targets))
+        {
+            correct_predictions += 1;        
+        }
+    }
+
+    matrix_unpartition(prediction_batch);
+    matrix_unpartition(target_batch);
+
+    return correct_predictions;
+}
+
 // ---------------------------------------- TRAITS ----------------------------------------
-// Tasks that can be applied to any data type are defined with traits.
-// Each trait links a type with the right codelets.
-dahl_traits dahl_traits_tensor = {
-    .get_handle = _tensor_get_handle,
-    .get_nb_elem = _tensor_get_nb_elem,
-};
-
-dahl_traits dahl_traits_block = {
-    .get_handle = _block_get_handle,
-    .get_nb_elem = _block_get_nb_elem,
-};
-
-dahl_traits dahl_traits_matrix = {
-    .get_handle = _matrix_get_handle,
-    .get_nb_elem = _matrix_get_nb_elem,
-};
-
-dahl_traits dahl_traits_vector = {
-    .get_handle = _vector_get_handle,
-    .get_nb_elem = _vector_get_nb_elem,
-};
-
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(out);

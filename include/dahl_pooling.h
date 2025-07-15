@@ -21,7 +21,7 @@ typedef struct
 } dahl_pooling;
 
 dahl_pooling* pooling_init(size_t pool_size, dahl_shape4d input_shape);
-dahl_tensor* pooling_forward(dahl_pooling* pool, dahl_tensor* input_batch);
-dahl_tensor* pooling_backward(dahl_pooling* pool, dahl_tensor* dl_dout);
+dahl_tensor* pooling_forward(dahl_pooling* pool, dahl_tensor const* input_batch);
+dahl_tensor* pooling_backward(dahl_pooling* pool, dahl_tensor const* dl_dout);
 
 #endif //!DAHL_POOLING_H

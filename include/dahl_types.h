@@ -6,7 +6,6 @@
 
 // Different types
 typedef enum {
-    DAHL_NONE, // Nothing
     DAHL_TENSOR,
     DAHL_BLOCK,
     DAHL_MATRIX,
@@ -38,6 +37,7 @@ typedef struct
 
 bool shape2d_equals(dahl_shape2d a, dahl_shape2d b);
 bool shape3d_equals(dahl_shape3d a, dahl_shape3d b);
+bool shape4d_equals(dahl_shape4d a, dahl_shape4d b);
 void shape2d_print(dahl_shape2d shape);
 void shape3d_print(dahl_shape3d shape);
 void shape4d_print(dahl_shape4d shape);

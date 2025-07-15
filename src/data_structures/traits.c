@@ -1,0 +1,34 @@
+#include "data_structures.h"
+
+// Linking traits with their corresponding function definition
+dahl_traits dahl_traits_tensor = {
+    .init_from_ptr = _tensor_init_from_ptr,
+    .get_handle = _tensor_get_handle,
+    .get_partition = _tensor_get_current_partition,
+    .get_nb_elem = _tensor_get_nb_elem,
+    .type = DAHL_TENSOR,
+};
+
+dahl_traits dahl_traits_block = {
+    .init_from_ptr = _block_init_from_ptr,
+    .get_handle = _block_get_handle,
+    .get_partition = _block_get_current_partition,
+    .get_nb_elem = _block_get_nb_elem,
+    .type = DAHL_BLOCK,
+};
+
+dahl_traits dahl_traits_matrix = {
+    .init_from_ptr = _matrix_init_from_ptr,
+    .get_handle = _matrix_get_handle,
+    .get_partition = _matrix_get_current_partition,
+    .get_nb_elem = _matrix_get_nb_elem,
+    .type = DAHL_MATRIX,
+};
+
+dahl_traits dahl_traits_vector = {
+    .init_from_ptr = _vector_init_from_ptr,
+    .get_handle = _vector_get_handle,
+    .get_partition = nullptr, // Vectors cannot be partitioned
+    .get_nb_elem = _vector_get_nb_elem,
+    .type = DAHL_VECTOR,
+};

@@ -66,11 +66,14 @@ dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix c
 void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out);
 dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in);
 
+// Resize a matrix as long as it can hold the same number of elements, e.g. a 4*4 matrix can be resize to 2*8, 1*16...
+void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape);
+
 // Flatten a matrix and consider it as a row matrix
-void task_matrix_to_flat_row(dahl_matrix* mat);
+void task_matrix_as_flat_row(dahl_matrix* mat);
 
 // Flatten a matrix and consider it as a column matrix
-void task_matrix_to_flat_col(dahl_matrix* mat);
+void task_matrix_as_flat_col(dahl_matrix* mat);
 
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
@@ -92,21 +95,15 @@ void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out);
 dahl_matrix* task_vector_softmax_derivative_init(dahl_vector const* in);
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
+dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
+void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
 dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets);
+// TODO naming convention
+unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
-// Using a trait mechanism to group functions together
-typedef const struct _dahl_traits dahl_traits;
-
-// Here we define our different traits associated to each types.
-// Those structures contains references to the implementation of each function matching with the correct type.
-extern dahl_traits dahl_traits_tensor;
-extern dahl_traits dahl_traits_block;
-extern dahl_traits dahl_traits_matrix;
-extern dahl_traits dahl_traits_vector;
-
 void task_relu(void const* in, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
@@ -116,19 +113,6 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
 dahl_fp task_sum(void const* object, dahl_traits* traits);
 void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
-
-// HELPER MACROS FOR THE COMMON TASKS
-// Get the traits structure of an object at compile time
-#define GET_TRAITS(OBJECT) _Generic((OBJECT), \
-    dahl_tensor*: &dahl_traits_tensor,        \
-    dahl_block*:  &dahl_traits_block,         \
-    dahl_matrix*: &dahl_traits_matrix,        \
-    dahl_vector*: &dahl_traits_vector         \
-)
-
-// Type comparison without taking into account const qualifiers
-#define TYPES_MATCH(T1, T2) \
-    (__builtin_types_compatible_p(typeof(*(T1)), typeof(*(T2))))
 
 // Apply a relu function to every value of `in` and store the result in `out`.
 #define TASK_RELU(IN, OUT)                                     \
