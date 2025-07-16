@@ -110,12 +110,20 @@ dahl_matrix* dense_forward(dahl_dense* dense, dahl_tensor const* input_batch)
     return dense->output_batch;
 }
 
-void _dense_backward_sample(dahl_block const* input, dahl_block* dl_dw, 
-                            dahl_block* dl_dinput, dahl_vector const* sub_dl_dy,
+void _dense_backward_sample(dahl_vector const* dl_dout,
+                            dahl_vector const* output,
+                            dahl_vector* dl_dy,
+                            dahl_block const* input, 
+                            dahl_block* dl_dw, 
+                            dahl_block* dl_dinput,
                             dahl_block const* weights)
 {
+    // First compute dl_dy
+    dahl_matrix const* tmp = task_vector_softmax_derivative_init(output);
+    task_matrix_vector_product(tmp, dl_dout, dl_dy);
+
     // Create a clone of dl_dy as a column matrix
-    dahl_matrix const* sub_dl_dy_col = vector_to_column_matrix(sub_dl_dy);
+    dahl_matrix const* dl_dy_col = vector_to_column_matrix(dl_dy);
 
     // Partition by channels
     block_partition_along_z_flat_matrices(input, true);
@@ -125,20 +133,20 @@ void _dense_backward_sample(dahl_block const* input, dahl_block* dl_dw,
     // views of the matrices.
     block_partition_along_z_flat_vectors_mut(dl_dinput);
 
-    size_t const n_channels = GET_NB_CHILDREN(input);
+    size_t const n_channels = GET_NB_CHILDREN(input); 
 
     for (size_t j = 0; j < n_channels; j++)
     {
         dahl_matrix const* sub_input = GET_SUB_MATRIX(input, j);
         dahl_matrix* sub_dl_dw = GET_SUB_MATRIX_MUT(dl_dw, j);
 
-        task_matrix_matrix_product(sub_dl_dy_col, sub_input, sub_dl_dw);
+        task_matrix_matrix_product(dl_dy_col, sub_input, sub_dl_dw);
 
         dahl_matrix const* sub_weights = GET_SUB_MATRIX(weights, j);
         dahl_matrix const* sub_weights_t = task_matrix_transpose_init(sub_weights);
 
         dahl_vector* sub_dl_dinput = GET_SUB_VECTOR_MUT(dl_dinput, j);
-        task_matrix_vector_product(sub_weights_t, sub_dl_dy, sub_dl_dinput);  
+        task_matrix_vector_product(sub_weights_t, dl_dy, sub_dl_dinput);  
     }
 
     block_unpartition(input);
@@ -154,24 +162,6 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch,
     // Same shape as dl_dout: n classes by batch size
     dahl_matrix* dl_dy_batch = matrix_init(matrix_get_shape(dl_dout_batch));
 
-    matrix_partition_along_y(dl_dout_batch); // list of gradient for each batch
-    matrix_partition_along_y(dense->output_batch); // list of predictions from the last forward pass for each batch
-    matrix_partition_along_y_mut(dl_dy_batch); // derivative of the output and the gradients
-
-    for (size_t i = 0; i < GET_NB_CHILDREN(dl_dout_batch); i++)
-    {
-        dahl_vector const* sub_dl_dout = GET_SUB_VECTOR(dl_dout_batch, i);
-        dahl_vector const* sub_output = GET_SUB_VECTOR(dense->output_batch, i);
-        dahl_vector* sub_dl_dy = GET_SUB_VECTOR_MUT(dl_dy_batch, i);
-
-        dahl_matrix const* tmp = task_vector_softmax_derivative_init(sub_output);
-        task_matrix_vector_product(tmp, sub_dl_dout, sub_dl_dy);
-    }
-
-    matrix_unpartition(dl_dout_batch);
-    matrix_unpartition(dense->output_batch);
-    matrix_unpartition(dl_dy_batch);
-
     dahl_shape4d dl_dw_shape = {
         .x = dense->input_shape.x * dense->input_shape.y, // Image size after flattening
         .y = dense->output_shape.x, // Number of classes 
@@ -185,10 +175,12 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch,
     TASK_FILL(dense->dl_dinput_batch, 0);
 
     // Partition by batch
-    tensor_partition_along_t(dense->input_batch);
+    matrix_partition_along_y(dl_dout_batch); // list of gradient for each batch
+    matrix_partition_along_y(dense->output_batch); // list of predictions from the last forward pass for each batch
+    matrix_partition_along_y_mut(dl_dy_batch); // derivative of the output and the gradients
+    tensor_partition_along_t(dense->input_batch); // last input of the forward pass
     tensor_partition_along_t_mut(dl_dw_batch);
     tensor_partition_along_t_mut(dense->dl_dinput_batch);
-    matrix_partition_along_y(dl_dy_batch);
 
     // Weights doesn't have a batch dim, so we will access them only in the channel loop
     block_partition_along_z(dense->weights);
@@ -197,19 +189,23 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch,
     for (size_t i = 0; i < GET_NB_CHILDREN(dense->input_batch); i++)
     {
         _dense_backward_sample(
+            GET_SUB_VECTOR(dl_dout_batch, i),
+            GET_SUB_VECTOR(dense->output_batch, i),
+            GET_SUB_VECTOR_MUT(dl_dy_batch, i),
             GET_SUB_BLOCK(dense->input_batch, i),
             GET_SUB_BLOCK_MUT(dl_dw_batch, i),
             GET_SUB_BLOCK_MUT(dense->dl_dinput_batch, i),
-            GET_SUB_VECTOR(dl_dy_batch, i),
             dense->weights
         );
     }
 
+    matrix_unpartition(dl_dout_batch);
+    matrix_unpartition(dense->output_batch);
+    matrix_unpartition(dl_dy_batch);
     tensor_unpartition(dense->input_batch);
     tensor_unpartition(dense->dl_dinput_batch);
     block_unpartition(dense->weights);
     tensor_unpartition(dl_dw_batch);
-    matrix_unpartition(dl_dy_batch); // unpartition dl_dy that was partitionned earlier
     
     dahl_vector* summed_dl_dy = task_matrix_sum_y_axis_init(dl_dy_batch);
     dahl_block* summed_dl_dw = task_tensor_sum_t_axis_init(dl_dw_batch);
