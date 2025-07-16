@@ -14,7 +14,7 @@ size_t HANDLE_REGISTER_COUNT = 0;
 size_t HANDLE_UNREGISTER_COUNT = 0;
 // TODO: make it dynamic?
 #define NMAX_HANDLES 1000
-#define NMAX_PARTITIONS 10000
+#define NMAX_PARTITIONS 50000
 #define NMAX_CONTEXTS 256
 
 static dahl_arena* context_stack[NMAX_CONTEXTS];

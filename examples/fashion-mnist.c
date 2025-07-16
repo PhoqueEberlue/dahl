@@ -21,7 +21,7 @@ void train_network(dataset* set, dahl_convolution* conv, dahl_pooling* pool, dah
     matrix_partition_along_y_batch(y_categorical, batch_size);
 
     // size_t const n_samples = block_get_nb_children(image_block);
-    size_t const n_samples = 5000; // block_get_shape(image_block).z
+    size_t const n_samples = 6000; // block_get_shape(image_block).z
     size_t const n_batches_per_epoch = n_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)

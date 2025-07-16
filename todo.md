@@ -2,6 +2,7 @@
 
 ## Important
 
+- Try to do shuffling to fix the accuracy?
 - benchmark with different task granularity?
 - benchmark with different batch sizes?
 - Implementing the 3 other parallelizable dimensions
@@ -13,6 +14,9 @@
 
 - Make dahl_temporary_arena and persistent arena pointer const. This requires being able to instanciate the arenas on the stack.
   -> I think I won't be possible because I need (or want) to hide the arena implementation behind an opaque type.
+- Replace the context arena mechanism by an explicit-argument-passing implement: this will make function signature indicate if the function
+  actually allocates data
+
 - Investigate why filling arenas buffer in block/matrix/vector works and not with a memset directly inside the arena_alloc function
 - propagate precision passed in the asserts to the block/matirx/vector prints
 - Add compilation condition to enable/disable debugg asserts
