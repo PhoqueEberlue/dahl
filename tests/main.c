@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     testing_arena = dahl_arena_new();
     dahl_arena_set_context(testing_arena);
 
-    // test_layers();
+    test_layers();
     test_tasks();
     test_data();
     test_arena();
