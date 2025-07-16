@@ -384,7 +384,9 @@ dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch
     matrix_partition_along_y(prediction_batch);
     matrix_partition_along_y(target_batch);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
+    size_t const batch_size = GET_NB_CHILDREN(prediction_batch);
+
+    for (size_t i = 0; i < batch_size; i++)
     {
         dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
         dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
@@ -395,7 +397,7 @@ dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch
     matrix_unpartition(prediction_batch);
     matrix_unpartition(target_batch);
 
-    return total_loss;
+    return total_loss / (dahl_fp)batch_size;
 }
 
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
