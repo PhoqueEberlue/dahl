@@ -5,10 +5,10 @@
 
 typedef struct 
 {
-    dahl_shape4d const input_shape;
-    dahl_shape2d const output_shape;
+    dahl_shape4d input_shape;
+    dahl_shape2d output_shape;
 
-    dahl_tensor const* input_batch;
+    dahl_tensor* input_batch;
     dahl_matrix* output_batch;
     dahl_tensor* dl_dinput_batch;
 

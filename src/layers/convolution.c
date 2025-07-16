@@ -36,12 +36,11 @@ dahl_convolution* convolution_init(dahl_shape3d input_shape, size_t filter_size,
 
     dahl_convolution* conv = dahl_arena_alloc(sizeof(dahl_convolution));
 
-    // Little trick to initialize const fields dynamically
-    *(dahl_shape3d*)&conv->input_shape = input_shape;
-    *(size_t*)&conv->num_filters = num_filters;
-    *(size_t*)&conv->filter_size = filter_size;
-    *(dahl_shape3d*)&conv->filter_shape = filter_shape;
-    *(dahl_shape4d*)&conv->output_shape = output_shape;
+    conv->input_shape = input_shape;
+    conv->num_filters = num_filters;
+    conv->filter_size = filter_size;
+    conv->filter_shape = filter_shape;
+    conv->output_shape = output_shape;
     conv->filters = filters;
     conv->biases = biases;
     conv->input_batch = nullptr;
@@ -216,17 +215,17 @@ dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor const* dl_d
     block_unpartition(conv->dl_dinput_batch);
     block_unpartition(conv->filters);
     
-    dahl_block* tmp_filters = task_tensor_sum_t_axis_init(dl_dfilters_batch);
-    dahl_block* tmp_dout = task_tensor_sum_t_axis_init(dl_dout_batch);
+    dahl_block* summed_dl_dfilters = task_tensor_sum_t_axis_init(dl_dfilters_batch);
+    dahl_block* summed_dl_dout = task_tensor_sum_t_axis_init(dl_dout_batch);
 
     // Updating filters and biases
     // filters -= dl_dfilters * learning_rate
     // biases -= dl_dout * learning_rate
-    TASK_SCAL_SELF(tmp_filters, learning_rate / (dahl_fp)conv->input_shape.z);
-    TASK_SUB_SELF(conv->filters, tmp_filters);
+    TASK_SCAL_SELF(summed_dl_dfilters, learning_rate / batch_size);
+    TASK_SUB_SELF(conv->filters, summed_dl_dfilters);
 
-    TASK_SCAL_SELF(tmp_dout, learning_rate / (dahl_fp)conv->input_shape.z);
-    TASK_SUB_SELF(conv->biases, tmp_dout);
+    TASK_SCAL_SELF(summed_dl_dout, learning_rate / batch_size);
+    TASK_SUB_SELF(conv->biases, summed_dl_dout);
 
     dahl_arena_reset(dahl_temporary_arena);
     dahl_arena_restore_context();

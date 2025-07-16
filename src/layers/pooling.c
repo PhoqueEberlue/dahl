@@ -13,16 +13,15 @@ dahl_pooling* pooling_init(size_t const pool_size, dahl_shape4d const input_shap
 
     dahl_pooling* pool = dahl_arena_alloc(sizeof(dahl_pooling));
 
-    *(size_t*)&pool->pool_size = pool_size;
-    *(dahl_shape4d*)&pool->input_shape = input_shape;
-
-    // Image dimensions divided by the pool size
-    *(size_t*)&pool->output_shape.x = pool->input_shape.x / pool->pool_size;
-    *(size_t*)&pool->output_shape.y = pool->input_shape.y / pool->pool_size;
-    // Channel dimension
-    *(size_t*)&pool->output_shape.z = pool->input_shape.z;
-    // Batch dimension
-    *(size_t*)&pool->output_shape.t = pool->input_shape.t;
+    pool->pool_size = pool_size;
+    pool->input_shape = input_shape;
+ 
+    pool->output_shape = (dahl_shape4d){
+        .x = pool->input_shape.x / pool->pool_size, // Image dimensions divided by the pool size
+        .y = pool->input_shape.y / pool->pool_size,
+        .z = pool->input_shape.z,                   // Channel dimension
+        .t = pool->input_shape.t                    // Batch dimension
+    };
 
     dahl_tensor* output = tensor_init(pool->output_shape);
     dahl_tensor* mask = tensor_init(pool->input_shape);

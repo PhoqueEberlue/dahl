@@ -5,15 +5,15 @@
 
 typedef struct 
 {
-    size_t const pool_size;
+    size_t pool_size;
 
     // Input shape with a batch dimension
-    dahl_shape4d const input_shape;
+    dahl_shape4d input_shape;
 
     // Mask storing the max values indexes from the last input data, act as dl_dinput
     dahl_tensor* mask_batch;
 
-    dahl_shape4d const output_shape;
+    dahl_shape4d output_shape;
 
     // Forward output data. Overwritten each pooling_forward() call
     dahl_tensor* output_batch;

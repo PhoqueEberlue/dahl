@@ -21,8 +21,8 @@ dahl_dense* dense_init(dahl_shape4d const input_shape, size_t const n_classes)
 
     dahl_tensor* dl_dinput = tensor_init(input_shape);
 
-    *(dahl_shape4d*)&dense->input_shape = input_shape;
-    *(dahl_shape2d*)&dense->output_shape = output_shape;
+    dense->input_shape = input_shape;
+    dense->output_shape = output_shape;
 
     dahl_shape3d weights_shape = { 
         .x = input_shape.x * input_shape.y, // size of the flattened image
@@ -185,8 +185,10 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch,
     // Weights doesn't have a batch dim, so we will access them only in the channel loop
     block_partition_along_z(dense->weights);
 
+    size_t const batch_size = GET_NB_CHILDREN(dense->input_batch);
+    
     // Loop through each batch
-    for (size_t i = 0; i < GET_NB_CHILDREN(dense->input_batch); i++)
+    for (size_t i = 0; i < batch_size; i++)
     {
         _dense_backward_sample(
             GET_SUB_VECTOR(dl_dout_batch, i),
@@ -211,11 +213,11 @@ dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch,
     dahl_block* summed_dl_dw = task_tensor_sum_t_axis_init(dl_dw_batch);
 
     // Updating weights
-    TASK_SCAL_SELF(summed_dl_dw, learning_rate / dense->input_shape.t); // dl_dw * lr / batch_size
+    TASK_SCAL_SELF(summed_dl_dw, learning_rate / batch_size); // dl_dw * lr / batch_size
     TASK_SUB_SELF(dense->weights, summed_dl_dw);
 
     // Updating biases
-    TASK_SCAL_SELF(summed_dl_dy, learning_rate / dense->input_shape.t); // dl_dy * lr / batch_size
+    TASK_SCAL_SELF(summed_dl_dy, learning_rate / batch_size); // dl_dy * lr / batch_size
     TASK_SUB_SELF(dense->biases, summed_dl_dy);
 
     dahl_arena_reset(dahl_temporary_arena);
