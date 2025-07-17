@@ -106,6 +106,7 @@ unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, d
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
+void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits);
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits);
@@ -126,15 +127,26 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 #define TASK_RELU_SELF(SELF) TASK_RELU(SELF, SELF)
 
 // Multiply every value of `in` by `divisor` and store the result in `out`.
-#define TASK_SCAL(IN, OUT, FACTOR)                                   \
-    do {                                                             \
-        _Static_assert(TYPES_MATCH((IN), (OUT)),                     \
-                       "IN and OUT must be of the same type");       \
-        task_scal(IN, OUT, FACTOR, GET_TRAITS(OUT));                 \
+#define TASK_SCAL(IN, OUT, FACTOR)                             \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),               \
+                       "IN and OUT must be of the same type"); \
+        task_scal(IN, OUT, FACTOR, GET_TRAITS(OUT));           \
     } while (0)
 
 // Update every value of `self`, multiplying by `divisor`.
 #define TASK_SCAL_SELF(SELF, FACTOR) TASK_SCAL(SELF, SELF, FACTOR)
+
+// Power every value of `in` by `power` and store the result in `out`.
+#define TASK_POWER(IN, OUT, POWER)                             \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),               \
+                       "IN and OUT must be of the same type"); \
+        task_power(IN, OUT, POWER, GET_TRAITS(OUT));            \
+    } while (0)
+
+// Update every value of `self`, powering by `power`.
+#define TASK_POWER_SELF(SELF, POWER) TASK_POWER(SELF, SELF, POWER)
 
 // Divide every value of `in` by `divisor` and store the result in `out`.
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two

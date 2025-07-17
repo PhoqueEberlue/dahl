@@ -524,6 +524,17 @@ void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_power,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &power, sizeof(&power),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(c);
