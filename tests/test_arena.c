@@ -25,6 +25,8 @@ void test_arena_reset()
     ASSERT_VECTOR_EQUALS(vector_init_from(5, (dahl_fp[5]){ 0, 2, 4, 6, 8 }), v2);
 
     dahl_arena_delete(tmp_arena);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_arena_dangling_pointers()
@@ -41,11 +43,28 @@ void test_arena_dangling_pointers()
     vector_print(v);
 
     dahl_arena_restore_context();
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_return_values()
+{
+    dahl_fp* a = dahl_arena_alloc(sizeof(dahl_fp));
+    *a = 42.0F;
+
+    dahl_arena_reset(testing_arena);
+
+    dahl_fp* b = dahl_arena_alloc(sizeof(dahl_fp));
+
+    // The memory is not reseted to 0, so the old value is still here
+    ASSERT_FP_EQUALS(*b, 42.0F);
+
 }
 
 void test_arena()
 {
     test_arena_reset();
+    test_return_values();
     // We need a xfail mechanism
     // test_arena_dangling_pointers();
 }
