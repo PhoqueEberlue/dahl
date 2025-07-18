@@ -8,6 +8,7 @@ typedef struct _dahl_tensor dahl_tensor;
 typedef struct _dahl_block dahl_block;
 typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_vector dahl_vector;
+typedef struct _dahl_scalar dahl_scalar;
 
 typedef struct _dahl_partition dahl_partition;
 
@@ -269,6 +270,12 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool rounding, u_
 // Print a vector
 void vector_print(dahl_vector const*);
 
+// ---------------------------------------- SCALAR ----------------------------------------
+dahl_scalar* scalar_init(dahl_arena* arena);
+dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp value);
+dahl_fp scalar_get_value(dahl_scalar const* scalar);
+bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, u_int8_t const precision);
+void scalar_print(dahl_scalar const* scalar);
 // ---------------------------------------- PARTITION ----------------------------------------
 
 size_t get_nb_children(void const* object, dahl_traits* traits);

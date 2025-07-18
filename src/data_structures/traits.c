@@ -32,3 +32,11 @@ dahl_traits dahl_traits_vector = {
     .get_nb_elem = _vector_get_nb_elem,
     .type = DAHL_VECTOR,
 };
+
+dahl_traits dahl_traits_scalar = {
+    .init_from_ptr = nullptr, // No function for scalar
+    .get_handle = _scalar_get_handle,
+    .get_partition = nullptr, // Scalars cannot be partitioned
+    .get_nb_elem = nullptr, // No number 
+    .type = DAHL_SCALAR,
+};

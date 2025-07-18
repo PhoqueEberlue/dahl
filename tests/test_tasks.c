@@ -709,9 +709,9 @@ void test_sum()
     };
 
     dahl_block* block = block_init_from(testing_arena, data_shape_block, (dahl_fp*)&data_block);
-    dahl_fp result = TASK_SUM(block);
+    dahl_scalar* result = TASK_SUM_INIT(testing_arena, block);
 
-    ASSERT_FP_EQUALS(8, result);
+    ASSERT_FP_EQUALS(8, scalar_get_value(result));
 
     dahl_shape2d data_shape_matrix = { .x = 4, .y = 3 };
 
@@ -722,16 +722,16 @@ void test_sum()
     };
 
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape_matrix, (dahl_fp*)&data_matrix);
-    result = TASK_SUM(matrix);
+    result = TASK_SUM_INIT(testing_arena, matrix);
 
-    ASSERT_FP_EQUALS(8, result);
+    ASSERT_FP_EQUALS(8, scalar_get_value(result));
 
     dahl_fp data_vector[4] = { -2.0F, 1.0F, 2.0F,-1.0F };
 
     dahl_vector* vector = vector_init_from(testing_arena, 4, (dahl_fp*)&data_vector);
-    result = TASK_SUM(vector);
+    result = TASK_SUM_INIT(testing_arena, vector);
 
-    ASSERT_FP_EQUALS(0, result);
+    ASSERT_FP_EQUALS(0, scalar_get_value(result));
 
     dahl_arena_reset(testing_arena);
 }

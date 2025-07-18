@@ -445,61 +445,6 @@ dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena* arena, dah
     return gradients;
 }
 
-bool task_vector_check_predictions(dahl_vector const* predictions, dahl_vector const* targets)
-{
-    bool res = false;
-    bool* res_p = &res;
-
-    struct starpu_task* task = starpu_task_create();
-    task->cl = &cl_vector_check_predictions;
-
-    // Initialize argument buffer to obtain the return value with a pointer pointer
-    char *arg_buffer;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
-
-    task->cl_arg = arg_buffer;
-    task->cl_arg_size = arg_buffer_size;
-    task->nbuffers = 2;
-    task->handles[0] = predictions->handle;
-    task->handles[1] = targets->handle;
-    task->detach = 0;
-
-    int ret = starpu_task_submit(task); 
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    ret = starpu_task_wait(task);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    return res;
-}
-
-// TODO: We should vectorize this to prevent partitionning / or at least support batch in the kernel
-unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
-{
-    unsigned int correct_predictions = 0;
-
-    matrix_partition_along_y(prediction_batch);
-    matrix_partition_along_y(target_batch);
-
-    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
-    {
-        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
-        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
-
-        if (task_vector_check_predictions(predictions, targets))
-        {
-            correct_predictions += 1;        
-        }
-    }
-
-    matrix_unpartition(prediction_batch);
-    matrix_unpartition(target_batch);
-
-    return correct_predictions;
-}
-
 void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out)
 {
     int ret = starpu_task_insert(&cl_vector_to_matrix,
@@ -605,35 +550,20 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_fp task_sum(void const* object, dahl_traits* traits)
+void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
 {
-    dahl_fp res = 0.0F;
-    dahl_fp* res_p = &res;
-
-    size_t nb_elem = traits->get_nb_elem(object);
-
-    struct starpu_task* task = starpu_task_create();
-    task->cl = &cl_sum;
-
-    // Initialize argument buffer to obtain the return value with a pointer pointer
-    char *arg_buffer;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
-
-    task->cl_arg = arg_buffer;
-    task->cl_arg_size = arg_buffer_size;
-    task->nbuffers = 1;
-    task->handles[0] = traits->get_handle(object);
-    task->detach = 0;
-
-    int ret = starpu_task_submit(task); 
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_sum,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
 
-    ret = starpu_task_wait(task);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
+dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* traits)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_sum(object, res, traits);
     return res;
 }
 
@@ -654,4 +584,21 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
                                  STARPU_VALUE, &duration, sizeof(duration),
                                  STARPU_W, traits->get_handle(object), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+// ---------------------------------------- ML Related ----------------------------------------
+void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions)
+{
+    int ret = starpu_task_insert(&cl_check_predictions_batch,
+                                 STARPU_R, prediction_batch->handle,
+                                 STARPU_R, target_batch->handle,
+                                 STARPU_W, good_predictions->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_check_predictions_batch(prediction_batch, target_batch, res);
+    return res;
 }

@@ -7,6 +7,23 @@ void log_prefix(char const* file, int const line, char const* function)
     printf("[DAHL][FAIL][%s:%s:%d] ", file, function, line);
 }
 
+void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
+                          bool const rounding, u_int8_t const precision,
+                          char const* file, int const line, char const* function,
+                          char const* a_expr, char const* b_expr)
+{
+    if (!scalar_equals(a, b, rounding, precision))
+    {
+        log_prefix(file, line, function);
+        printf("Assert scalar equals: %s != %s\n", a_expr, b_expr);
+        printf("%s: ", a_expr);
+        scalar_print(a);
+        printf("%s: ", b_expr);
+        scalar_print(b);
+        printf("\n");
+    }
+}
+
 void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
                           bool const rounding, u_int8_t const precision,
                           char const* file, int const line, char const* function,

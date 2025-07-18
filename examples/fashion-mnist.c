@@ -7,6 +7,7 @@
 
 void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
 {
+    dahl_arena* epoch_arena = dahl_arena_new();
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
 
     block_partition_along_z_batch(images, batch_size);
@@ -21,7 +22,7 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
         printf("Epoch %lu\n", epoch);
 
         double total_loss = 0.0F;
-        unsigned int correct_predictions = 0;
+        dahl_scalar* correct_predictions = scalar_init(epoch_arena);
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
@@ -33,7 +34,7 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out); // Returns the predictions for each batch
 
             total_loss += task_vector_cross_entropy_loss_batch(dense_out, target_batch);
-            correct_predictions += task_check_predictions_batch(dense_out, target_batch);
+            task_check_predictions_batch(dense_out, target_batch, correct_predictions);
             dahl_matrix* gradients = task_vector_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch);
 
             dahl_tensor* dense_back = dense_backward(batch_arena, dense, gradients, pool_out, dense_out, LEARNING_RATE);
@@ -45,7 +46,9 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
 
         printf("Average loss: %f - Accuracy: %f\%\n",
            total_loss / (dahl_fp)n_samples,
-           correct_predictions / (dahl_fp)n_samples * 100);
+           scalar_get_value(correct_predictions) / (dahl_fp)n_samples * 100);
+
+        dahl_arena_reset(epoch_arena);
     }
 
     block_unpartition(images);

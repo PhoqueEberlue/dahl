@@ -49,6 +49,7 @@ void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
 #define ASSERT_SHAPE4D_EQUALS(a, b) assert_shape4d_equals((a), (b), __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_FP_EQUALS(a, b) assert_fp_equals((a), (b), __FILE__, __LINE__, __func__, #a, #b)
 
+#define ASSERT_SCALAR_EQUALS(a, b) assert_scalar_equals((a), (b), false, 0, __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_VECTOR_EQUALS(a, b) assert_vector_equals((a), (b), false, 0, __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_MATRIX_EQUALS(a, b) assert_matrix_equals((a), (b), false, 0, __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_BLOCK_EQUALS(a, b) assert_block_equals((a), (b), false, 0, __FILE__, __LINE__, __func__,  #a, #b)

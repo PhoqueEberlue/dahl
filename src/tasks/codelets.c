@@ -533,33 +533,6 @@ void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     }
 }
 
-void vector_check_predictions(void* buffers[2], void* cl_arg)
-{
-    bool *res_p;
-    starpu_codelet_unpack_args(cl_arg, &res_p);
-
-    size_t const pred_len = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp const* pred = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    // Targets vector
-    size_t const targ_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp const* targ = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
-
-    dahl_fp max_val = 0.0F;
-    size_t max_index = 0;
-
-    for (size_t i = 0; i < pred_len; i++)
-    {
-        if (pred[i] > max_val)
-        {
-            max_val = pred[i];
-            max_index = i;
-        }
-    }
-
-    *res_p = (bool)(targ[max_index] == 1);
-}
-
 void vector_to_matrix(void* buffers[2], void* cl_arg)
 {
     size_t const in_len = STARPU_VECTOR_GET_NX(buffers[0]);
@@ -701,22 +674,18 @@ void clip(void* buffers[2], void* cl_arg)
     }
 }
 
-void sum(void* buffers[1], void* cl_arg)
+void sum(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
-    dahl_fp *res_p;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem, &res_p);
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
-    dahl_fp* buf = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-
-    dahl_fp res = 0.0F;
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[1]);
 
     for (size_t i = 0; i < nb_elem; i++)
     {
-        res += buf[i];
+        *out += in[i];
     }
-
-    *res_p = res;
 }
 
 void fill(void* buffers[1], void* cl_arg)
@@ -739,4 +708,39 @@ void wait(void* buffers[1], void* cl_arg)
     unsigned int duration;
     starpu_codelet_unpack_args(cl_arg, &duration);
     usleep(duration);
+}
+
+// ---------------------------------------- ML Related ----------------------------------------
+void check_predictions_batch(void* buffers[3], void* cl_arg)
+{
+    size_t const pred_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const pred_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    dahl_fp const* pred = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Targets vector
+    size_t const targ_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    dahl_fp* correct_predictions = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[3]);
+
+    assert(pred_nx == targ_nx);
+    assert(pred_ny == targ_ny);
+
+    for (size_t y = 0; y < pred_ny; y++)
+    {
+        dahl_fp max_val = 0.0F;
+        size_t max_index = 0;
+
+        for (size_t x = 0; x < pred_nx; x++)
+        {
+            if (pred[x] > max_val)
+            {
+                max_val = pred[x];
+                max_index = x;
+            }
+        }
+
+        *correct_predictions += targ[max_index] == 1;
+    }
 }

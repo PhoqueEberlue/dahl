@@ -10,6 +10,7 @@ typedef enum {
     DAHL_BLOCK,
     DAHL_MATRIX,
     DAHL_VECTOR,
+    DAHL_SCALAR,
 } dahl_type;
 
 typedef double dahl_fp;

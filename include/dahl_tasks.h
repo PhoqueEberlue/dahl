@@ -100,10 +100,6 @@ dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vect
 void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
 dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
                                                                 dahl_matrix const* target_batch);
-
-// TODO naming convention
-unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
-
 void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
 
 // Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
@@ -123,7 +119,8 @@ void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits);
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
-dahl_fp task_sum(void const* object, dahl_traits* traits);
+void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits);
+dahl_scalar* task_sum_init(dahl_arena*, void const* object, dahl_traits* traits);
 void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 
@@ -232,9 +229,11 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 // Clip and modify every elements of `self` between `min` and `max`.
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
 
-// Sum every elements of `object`.
-// No self version of this macro because this is obviously the default behavior.
-#define TASK_SUM(OBJECT) task_sum(OBJECT, GET_TRAITS(OBJECT))
+// Sum every elements of `in` and write the result into a scalar `out`.
+#define TASK_SUM(IN, OUT) task_sum(IN, OUT, GET_TRAITS(OBJECT))
+
+// Sum every elements of `in` and allocate/return the result into the `arena`.
+#define TASK_SUM_INIT(ARENA, OBJECT) task_sum_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
 
 // Fill every elements of `object` with `value`.
 // No self version of this macro because this is obviously the default behavior.
@@ -243,5 +242,12 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 // Acquire `object` and wait for `duration` in microseconds.
 // Useful for debug purposes to investigate possible synchronization issues.
 #define TASK_WAIT(OBJECT, DURATION) task_wait(OBJECT, DURATION, GET_TRAITS(OBJECT))
+
+// ---------------------------- VARIOUS TASKS RELATED TO ML ----------------------------
+// Increment `good_predictions` with the number of good predictions from the `prediction_batch` and `target_batch`.
+void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions);
+
+// Init and return the number of good predictions from the `prediction_batch` and `target_batch`.
+dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 #endif //!DAHL_TASKS_H
