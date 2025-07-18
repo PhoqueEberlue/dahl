@@ -15,7 +15,7 @@ typedef struct
     dahl_arena* scratch_arena;
 } dahl_dense;
 
-dahl_dense* dense_init(dahl_arena*, dahl_shape4d input_shape, size_t n_classes);
+dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t n_classes);
 
 // Returns the prediction for each batch
 dahl_matrix* dense_forward(dahl_arena*, dahl_dense*, dahl_tensor const* input_batch);

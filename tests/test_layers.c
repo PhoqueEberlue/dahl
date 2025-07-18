@@ -398,10 +398,12 @@ static constexpr dahl_fp expect_conv_biases[2][23][23] = {
 
 void test_convolution()
 {
+    dahl_arena* scratch_arena = dahl_arena_new();
+
     // ----------- Forward -----------
     dahl_shape3d constexpr input_shape = { .x = 28, .y = 28, .z = 1 }; // We test with a one batch input
     size_t const num_channels = 2;
-    dahl_convolution* conv = convolution_init(testing_arena, input_shape, 6, num_channels);
+    dahl_convolution* conv = convolution_init(testing_arena, scratch_arena, input_shape, 6, num_channels);
 
     dahl_block const* img_batch = block_init_from(testing_arena, input_shape, (dahl_fp*)&sample);
 
@@ -438,6 +440,7 @@ void test_convolution()
     ASSERT_BLOCK_EQUALS_ROUND(expect_biases, conv->biases, 6);
 
     dahl_arena_reset(testing_arena);
+    dahl_arena_delete(scratch_arena);
 }
 
 void test_pool()
@@ -477,11 +480,13 @@ void test_pool()
 
 void test_dense()
 {
+    dahl_arena* scratch_arena = dahl_arena_new();
+
     // ----------- Forward -----------
     size_t constexpr num_classes = 10;
     size_t constexpr num_channels = 2;
     dahl_shape4d constexpr input_shape = { .x = 11, .y = 11, .z = num_channels, .t = 1 };
-    dahl_dense* dense = dense_init(testing_arena, input_shape, num_classes);
+    dahl_dense* dense = dense_init(testing_arena, scratch_arena, input_shape, num_classes);
     dahl_tensor const* input = tensor_init_from(testing_arena, input_shape, (dahl_fp*)&expect_pool_forward);
 
     dahl_matrix* dense_forward_out = dense_forward(testing_arena, dense, input);
@@ -515,12 +520,12 @@ void test_dense()
     ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 6);
 
     dahl_arena_reset(testing_arena);
+    dahl_arena_delete(scratch_arena);
 }
 
 void test_layers()
 {
     test_convolution();
-    test_convolution();
-    // test_pool();
-    // test_dense();
+    test_pool();
+    test_dense();
 }

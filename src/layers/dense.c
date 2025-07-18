@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "../arena/arena.h"
 
-dahl_dense* dense_init(dahl_arena* arena, dahl_shape4d const input_shape, size_t const n_classes)
+dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d const input_shape, size_t const n_classes)
 {
     dahl_dense* dense = dahl_arena_alloc(arena, sizeof(dahl_dense));
 
@@ -25,7 +25,7 @@ dahl_dense* dense_init(dahl_arena* arena, dahl_shape4d const input_shape, size_t
 
     dense->weights =  block_init_random(arena, weights_shape);
     dense->biases =  vector_init_random(arena, n_classes);
-    dense->scratch_arena = dahl_arena_new();
+    dense->scratch_arena = scratch_arena;
 
     return dense;
 }
@@ -112,7 +112,7 @@ void _dense_backward_sample(dahl_arena* arena,
     task_matrix_vector_product(tmp, dl_dout, dl_dy);
 
     // Create a clone of dl_dy as a column matrix
-    dahl_matrix const* dl_dy_col = vector_to_column_matrix(arena, dl_dy);
+    dahl_matrix const* dl_dy_col = task_vector_to_column_matrix_init(arena, dl_dy);
 
     // Partition by channels
     block_partition_along_z_flat_matrices(input, true);

@@ -2,18 +2,16 @@
 #include "../arena/arena.h"
 #include <stdio.h>
 
-dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape3d input_shape, size_t filter_size, size_t num_filters)
+dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape3d input_shape, size_t filter_size, size_t num_filters)
 {
     dahl_shape3d filter_shape = {
         .x = filter_size,
         .y = filter_size,
-        .z = num_filters,
+        .z = num_filters, // Equivalent to the number of channels of an image
     };
-    
-    dahl_block* filters = block_init_random(arena, filter_shape);
 
     dahl_shape4d output_shape = {
-        .x = input_shape.x - filter_size + 1,
+        .x = input_shape.x - filter_size + 1, // The convolution will reduce the size of the images
         .y = input_shape.y - filter_size + 1,
         .z = num_filters,
         .t = input_shape.z, // batch size
@@ -26,8 +24,6 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape3d input_shape, 
         .z = output_shape.z,
     };
 
-    dahl_block* biases = block_init_random(arena, bias_shape);
-
     dahl_convolution* conv = dahl_arena_alloc(arena, sizeof(dahl_convolution));
 
     conv->input_shape = input_shape;
@@ -35,9 +31,9 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_shape3d input_shape, 
     conv->filter_size = filter_size;
     conv->filter_shape = filter_shape;
     conv->output_shape = output_shape;
-    conv->filters = filters;
-    conv->biases = biases;
-    conv->scratch_arena = dahl_arena_new();
+    conv->filters = block_init_random(arena, filter_shape);
+    conv->biases = block_init_random(arena, bias_shape);
+    conv->scratch_arena = scratch_arena;
 
     return conv;
 }
@@ -66,6 +62,7 @@ void _convolution_forward_sample(dahl_block* output, dahl_matrix const* input,
 
     // Add biases to the output
     TASK_ADD_SELF(output, biases);
+    TASK_RELU_SELF(output);
 }
 
 dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl_block const* input_batch)
@@ -89,8 +86,6 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     
     tensor_unpartition(output_batch);
     block_unpartition(input_batch);
-
-    TASK_RELU_SELF(output_batch);
 
     return output_batch;
 }

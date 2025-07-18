@@ -5,15 +5,9 @@
 #define LEARNING_RATE 0.1F
 #define N_EPOCHS 200
 
-void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size, size_t n_classes)
+void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
 {
-    dahl_shape2d gradients_shape = {
-        .x = n_classes,
-        .y = batch_size
-    };
-
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
-    dahl_matrix* gradients = matrix_init(batch_arena, gradients_shape);
 
     block_partition_along_z_batch(images, batch_size);
     matrix_partition_along_y_batch(classes, batch_size);
@@ -40,15 +34,14 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
 
             total_loss += task_vector_cross_entropy_loss_batch(dense_out, target_batch);
             correct_predictions += task_check_predictions_batch(dense_out, target_batch);
-            task_vector_cross_entropy_loss_gradient_batch(dense_out, target_batch, gradients);
+            dahl_matrix* gradients = task_vector_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch);
 
             dahl_tensor* dense_back = dense_backward(batch_arena, dense, gradients, pool_out, dense_out, LEARNING_RATE);
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back);
             dahl_block* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
             // Why aren't we using bacward convolution result?
+            dahl_arena_reset(batch_arena);
         }
-
-        dahl_arena_reset(batch_arena);
 
         printf("Average loss: %f - Accuracy: %f\%\n",
            total_loss / (dahl_fp)n_samples,
@@ -71,7 +64,7 @@ int main(int argc, char **argv)
     size_t const filter_size = 6;
     size_t const pool_size = 2;
     // FIXME: support batch size that do not divide the dataset size
-    size_t constexpr batch_size = 10;
+    size_t constexpr batch_size = 100;
     dahl_shape3d constexpr input_shape = { .x = 28, .y = 28, .z = batch_size };
 
     // Everything instanciated here will remain allocated till the training finishes
@@ -81,13 +74,17 @@ int main(int argc, char **argv)
     dahl_block* images = set->train_images;
     dahl_matrix* classes = vector_to_categorical(network_arena, set->train_labels, num_classes);
 
-    dahl_convolution* conv = convolution_init(network_arena, input_shape, filter_size, num_channels);
+    // An arena for temporary results that shouldn't leak to their respective scope
+    dahl_arena* scratch_arena = dahl_arena_new();
+
+    dahl_convolution* conv = convolution_init(network_arena, scratch_arena, input_shape, filter_size, num_channels);
     dahl_pooling* pool = pooling_init(network_arena, pool_size, conv->output_shape);
-    dahl_dense* dense = dense_init(network_arena, pool->output_shape, num_classes);
+    dahl_dense* dense = dense_init(network_arena, scratch_arena, pool->output_shape, num_classes);
     
-    train_network(images, classes, conv, pool, dense, batch_size, num_classes);
+    train_network(images, classes, conv, pool, dense, batch_size);
 
     dahl_arena_delete(network_arena);
+    dahl_arena_delete(scratch_arena);
 
     dahl_shutdown();
     return 0;
