@@ -253,15 +253,6 @@ dahl_fp* vector_data_acquire_mut(dahl_vector*);
 // Release the vector data, tasks will be able to use the block again.
 void vector_data_release(dahl_vector const*);
 
-// Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
-dahl_matrix* vector_to_matrix(dahl_arena*, dahl_vector const*, dahl_shape2d shape);
-
-// Copy the vector into a new column matrix of shape (1, len)
-dahl_matrix* vector_to_column_matrix(dahl_arena*, dahl_vector const*);
-
-// Copy the vector into a new row matrix of shape (len, 1)
-dahl_matrix* vector_to_row_matrix(dahl_arena*, dahl_vector const*);
-
 // Copy the vector into a new categorical matrix
 // E.g. [1,2,0,1,1] gives:
 // [[0, 1, 0],

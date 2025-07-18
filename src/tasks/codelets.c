@@ -560,6 +560,21 @@ void vector_check_predictions(void* buffers[2], void* cl_arg)
     *res_p = (bool)(targ[max_index] == 1);
 }
 
+void vector_to_matrix(void* buffers[2], void* cl_arg)
+{
+    size_t const in_len = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    assert(out_nx * out_ny == in_len);
+    
+    for (size_t i = 0; i < in_len; i++)
+        out[i] = in[i];
+}
+
 // ---------------------------------------- ANY ----------------------------------------
 // Get the ptr of any StarPU data type. Does not perform any check.
 // This works because ptr is always the second field in the struct for vector, matrix, block and tensor,

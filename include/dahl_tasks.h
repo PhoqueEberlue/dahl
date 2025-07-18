@@ -95,11 +95,25 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
 dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
-void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
 dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vector const* predictions, dahl_vector const* targets);
+
+void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
+dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
+                                                                dahl_matrix const* target_batch);
 
 // TODO naming convention
 unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
+
+void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
+
+// Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
+dahl_matrix* task_vector_to_matrix_init(dahl_arena*, dahl_vector const*, dahl_shape2d new_shape);
+
+// Copy the vector into a new column matrix of shape (1, len)
+dahl_matrix* task_vector_to_column_matrix_init(dahl_arena*, dahl_vector const*);
+
+// Copy the vector into a new row matrix of shape (len, 1)
+dahl_matrix* task_vector_to_row_matrix_init(dahl_arena*, dahl_vector const*);
 
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);

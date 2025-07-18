@@ -159,29 +159,6 @@ void vector_print(dahl_vector const* vector)
 	starpu_data_release(vector->handle);
 }
 
-dahl_matrix* vector_to_matrix(dahl_arena* arena, dahl_vector const* vector, dahl_shape2d shape)
-{
-    assert(shape.x * shape.y == vector_get_len(vector));
-
-    starpu_data_acquire(vector->handle, STARPU_R);
-    dahl_matrix* res = matrix_init_from(arena, shape, vector->data);
-    starpu_data_release(vector->handle);
-
-    return res;
-}
-
-dahl_matrix* vector_to_column_matrix(dahl_arena* arena, dahl_vector const* vector)
-{
-    dahl_shape2d new_shape = { .x = 1, .y = vector_get_len(vector) };
-    return vector_to_matrix(arena, vector, new_shape);
-}
-
-dahl_matrix* vector_to_row_matrix(dahl_arena* arena, dahl_vector const* vector)
-{
-    dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
-    return vector_to_matrix(arena, vector, new_shape);
-}
-
 // TODO: why wouldn't it be a codelet?
 dahl_matrix* vector_to_categorical(dahl_arena* arena, dahl_vector const* vector, size_t const num_classes)
 {

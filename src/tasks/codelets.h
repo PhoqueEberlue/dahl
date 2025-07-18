@@ -50,6 +50,7 @@ DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_check_predictions, 2, STARPU_R, STARPU_R);
+DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
 
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type
