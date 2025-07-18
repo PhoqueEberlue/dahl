@@ -17,7 +17,7 @@ void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_block* task_tensor_sum_t_axis_init(dahl_tensor const* in)
+dahl_block* task_tensor_sum_t_axis_init(dahl_arena* arena, dahl_tensor const* in)
 {
     dahl_shape4d in_shape = tensor_get_shape(in);
 
@@ -27,7 +27,7 @@ dahl_block* task_tensor_sum_t_axis_init(dahl_tensor const* in)
         .z = in_shape.z,
     };
 
-    dahl_block* out = block_init(out_shape);
+    dahl_block* out = block_init(arena, out_shape);
     
     task_tensor_sum_t_axis(in, out);
 
@@ -42,7 +42,7 @@ void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_block_sum_z_axis_init(dahl_block const* in)
+dahl_matrix* task_block_sum_z_axis_init(dahl_arena* arena, dahl_block const* in)
 {
     dahl_shape3d in_shape = block_get_shape(in);
 
@@ -51,7 +51,7 @@ dahl_matrix* task_block_sum_z_axis_init(dahl_block const* in)
         .y = in_shape.y,
     };
 
-    dahl_matrix* out = matrix_init(out_shape);
+    dahl_matrix* out = matrix_init(arena, out_shape);
     
     task_block_sum_z_axis(in, out);
 
@@ -66,7 +66,7 @@ void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_block_sum_y_axis_init(dahl_block const* in)
+dahl_matrix* task_block_sum_y_axis_init(dahl_arena* arena, dahl_block const* in)
 {
     dahl_shape3d in_shape = block_get_shape(in);
 
@@ -76,7 +76,7 @@ dahl_matrix* task_block_sum_y_axis_init(dahl_block const* in)
         .y = in_shape.z,
     };
 
-    dahl_matrix* out = matrix_init(out_shape);
+    dahl_matrix* out = matrix_init(arena, out_shape);
     
     task_block_sum_y_axis(in, out);
 
@@ -127,13 +127,13 @@ void task_matrix_matrix_product(dahl_matrix const* a, dahl_matrix const* b, dahl
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix const* b)
+dahl_matrix* task_matrix_matrix_product_init(dahl_arena* arena, dahl_matrix const* a, dahl_matrix const* b)
 {
     dahl_shape2d a_shape = matrix_get_shape(a);
     dahl_shape2d b_shape = matrix_get_shape(b);
 
     dahl_shape2d c_shape = { .x = b_shape.x, .y = a_shape.y };
-    dahl_matrix* c = matrix_init(c_shape);
+    dahl_matrix* c = matrix_init(arena, c_shape);
 
     task_matrix_matrix_product(a, b, c);
 
@@ -148,10 +148,10 @@ void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in)
+dahl_vector* task_matrix_sum_y_axis_init(dahl_arena* arena, dahl_matrix const* in)
 {
     dahl_shape2d in_shape = matrix_get_shape(in);
-    dahl_vector* out = vector_init(in_shape.x);
+    dahl_vector* out = vector_init(arena, in_shape.x);
     
     task_matrix_sum_y_axis(in, out);
 
@@ -167,14 +167,14 @@ void task_matrix_vector_product(dahl_matrix const* mat, dahl_vector const* vec, 
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_vector* task_matrix_vector_product_init(dahl_matrix const* mat, dahl_vector const* vec)
+dahl_vector* task_matrix_vector_product_init(dahl_arena* arena, dahl_matrix const* mat, dahl_vector const* vec)
 {
     dahl_shape2d mat_shape = matrix_get_shape(mat);
     size_t vec_len = vector_get_len(vec);
     
     assert(mat_shape.x == vec_len);
 
-    dahl_vector* out = vector_init(mat_shape.y);
+    dahl_vector* out = vector_init(arena, mat_shape.y);
 
     task_matrix_vector_product(mat, vec, out); 
 
@@ -189,11 +189,11 @@ void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in)
+dahl_matrix* task_matrix_transpose_init(dahl_arena* arena, dahl_matrix const* in)
 {
     dahl_shape2d in_shape = matrix_get_shape(in);
     dahl_shape2d out_shape = { .x = in_shape.y, .y = in_shape.x };
-    dahl_matrix* out = matrix_init(out_shape);
+    dahl_matrix* out = matrix_init(arena, out_shape);
 
     task_matrix_transpose(in, out);
 
@@ -256,10 +256,10 @@ void task_vector_softmax(dahl_vector const* in, dahl_vector* out)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_vector* task_vector_softmax_init(dahl_vector const* in)
+dahl_vector* task_vector_softmax_init(dahl_arena* arena, dahl_vector const* in)
 {
     size_t len = vector_get_len(in);
-    dahl_vector* out = vector_init(len);
+    dahl_vector* out = vector_init(arena, len);
 
     task_vector_softmax(in, out); 
     return out;
@@ -295,12 +295,12 @@ dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b)
     return res;
 }
 
-dahl_matrix* task_vector_diag(dahl_vector const* in)
+dahl_matrix* task_vector_diag_init(dahl_arena* arena, dahl_vector const* in)
 {
     size_t vec_len = vector_get_len(in);
 
     dahl_shape2d out_shape = { .x = vec_len, .y = vec_len };
-    dahl_matrix* out = matrix_init(out_shape);
+    dahl_matrix* out = matrix_init(arena, out_shape);
 
     int ret = starpu_task_insert(&cl_vector_diag,
                                  STARPU_R, in->handle,
@@ -313,38 +313,33 @@ dahl_matrix* task_vector_diag(dahl_vector const* in)
 // TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
 void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out)
 {
-    // Init in the temporary arena 
-    dahl_arena_set_context(dahl_temporary_arena);
+    dahl_arena* tmp_arena = dahl_arena_new(); // for temporary results
 
-    dahl_matrix* in_col = vector_to_column_matrix(in);
-    dahl_matrix* in_row = vector_to_row_matrix(in);
-    dahl_matrix* tmp = task_matrix_matrix_product_init(in_col, in_row);
+    dahl_matrix* in_col = vector_to_column_matrix(tmp_arena, in);
+    dahl_matrix* in_row = vector_to_row_matrix(tmp_arena, in);
+    dahl_matrix* partial_res = task_matrix_matrix_product_init(tmp_arena, in_col, in_row);
 
-    // Then switch to previous context.
-    dahl_arena_restore_context();
-
-    TASK_SUB_SELF(out, tmp);
+    TASK_SUB_SELF(out, partial_res);
+    dahl_arena_delete(tmp_arena);
 }
 
-dahl_matrix* task_vector_softmax_derivative_init(dahl_vector const* in)
+dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_vector const* in)
 {
-    dahl_matrix* result = task_vector_diag(in);
+    // TODO: same as `task_vector_softmax_derivative`
+    dahl_matrix* result = task_vector_diag_init(arena, in);
     task_vector_softmax_derivative(in, result);
     return result;
 }
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets)
 {
+    dahl_arena* tmp_arena = dahl_arena_new(); // for temporary results
+    
+    // TODO: same as `task_vector_softmax_derivative`
     dahl_fp const epsilon = 1e-7F;
     size_t const n_classes = vector_get_len(predictions);
 
-    // Init in the temporary arena 
-    dahl_arena_set_context(dahl_temporary_arena);
-
-    dahl_vector* tmp = vector_init(n_classes);
-
-    // Then switch to previous context.
-    dahl_arena_restore_context();
+    dahl_vector* tmp = vector_init(tmp_arena, n_classes);
 
     TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
 
@@ -372,6 +367,8 @@ dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vect
 
     ret = starpu_task_wait(task);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+
+    dahl_arena_delete(tmp_arena);
 
     return res;
 }
@@ -430,18 +427,11 @@ void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction
     matrix_unpartition(gradient_batch);
 }
 
-dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets)
+dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena* arena, dahl_vector const* predictions, dahl_vector const* targets)
 {
+    // TODO: same as `task_vector_softmax_derivative`
     size_t len = vector_get_len(predictions);
-
-    // Init in the temporary arena 
-    dahl_arena_set_context(dahl_temporary_arena);
-
-    dahl_vector* gradients = vector_init(len);
-
-    // Then switch to previous context.
-    dahl_arena_restore_context();
-
+    dahl_vector* gradients = vector_init(arena, len);
     task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
 
     return gradients;

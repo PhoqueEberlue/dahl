@@ -19,7 +19,7 @@ void test_block_partition_along_z()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     dahl_shape2d expect_shape = { .x = 4, .y = 3 };
 
@@ -35,8 +35,8 @@ void test_block_partition_along_z()
         { 1.0F, 1.0F, 9.0F, 1.0F },
     };
 
-    dahl_matrix const* expect_matrix_0 = matrix_init_from(expect_shape, (dahl_fp*)&expect_0);
-    dahl_matrix const* expect_matrix_1 = matrix_init_from(expect_shape, (dahl_fp*)&expect_1);
+    dahl_matrix const* expect_matrix_0 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
+    dahl_matrix const* expect_matrix_1 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
     block_partition_along_z(block);
 
@@ -72,7 +72,7 @@ void test_block_partition_flatten_to_vector()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     dahl_fp expect[24] = {
         -2.0F, 1.0F, 2.0F,-1.0F,
@@ -83,7 +83,7 @@ void test_block_partition_flatten_to_vector()
         1.0F, 1.0F, 9.0F, 1.0F,
     };
 
-    dahl_vector const* expect_vector = vector_init_from(24, (dahl_fp*)&expect);
+    dahl_vector const* expect_vector = vector_init_from(testing_arena, 24, (dahl_fp*)&expect);
 
     block_partition_flatten_to_vector(block);
 
@@ -108,7 +108,7 @@ void test_matrix_partition_along_y()
         { 4.0F,-1.0F, 4.0F,-1.0F },
     };
 
-    dahl_matrix const* matrix = matrix_init_from(data_shape, (dahl_fp*)&data);
+    dahl_matrix const* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     size_t expect_len = 4;
 
@@ -174,17 +174,17 @@ void test_block_add_padding()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     dahl_shape3d padded_shape = { .x = 6, .y = 5, .z = 4 };
-    dahl_block* padded_block = block_add_padding_init(block, padded_shape);
+    dahl_block* padded_block = block_add_padding_init(testing_arena, block, padded_shape);
 
-    dahl_block* expect_block = block_init_from(padded_shape, (dahl_fp*)&expect);
+    dahl_block* expect_block = block_init_from(testing_arena, padded_shape, (dahl_fp*)&expect);
 
     ASSERT_BLOCK_EQUALS(expect_block, padded_block);
 
     dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
-    dahl_block* padded_block_2 = block_add_padding_init(block, padded_shape_2);
+    dahl_block* padded_block_2 = block_add_padding_init(testing_arena, block, padded_shape_2);
 
     dahl_fp expect_2[2][7][8] = {
         {
@@ -207,7 +207,7 @@ void test_block_add_padding()
         },
     };
 
-    dahl_block* expect_block_2 = block_init_from(padded_shape_2, (dahl_fp*)&expect_2);
+    dahl_block* expect_block_2 = block_init_from(testing_arena, padded_shape_2, (dahl_fp*)&expect_2);
 
     ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
 
@@ -224,7 +224,7 @@ void test_matrix_get_shape()
 
     dahl_shape2d shape = { .x = 4, .y = 3 };
 
-    dahl_matrix* matrix = matrix_init_from(shape, (dahl_fp*)&data);
+    dahl_matrix* matrix = matrix_init_from(testing_arena, shape, (dahl_fp*)&data);
 
     // Inject sleep on the matrix to verify that the resize task is really synchronous
     TASK_WAIT(matrix, 1000);
@@ -256,18 +256,18 @@ void test_recursive_partitioning()
         },
     };
 
-    dahl_block* block = block_init_from(data_shape, (dahl_fp*)&data);
+    dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     dahl_vector* expect[2][3] = {
         {
-            vector_init_from(4, (dahl_fp[4]){-2.0F, 1.0F, 2.0F,-1.0F }),
-            vector_init_from(4, (dahl_fp[4]){ 3.0F, 1.0F,-3.0F, 1.0F }),
-            vector_init_from(4, (dahl_fp[4]){ 4.0F,-1.0F, 4.0F,-1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){-2.0F, 1.0F, 2.0F,-1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3.0F, 1.0F,-3.0F, 1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 4.0F,-1.0F, 4.0F,-1.0F }),
         },
         {
-            vector_init_from(4, (dahl_fp[4]){ 3.0F, 1.0F,-8.0F,-3.0F }),
-            vector_init_from(4, (dahl_fp[4]){-7.0F,-3.0F, 3.0F, 2.0F }),
-            vector_init_from(4, (dahl_fp[4]){ 1.0F, 1.0F, 9.0F, 1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3.0F, 1.0F,-8.0F,-3.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){-7.0F,-3.0F, 3.0F, 2.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 1.0F, 1.0F, 9.0F, 1.0F }),
         }
     };
 
@@ -303,8 +303,8 @@ void test_mut_partitioning()
         { 4.0F,-1.0F, 4.0F,-1.0F },
     };
 
-    dahl_matrix* matrix = matrix_init_from(data_shape, (dahl_fp*)&data);
-    dahl_matrix* another_matrix = matrix_init_from(data_shape, (dahl_fp*)&data);
+    dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
+    dahl_matrix* another_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     matrix_partition_along_y(matrix);
 
@@ -339,8 +339,8 @@ void test_partition_reuse()
         { 4.0F,-1.0F, 4.0F,-1.0F },
     };
 
-    dahl_matrix* matrix = matrix_init_from(data_shape, (dahl_fp*)&data);
-    dahl_matrix* expect_matrix = matrix_init_from(data_shape, (dahl_fp*)&expect);
+    dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
+    dahl_matrix* expect_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&expect);
 
     matrix_partition_along_y_mut(matrix);
 

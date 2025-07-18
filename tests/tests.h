@@ -9,5 +9,6 @@ void test_layers();
 void test_tasks();
 void test_data();
 void test_arena();
+void test_miscellaneous();
 
 #endif //!DAHL_TESTS_H

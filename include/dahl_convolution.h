@@ -10,8 +10,6 @@ typedef struct
 {
     // img width * img height * batch size
     dahl_shape3d input_shape;
-    // Last batch of input data. Note: the pointer can be modified, the data cannot.
-    dahl_block* input_batch;
 
     size_t num_filters;
     size_t filter_size;
@@ -20,17 +18,22 @@ typedef struct
     dahl_shape3d filter_shape;
     dahl_shape4d output_shape;
 
-    // Forward output data. Overwritten each convolution_forward() call
-    dahl_tensor* output_batch;
-    // Derivative of the backward input. Overwritten each convolution_backward() call
-    dahl_block* dl_dinput_batch;
-
     dahl_block* filters;
     dahl_block* biases;
+
+    // Arena for temporary data 
+    // FIX If the convolution structure itself is allocated in an arena, it can't
+    // free the scratch arena (or we must call a finalize method which break the principle of the arena).
+    // So In fact here it's pretty ok to manage the layers structures with a regular malloc free pattern.
+    // Or, we should provide at initialization as an argument, a scratch arena.
+    // Other question, why should layers structures be heap allocated?
+    dahl_arena* scratch_arena;
 } dahl_convolution;
 
-dahl_convolution* convolution_init(dahl_shape3d input_shape, size_t filter_size, size_t num_filters);
-dahl_tensor* convolution_forward(dahl_convolution* conv, dahl_block const* input_batch);
-dahl_block* convolution_backward(dahl_convolution* conv, dahl_tensor const* dl_dout_batch, double learning_rate);
+// Initialize a convolution structure.
+dahl_convolution* convolution_init(dahl_arena*, dahl_shape3d input_shape, size_t filter_size, size_t num_filters);
+dahl_tensor* convolution_forward(dahl_arena*, dahl_convolution*, dahl_block const* input_batch);
+dahl_block* convolution_backward(dahl_arena*, dahl_convolution*, dahl_tensor const* dl_dout_batch, 
+                                 double learning_rate, dahl_block const* input_batch);
 
 #endif //!DAHL_CONVOLUTION_H

@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
-void* _block_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
+void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     metadata* md = dahl_arena_alloc(
+        arena,
         // Metadata struct itself
         sizeof(metadata) + 
         // + a flexible array big enough partition pointers to 
@@ -20,9 +21,9 @@ void* _block_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
         md->partitions[i] = nullptr;
 
     md->current_partition = -1;
-    md->origin_arena = dahl_arena_get_context();
+    md->origin_arena = arena; // Saves where the block have been allocated
 
-    dahl_block* block = dahl_arena_alloc(sizeof(dahl_block));
+    dahl_block* block = dahl_arena_alloc(arena, sizeof(dahl_block));
     block->handle = handle;
     block->data = data;
     block->meta = md;
@@ -30,10 +31,10 @@ void* _block_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
     return block;
 }
 
-dahl_block* block_init(dahl_shape3d const shape)
+dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
+    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
 
     for (size_t i = 0; i < n_elems; i++)
         data[i] = 0.0F;
@@ -51,14 +52,14 @@ dahl_block* block_init(dahl_shape3d const shape)
         sizeof(dahl_fp)
     );
 
-    dahl_arena_attach_handle(handle); 
+    dahl_arena_attach_handle(arena, handle); 
 
-    return _block_init_from_ptr(handle, data);
+    return _block_init_from_ptr(arena, handle, data);
 }
 
-dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
+dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
 {
-    dahl_block* block = block_init(shape);
+    dahl_block* block = block_init(arena, shape);
     size_t const n_elems = shape.x * shape.y * shape.z;
 
     for (int i = 0; i < n_elems; i++)
@@ -69,9 +70,9 @@ dahl_block* block_init_from(dahl_shape3d const shape, dahl_fp const* data)
     return block;
 }
 
-dahl_block* block_init_random(dahl_shape3d const shape)
+dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
 {
-    dahl_block* block = block_init(shape);
+    dahl_block* block = block_init(arena, shape);
     size_t const n_elems = shape.x * shape.y * shape.z;
 
     for (int i = 0; i < n_elems; i += 1)
@@ -84,18 +85,18 @@ dahl_block* block_init_random(dahl_shape3d const shape)
     return block;
 }
 
-dahl_block* block_clone(dahl_block const* block)
+dahl_block* block_clone(dahl_arena* arena, dahl_block const* block)
 {
     dahl_shape3d shape = block_get_shape(block);
 
     dahl_fp* data = block_data_acquire(block);
-    dahl_block* res = block_init_from(shape, data);
+    dahl_block* res = block_init_from(arena, shape, data);
     block_data_release(block);
 
     return res;
 }
 
-dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const new_shape)
+dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape)
 {
     dahl_shape3d shape = block_get_shape(block);
 
@@ -108,7 +109,7 @@ dahl_block* block_add_padding_init(dahl_block const* block, dahl_shape3d const n
     size_t diff_y = (new_shape.y - shape.y) / 2;
     size_t diff_x = (new_shape.x - shape.x) / 2;
 
-    dahl_block* res = block_init(new_shape);
+    dahl_block* res = block_init(arena, new_shape);
     starpu_data_acquire(res->handle, STARPU_W);
     dahl_fp* res_data = res->data;
 

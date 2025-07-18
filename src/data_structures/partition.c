@@ -6,11 +6,8 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
                                 struct starpu_data_filter* f, starpu_data_handle_t main_handle,
                                 dahl_arena* origin_arena)
 {
-    // Every partition and related data should be stored in the same arena where the parent
-    // was originally alocated to prevent issues.
-    dahl_arena_set_context(origin_arena);
-
     dahl_partition* p = dahl_arena_alloc(
+        origin_arena,
         // The partition object itself
         sizeof(dahl_partition) + 
         // + the children array with enough space to store their pointers
@@ -18,6 +15,7 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
     );
 
     p->handles = (starpu_data_handle_t*)dahl_arena_alloc(
+        origin_arena,
         nb_children * sizeof(starpu_data_handle_t));
     p->nb_children = nb_children;
     p->type = trait->type;
@@ -31,16 +29,13 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
     for (int i = 0; i < nb_children; i++)
     {
         p->children[i] = trait->init_from_ptr(
+            origin_arena,
             p->handles[i], 
             (dahl_fp*)starpu_data_get_local_ptr(p->handles[i])
         );
     }
 
-    // Partition memory will be handled by the current arena
-    dahl_arena_attach_partition(main_handle, nb_children, p->handles);
-
-    // Restore context
-    dahl_arena_restore_context();
+    dahl_arena_attach_partition(origin_arena, main_handle, nb_children, p->handles);
 
     return p;
 }

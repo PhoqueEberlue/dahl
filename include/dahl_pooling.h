@@ -10,18 +10,16 @@ typedef struct
     // Input shape with a batch dimension
     dahl_shape4d input_shape;
 
-    // Mask storing the max values indexes from the last input data, act as dl_dinput
+    // Mask that stores the max index values of each pooling window.
+    // Useful to prevent recomputing the windows in the backward pass.
     dahl_tensor* mask_batch;
 
     dahl_shape4d output_shape;
 
-    // Forward output data. Overwritten each pooling_forward() call
-    dahl_tensor* output_batch;
-
 } dahl_pooling;
 
-dahl_pooling* pooling_init(size_t pool_size, dahl_shape4d input_shape);
-dahl_tensor* pooling_forward(dahl_pooling* pool, dahl_tensor const* input_batch);
-dahl_tensor* pooling_backward(dahl_pooling* pool, dahl_tensor const* dl_dout);
+dahl_pooling* pooling_init(dahl_arena*, size_t pool_size, dahl_shape4d input_shape);
+dahl_tensor* pooling_forward(dahl_arena*, dahl_pooling*, dahl_tensor const* input_batch);
+dahl_tensor* pooling_backward(dahl_arena*, dahl_pooling*, dahl_tensor const* dl_dout);
 
 #endif //!DAHL_POOLING_H

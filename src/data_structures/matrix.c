@@ -3,9 +3,10 @@
 #include "sys/types.h"
 #include <stdio.h>
 
-void* _matrix_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
+void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     metadata* md = dahl_arena_alloc(
+        arena,
         // Metadata struct itself
         sizeof(metadata) + 
         // + a flexible array big enough partition pointers to 
@@ -17,9 +18,9 @@ void* _matrix_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
         md->partitions[i] = nullptr;
 
     md->current_partition = -1;
-    md->origin_arena = dahl_arena_get_context();
+    md->origin_arena = arena;
 
-    dahl_matrix* matrix = dahl_arena_alloc(sizeof(dahl_matrix));
+    dahl_matrix* matrix = dahl_arena_alloc(arena, sizeof(dahl_matrix));
     matrix->handle = handle;
     matrix->data = data;
     matrix->meta = md;
@@ -27,10 +28,10 @@ void* _matrix_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
     return matrix;
 }
 
-dahl_matrix* matrix_init(dahl_shape2d const shape)
+dahl_matrix* matrix_init(dahl_arena* arena, dahl_shape2d const shape)
 {
     size_t n_elems = shape.x * shape.y;
-    dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
+    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
 
     for (size_t i = 0; i < n_elems; i++)
         data[i] = 0.0F;
@@ -46,14 +47,14 @@ dahl_matrix* matrix_init(dahl_shape2d const shape)
         sizeof(dahl_fp)
     );
 
-    dahl_arena_attach_handle(handle);
+    dahl_arena_attach_handle(arena, handle);
 
-    return _matrix_init_from_ptr(handle, data);
+    return _matrix_init_from_ptr(arena, handle, data);
 }
 
-dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data)
+dahl_matrix* matrix_init_from(dahl_arena* arena, dahl_shape2d const shape, dahl_fp const* data)
 {
-    dahl_matrix* matrix = matrix_init(shape);
+    dahl_matrix* matrix = matrix_init(arena, shape);
     size_t n_elems = shape.x * shape.y;
     
     for (int i = 0; i < n_elems; i++)
@@ -64,9 +65,9 @@ dahl_matrix* matrix_init_from(dahl_shape2d const shape, dahl_fp const* data)
     return matrix;
 }
 
-dahl_matrix* matrix_init_random(dahl_shape2d const shape)
+dahl_matrix* matrix_init_random(dahl_arena* arena, dahl_shape2d const shape)
 {
-    dahl_matrix* matrix = matrix_init(shape);
+    dahl_matrix* matrix = matrix_init(arena, shape);
     size_t n_elems = shape.x * shape.y;
 
     for (int i = 0; i < n_elems; i += 1)
@@ -77,12 +78,12 @@ dahl_matrix* matrix_init_random(dahl_shape2d const shape)
     return matrix;
 }
 
-dahl_matrix* matrix_clone(dahl_matrix const* matrix)
+dahl_matrix* matrix_clone(dahl_arena* arena, dahl_matrix const* matrix)
 {
     dahl_shape2d shape = matrix_get_shape(matrix);
 
     starpu_data_acquire(matrix->handle, STARPU_R);
-    dahl_matrix* res = matrix_init_from(shape, matrix->data);
+    dahl_matrix* res = matrix_init_from(arena, shape, matrix->data);
     starpu_data_release(matrix->handle);
 
     return res;

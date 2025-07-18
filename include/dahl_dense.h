@@ -8,20 +8,26 @@ typedef struct
     dahl_shape4d input_shape;
     dahl_shape2d output_shape;
 
-    dahl_tensor* input_batch;
-    dahl_matrix* output_batch;
-    dahl_tensor* dl_dinput_batch;
-
     dahl_block* weights;
     dahl_vector* biases;
+
+    // Arena for temporary data
+    dahl_arena* scratch_arena;
 } dahl_dense;
 
-dahl_dense* dense_init(dahl_shape4d input_shape, size_t n_classes);
+dahl_dense* dense_init(dahl_arena*, dahl_shape4d input_shape, size_t n_classes);
 
 // Returns the prediction for each batch
-dahl_matrix* dense_forward(dahl_dense* dense, dahl_tensor const* input_batch);
+dahl_matrix* dense_forward(dahl_arena*, dahl_dense*, dahl_tensor const* input_batch);
 
 // `dl_dout` gradient batch of the last forward pass
-dahl_tensor* dense_backward(dahl_dense* dense, dahl_matrix const* dl_dout_batch, dahl_fp learning_rate);
+//
+// Parameters:
+// - `dl_dout_batch` derivative output of the previous layer
+// - `input_batch` the input from the last forward pass
+// - `output_batch` the predictions from the last forward pass for each batch
+// - `learning_rate`
+dahl_tensor* dense_backward(dahl_arena*, dahl_dense*, dahl_matrix const* dl_dout_batch, 
+                            dahl_tensor const* input_batch, dahl_matrix const* output_batch, dahl_fp learning_rate);
 
 #endif //!DAHL_DENSE_H

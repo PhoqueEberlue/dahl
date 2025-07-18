@@ -18,19 +18,16 @@
 // ------------------------------------ TASKS FOR DAHL_TENSOR TYPE ------------------------------------
 // Sum the tensor values over the t axis and return it as a block of the same x,y shape.
 void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out);
-
-// Sum the tensor values over the t axis and initialize + return a block of the same x,y shape.
-dahl_block* task_tensor_sum_t_axis_init(dahl_tensor const* in);
+dahl_block* task_tensor_sum_t_axis_init(dahl_arena*, dahl_tensor const* in);
 
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
+dahl_matrix* task_block_sum_z_axis_init(dahl_arena*, dahl_block const* in);
 
-// Sum the block values over the z axis and initialize + return a matrix of the same x,y shape.
-dahl_matrix* task_block_sum_z_axis_init(dahl_block const* in);
-
-dahl_matrix* task_block_sum_y_axis_init(dahl_block const* in);
+// Sum the block values over the y axis and return it as a matrix of the same x,z shape.
 void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out);
+dahl_matrix* task_block_sum_y_axis_init(dahl_arena*, dahl_block const* in);
 
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
@@ -45,8 +42,9 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 // - `mask` shape should be the same as `in` shape.
 void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t pool_size);
 
+// Sum the matrix values over the y axis and return it as a vector of len x.
 void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out);
-dahl_vector* task_matrix_sum_y_axis_init(dahl_matrix const* in);
+dahl_vector* task_matrix_sum_y_axis_init(dahl_arena*, dahl_matrix const* in);
 
 // Performs a backward max dahl_pooling, copying each value of `in` into the right index of each window in `out` thanks to the `mask`.
 // - `in` shape should be equal to `out` shape / `pool_size` (euclidian division)
@@ -58,29 +56,27 @@ void task_matrix_backward_max_pooling_self(dahl_matrix const* in, dahl_matrix* m
 
 // Performs matrix vector product. Tries to find the right dimension to perform the operation.
 void task_matrix_vector_product(dahl_matrix const* mat, dahl_vector const* vec, dahl_vector* out);
-dahl_vector* task_matrix_vector_product_init(dahl_matrix const* mat, dahl_vector const* vec);
+dahl_vector* task_matrix_vector_product_init(dahl_arena*, dahl_matrix const* mat, dahl_vector const* vec);
 
 void task_matrix_matrix_product(dahl_matrix const* a, dahl_matrix const* b, dahl_matrix* c);
-dahl_matrix* task_matrix_matrix_product_init(dahl_matrix const* a, dahl_matrix const* b);
+dahl_matrix* task_matrix_matrix_product_init(dahl_arena*, dahl_matrix const* a, dahl_matrix const* b);
 
 void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out);
-dahl_matrix* task_matrix_transpose_init(dahl_matrix const* in);
+dahl_matrix* task_matrix_transpose_init(dahl_arena*, dahl_matrix const* in);
 
 // Resize a matrix as long as it can hold the same number of elements, e.g. a 4*4 matrix can be resize to 2*8, 1*16...
-void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape);
+void task_matrix_resize(dahl_matrix*, dahl_shape2d shape);
 
 // Flatten a matrix and consider it as a row matrix
-void task_matrix_as_flat_row(dahl_matrix* mat);
+void task_matrix_as_flat_row(dahl_matrix*);
 
 // Flatten a matrix and consider it as a column matrix
-void task_matrix_as_flat_col(dahl_matrix* mat);
+void task_matrix_as_flat_col(dahl_matrix*);
 
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
-
-// Performs the softmax function with `in` vector and returns the result.
-dahl_vector* task_vector_softmax_init(dahl_vector const* in);
+dahl_vector* task_vector_softmax_init(dahl_arena*, dahl_vector const* in);
 
 // Performs `a`  `b`, where:
 // - `` is the dot product
@@ -89,17 +85,19 @@ dahl_vector* task_vector_softmax_init(dahl_vector const* in);
 dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b);
 
 // Create and return a diagonal dahl_matrix of the input dahl_vector
-dahl_matrix* task_vector_diag(dahl_vector const* in);
+dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
 
+// Performs the softmax derivative on `in` and store into `out`
 void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out);
-dahl_matrix* task_vector_softmax_derivative_init(dahl_vector const* in);
+dahl_matrix* task_vector_softmax_derivative_init(dahl_arena*, dahl_vector const* in);
 
 dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
 dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
 void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
-dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_vector const* predictions, dahl_vector const* targets);
+dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vector const* predictions, dahl_vector const* targets);
+
 // TODO naming convention
 unsigned int task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 

@@ -9,9 +9,10 @@
 #include <stdio.h>
 #include <string.h>
 
-void* _tensor_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
+void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     metadata* md = dahl_arena_alloc(
+        arena,
         // Metadata struct itself
         sizeof(metadata) + 
         // + a flexible array big enough partition pointers to 
@@ -23,9 +24,9 @@ void* _tensor_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
         md->partitions[i] = nullptr;
 
     md->current_partition = -1;
-    md->origin_arena = dahl_arena_get_context();
+    md->origin_arena = arena;
 
-    dahl_tensor* tensor = dahl_arena_alloc(sizeof(dahl_tensor));
+    dahl_tensor* tensor = dahl_arena_alloc(arena, sizeof(dahl_tensor));
     tensor->handle = handle;
     tensor->data = data;
     tensor->meta = md;
@@ -33,10 +34,10 @@ void* _tensor_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
     return tensor;
 }
 
-dahl_tensor* tensor_init(dahl_shape4d const shape)
+dahl_tensor* tensor_init(dahl_arena* arena, dahl_shape4d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z * shape.t;
-    dahl_fp* data = dahl_arena_alloc(n_elems * sizeof(dahl_fp));
+    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
 
     for (size_t i = 0; i < n_elems; i++)
         data[i] = 0.0F;
@@ -56,14 +57,14 @@ dahl_tensor* tensor_init(dahl_shape4d const shape)
         sizeof(dahl_fp)
     );
 
-    dahl_arena_attach_handle(handle);
+    dahl_arena_attach_handle(arena, handle);
 
-    return _tensor_init_from_ptr(handle, data);
+    return _tensor_init_from_ptr(arena, handle, data);
 }
 
-dahl_tensor* tensor_init_from(dahl_shape4d const shape, dahl_fp const* data)
+dahl_tensor* tensor_init_from(dahl_arena* arena, dahl_shape4d const shape, dahl_fp const* data)
 {
-    dahl_tensor* tensor = tensor_init(shape);
+    dahl_tensor* tensor = tensor_init(arena, shape);
     size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
 
     for (int i = 0; i < n_elems; i++)
@@ -74,9 +75,9 @@ dahl_tensor* tensor_init_from(dahl_shape4d const shape, dahl_fp const* data)
     return tensor;
 }
 
-dahl_tensor* tensor_init_random(dahl_shape4d const shape)
+dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape)
 {
-    dahl_tensor* tensor = tensor_init(shape);
+    dahl_tensor* tensor = tensor_init(arena, shape);
     size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
 
     for (int i = 0; i < n_elems; i += 1)
@@ -89,12 +90,12 @@ dahl_tensor* tensor_init_random(dahl_shape4d const shape)
     return tensor;
 }
 
-dahl_tensor* tensor_clone(dahl_tensor const* tensor)
+dahl_tensor* tensor_clone(dahl_arena* arena, dahl_tensor const* tensor)
 {
     dahl_shape4d shape = tensor_get_shape(tensor);
 
     starpu_data_acquire(tensor->handle, STARPU_R);
-    dahl_tensor* res = tensor_init_from(shape, tensor->data);
+    dahl_tensor* res = tensor_init_from(arena, shape, tensor->data);
     starpu_data_release(tensor->handle);
 
     return res;

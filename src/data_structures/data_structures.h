@@ -17,7 +17,7 @@
 
 typedef const struct _dahl_traits
 {
-    void* (*init_from_ptr)(starpu_data_handle_t handle, dahl_fp* data);
+    void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*);
     starpu_data_handle_t (*get_handle)(void const*);
     dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
@@ -97,16 +97,17 @@ typedef struct _dahl_tensor
     metadata* meta;
 } dahl_tensor;
 
+// Init a new partition object in the same arena as the parent
 dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* trait, 
                                 struct starpu_data_filter* f, starpu_data_handle_t main_handle,
                                 dahl_arena* origin_arena);
 
 void _partition_submit_if_needed(metadata* meta, int8_t index, bool should_be_mut, starpu_data_handle_t main_handle);
 
-void* _tensor_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data);
-void* _block_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data);
-void* _matrix_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data);
-void* _vector_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data);
+void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
+void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
+void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
+void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
 
 
 starpu_data_handle_t _vector_get_handle(void const* vector);

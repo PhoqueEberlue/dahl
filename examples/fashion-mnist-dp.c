@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     srand(42);
     dahl_init();
 
-    dataset* set = load_mnist(argv[1], argv[2]);
+    // dataset* set = load_mnist(argv[1], argv[2]);
 
     dahl_shape2d constexpr img_shape = { .x = 28, .y = 28 };
     size_t const num_channels = 2;

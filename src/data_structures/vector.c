@@ -2,23 +2,23 @@
 #include "starpu_data.h"
 #include <math.h>
 
-void* _vector_init_from_ptr(starpu_data_handle_t handle, dahl_fp* data)
+void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     // The vector cannot be partitioned so we don't allocate space for the partition list
-    metadata* md = dahl_arena_alloc(sizeof(metadata));
+    metadata* md = dahl_arena_alloc(arena, sizeof(metadata));
     md->current_partition = -1;
-    md->origin_arena = dahl_arena_get_context();
+    md->origin_arena = arena;
 
-    dahl_vector* vector = dahl_arena_alloc(sizeof(dahl_vector));
+    dahl_vector* vector = dahl_arena_alloc(arena, sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
 
     return vector;
 }
 
-dahl_vector* vector_init(size_t const len)
+dahl_vector* vector_init(dahl_arena* arena, size_t const len)
 {
-    dahl_fp* data = dahl_arena_alloc(len * sizeof(dahl_fp));
+    dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
 
     for (size_t i = 0; i < len; i++)
         data[i] = 0.0F;
@@ -32,14 +32,14 @@ dahl_vector* vector_init(size_t const len)
         sizeof(dahl_fp)
     );
 
-    dahl_arena_attach_handle(handle);
+    dahl_arena_attach_handle(arena, handle);
 
-    return _vector_init_from_ptr(handle, data);
+    return _vector_init_from_ptr(arena, handle, data);
 }
 
-dahl_vector* vector_init_from(size_t const len, dahl_fp const* data)
+dahl_vector* vector_init_from(dahl_arena* arena, size_t const len, dahl_fp const* data)
 {
-    dahl_vector* vector = vector_init(len);
+    dahl_vector* vector = vector_init(arena, len);
     
     for (int i = 0; i < len; i++)
     {
@@ -49,9 +49,9 @@ dahl_vector* vector_init_from(size_t const len, dahl_fp const* data)
     return vector;
 }
 
-dahl_vector* vector_init_random(size_t const len)
+dahl_vector* vector_init_random(dahl_arena* arena, size_t const len)
 {
-    dahl_vector* vector = vector_init(len);
+    dahl_vector* vector = vector_init(arena, len);
 
     for (int i = 0; i < len; i += 1)
     {
@@ -61,12 +61,12 @@ dahl_vector* vector_init_random(size_t const len)
     return vector;
 }
 
-dahl_vector* vector_clone(dahl_vector const* vector)
+dahl_vector* vector_clone(dahl_arena* arena, dahl_vector const* vector)
 {
     size_t shape = vector_get_len(vector);
 
     starpu_data_acquire(vector->handle, STARPU_R);
-    dahl_vector* res = vector_init_from(shape, vector->data);
+    dahl_vector* res = vector_init_from(arena, shape, vector->data);
     starpu_data_release(vector->handle);
 
     return res;
@@ -159,38 +159,38 @@ void vector_print(dahl_vector const* vector)
 	starpu_data_release(vector->handle);
 }
 
-dahl_matrix* vector_to_matrix(dahl_vector const* vector, dahl_shape2d shape)
+dahl_matrix* vector_to_matrix(dahl_arena* arena, dahl_vector const* vector, dahl_shape2d shape)
 {
     assert(shape.x * shape.y == vector_get_len(vector));
 
     starpu_data_acquire(vector->handle, STARPU_R);
-    dahl_matrix* res = matrix_init_from(shape, vector->data);
+    dahl_matrix* res = matrix_init_from(arena, shape, vector->data);
     starpu_data_release(vector->handle);
 
     return res;
 }
 
-dahl_matrix* vector_to_column_matrix(dahl_vector const* vector)
+dahl_matrix* vector_to_column_matrix(dahl_arena* arena, dahl_vector const* vector)
 {
     dahl_shape2d new_shape = { .x = 1, .y = vector_get_len(vector) };
-    return vector_to_matrix(vector, new_shape);
+    return vector_to_matrix(arena, vector, new_shape);
 }
 
-dahl_matrix* vector_to_row_matrix(dahl_vector const* vector)
+dahl_matrix* vector_to_row_matrix(dahl_arena* arena, dahl_vector const* vector)
 {
     dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
-    return vector_to_matrix(vector, new_shape);
+    return vector_to_matrix(arena, vector, new_shape);
 }
 
 // TODO: why wouldn't it be a codelet?
-dahl_matrix* vector_to_categorical(dahl_vector const* vector, size_t const num_classes)
+dahl_matrix* vector_to_categorical(dahl_arena* arena, dahl_vector const* vector, size_t const num_classes)
 {
     size_t len = vector_get_len(vector);
 
     starpu_data_acquire(vector->handle, STARPU_R);
 
     dahl_shape2d shape = { .x = num_classes, .y = len };
-    dahl_matrix* matrix = matrix_init(shape);
+    dahl_matrix* matrix = matrix_init(arena, shape);
 
     starpu_data_acquire(matrix->handle, STARPU_W);
 
