@@ -85,12 +85,13 @@ dahl_vector* task_vector_softmax_init(dahl_arena*, dahl_vector const* in);
 void task_vector_dot_product(dahl_vector const* a, dahl_vector const* b, dahl_scalar* c);
 dahl_scalar* task_vector_dot_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b);
 
+void task_vector_diag(dahl_vector const* in, dahl_matrix* out);
 // Create and return a diagonal dahl_matrix of the input dahl_vector
 dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
 
 // Performs the softmax derivative on `in` and store into `out`
-void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out);
-dahl_matrix* task_vector_softmax_derivative_init(dahl_arena*, dahl_vector const* in);
+void task_vector_softmax_derivative(dahl_arena* scratch_arena, dahl_vector const* in, dahl_matrix* out);
+dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_vector const* in);
 
 void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
 

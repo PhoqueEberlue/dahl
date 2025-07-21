@@ -281,39 +281,41 @@ dahl_scalar* task_vector_dot_product_init(dahl_arena* arena, dahl_vector const* 
     return res;
 }
 
+void task_vector_diag(dahl_vector const* in, dahl_matrix* out)
+{
+    int ret = starpu_task_insert(&cl_vector_diag,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
 dahl_matrix* task_vector_diag_init(dahl_arena* arena, dahl_vector const* in)
 {
     size_t vec_len = vector_get_len(in);
 
     dahl_shape2d out_shape = { .x = vec_len, .y = vec_len };
     dahl_matrix* out = matrix_init(arena, out_shape);
-
-    int ret = starpu_task_insert(&cl_vector_diag,
-                                 STARPU_R, in->handle,
-                                 STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
+    task_vector_diag(in, out);
     return out;
 }
 
 // TODO: for coherency maybe it should be a codelet on its own? like the basic softmax derivative.
-void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out)
+void task_vector_softmax_derivative(dahl_arena* scratch_arena, dahl_vector const* in, dahl_matrix* out)
 {
-    dahl_arena* tmp_arena = dahl_arena_new(); // for temporary results
-
-    dahl_matrix* in_col = task_vector_to_column_matrix_init(tmp_arena, in);
-    dahl_matrix* in_row = task_vector_to_row_matrix_init(tmp_arena, in);
-    dahl_matrix* partial_res = task_matrix_matrix_product_init(tmp_arena, in_col, in_row);
+    task_vector_diag(in, out);
+    dahl_matrix* in_col = task_vector_to_column_matrix_init(scratch_arena, in);
+    dahl_matrix* in_row = task_vector_to_row_matrix_init(scratch_arena, in);
+    dahl_matrix* partial_res = task_matrix_matrix_product_init(scratch_arena, in_col, in_row);
 
     TASK_SUB_SELF(out, partial_res);
-    dahl_arena_delete(tmp_arena);
 }
 
-dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_vector const* in)
+dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_vector const* in)
 {
-    // TODO: same as `task_vector_softmax_derivative`
-    dahl_matrix* result = task_vector_diag_init(arena, in); // FIX Weird no?
-    task_vector_softmax_derivative(in, result);
+    size_t vec_len = vector_get_len(in);
+    dahl_shape2d out_shape = { .x = vec_len, .y = vec_len };
+    dahl_matrix* result = matrix_init(arena, out_shape);
+    task_vector_softmax_derivative(scratch_arena, in, result);
     return result;
 }
 

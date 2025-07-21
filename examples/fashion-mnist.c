@@ -5,7 +5,7 @@
 #define LEARNING_RATE 0.1F
 #define N_EPOCHS 2
 
-void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
+void train_network(dahl_arena* scratch_arena, dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
 {
     dahl_arena* epoch_arena = dahl_arena_new();
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
@@ -30,21 +30,23 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
             dahl_matrix const* target_batch = GET_SUB_MATRIX(classes, i);
 
             dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
-            dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
-            dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out); // Returns the predictions for each batch
+            dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out); 
+            dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out); // Returns the predictions for each batch 
 
             // TODO: remove clone and replace by starpu temporary data inside the cross entropy task?
             dahl_matrix* dense_out_copy = matrix_init(batch_arena, matrix_get_shape(dense_out));
             TASK_COPY(dense_out, dense_out_copy);
             task_cross_entropy_loss_batch(dense_out_copy, target_batch, total_loss);
             task_check_predictions_batch(dense_out, target_batch, correct_predictions);
-            dahl_matrix* gradients = task_vector_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch);
+            dahl_matrix* gradients = task_vector_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
             dahl_tensor* dense_back = dense_backward(batch_arena, dense, gradients, pool_out, dense_out, LEARNING_RATE);
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back);
             dahl_block* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
             // Why aren't we using bacward convolution result?
+            dahl_arena_reset(scratch_arena);
             dahl_arena_reset(batch_arena);
+            abort();
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n",
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
     dahl_pooling* pool = pooling_init(network_arena, pool_size, conv->output_shape);
     dahl_dense* dense = dense_init(network_arena, scratch_arena, pool->output_shape, num_classes);
     
-    train_network(images, classes, conv, pool, dense, batch_size);
+    train_network(scratch_arena, images, classes, conv, pool, dense, batch_size);
 
     dahl_arena_delete(network_arena);
     dahl_arena_delete(scratch_arena);

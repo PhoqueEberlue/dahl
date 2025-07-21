@@ -203,7 +203,5 @@ dahl_block* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     TASK_SCAL_SELF(summed_dl_dout, learning_rate / batch_size);
     TASK_SUB_SELF(conv->biases, summed_dl_dout);
 
-    dahl_arena_reset(conv->scratch_arena);
-
     return dl_dinput_batch;
 }

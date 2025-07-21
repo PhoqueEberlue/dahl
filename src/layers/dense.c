@@ -93,8 +93,6 @@ dahl_matrix* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_tensor con
     block_unpartition(tmp);
     matrix_unpartition(output_batch);
 
-    dahl_arena_reset(dense->scratch_arena);
-
     return output_batch;
 }
 
@@ -108,7 +106,7 @@ void _dense_backward_sample(dahl_arena* arena,
                             dahl_block const* weights)
 {
     // First compute dl_dy
-    dahl_matrix const* tmp = task_vector_softmax_derivative_init(arena, output);
+    dahl_matrix const* tmp = task_vector_softmax_derivative_init(arena, arena, output);
     task_matrix_vector_product(tmp, dl_dout, dl_dy);
 
     // Create a clone of dl_dy as a column matrix
@@ -207,8 +205,6 @@ dahl_tensor* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     // Updating biases
     TASK_SCAL_SELF(summed_dl_dy, learning_rate / batch_size); // dl_dy * lr / batch_size
     TASK_SUB_SELF(dense->biases, summed_dl_dy);
-
-    dahl_arena_reset(dense->scratch_arena);
 
     return dl_dinput_batch;
 }

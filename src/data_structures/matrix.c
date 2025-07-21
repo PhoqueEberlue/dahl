@@ -1,5 +1,6 @@
 #include "data_structures.h"
 #include "custom_filters.h"
+#include "starpu_data.h"
 #include "starpu_data_interfaces.h"
 #include "sys/types.h"
 #include <stdio.h>
