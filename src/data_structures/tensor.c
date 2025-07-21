@@ -90,17 +90,6 @@ dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape)
     return tensor;
 }
 
-dahl_tensor* tensor_clone(dahl_arena* arena, dahl_tensor const* tensor)
-{
-    dahl_shape4d shape = tensor_get_shape(tensor);
-
-    starpu_data_acquire(tensor->handle, STARPU_R);
-    dahl_tensor* res = tensor_init_from(arena, shape, tensor->data);
-    starpu_data_release(tensor->handle);
-
-    return res;
-}
-
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
 {
     size_t nx = starpu_tensor_get_nx(tensor->handle);

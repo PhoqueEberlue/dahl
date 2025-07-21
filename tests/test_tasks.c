@@ -459,18 +459,18 @@ void test_vector_dot_product()
 
     dahl_fp expect = 285.0F;
 
-    dahl_fp result = task_vector_dot_product(a, a);
+    dahl_scalar* result = task_vector_dot_product_init(testing_arena, a, a);
 
-    ASSERT_FP_EQUALS(expect, result);
+    ASSERT_FP_EQUALS(expect, scalar_get_value(result));
 
     dahl_fp data_2[len] = { 9.0F, 8.0F, 7.0F, 6.0F, 5.0F, 4.0F, 3.0F, 2.0F, 1.0F, 0.0F };
     dahl_vector* b = vector_init_from(testing_arena, len, (dahl_fp*)&data_2);
 
     dahl_fp expect_2 = 120.0F;
 
-    result = task_vector_dot_product(a, b);
+    result = task_vector_dot_product_init(testing_arena, a, b);
 
-    ASSERT_FP_EQUALS(expect_2, result);
+    ASSERT_FP_EQUALS(expect_2, scalar_get_value(result));
 
     dahl_arena_reset(testing_arena);
 }
@@ -617,22 +617,28 @@ void test_clip()
 
 void test_vector_cross_entropy_loss()
 {
-    size_t constexpr len = 10;
-    dahl_fp pred[len] = { 
+    dahl_shape2d constexpr pred_shape = { .x = 10, .y = 1 }; // 10 classes, 1 batch size
+    dahl_fp pred[1][10] = {{ 
         1.69330994e-43F, 1.00000000e+00F, 1.46134680e-11F, 4.19037620e-45F, 2.11622997e-31F, 
         7.47873538e-12F, 5.96985145e-26F, 2.43828226e-41F, 1.16977452e-31F, 1.15460362e-36F
-    };
+    }};
 
-    dahl_vector* pred_vec = vector_init_from(testing_arena, len, (dahl_fp*)&pred);
+    dahl_matrix* pred_mat = matrix_init_from(testing_arena, pred_shape, (dahl_fp*)&pred);
 
-    dahl_fp targets[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F };
+    dahl_fp targets[1][10] = {{ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F }};
 
-    dahl_vector* target_vec = vector_init_from(testing_arena, len, (dahl_fp*)&targets);
+    dahl_matrix* target_mat = matrix_init_from(testing_arena, pred_shape, (dahl_fp*)&targets);
 
-    dahl_fp res = task_vector_cross_entropy_loss(pred_vec, target_vec);
+    // Testing the init version
+    dahl_scalar* res = task_cross_entropy_loss_batch_init(testing_arena, pred_mat, target_mat);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 1.6118095639272222996396521921269595623016357421875);
 
-    ASSERT_FP_EQUALS(res, 1.6118095639272222996396521921269595623016357421875);
+    // Testing the cumulative version, this will increment res
+    task_cross_entropy_loss_batch(pred_mat, target_mat, res);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 3.2236191278544445992793043842539191246032714843750);
 
+    task_cross_entropy_loss_batch(pred_mat, target_mat, res);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 4.8354286917816668989189565763808786869049072265625);
     dahl_arena_reset(testing_arena);
 }
 

@@ -13,6 +13,8 @@ dahl_scalar* scalar_init(dahl_arena* arena)
         sizeof(dahl_fp)
     );
 
+    scalar->handle = handle;
+
     dahl_arena_attach_handle(arena, handle);
 
     return scalar;

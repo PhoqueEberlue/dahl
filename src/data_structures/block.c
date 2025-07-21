@@ -85,17 +85,7 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape)
     return block;
 }
 
-dahl_block* block_clone(dahl_arena* arena, dahl_block const* block)
-{
-    dahl_shape3d shape = block_get_shape(block);
-
-    dahl_fp* data = block_data_acquire(block);
-    dahl_block* res = block_init_from(arena, shape, data);
-    block_data_release(block);
-
-    return res;
-}
-
+// TODO: convert into a starpu task
 dahl_block* block_add_padding_init(dahl_arena* arena, dahl_block const* block, dahl_shape3d const new_shape)
 {
     dahl_shape3d shape = block_get_shape(block);

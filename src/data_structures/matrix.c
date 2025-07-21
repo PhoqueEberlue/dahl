@@ -1,5 +1,6 @@
 #include "data_structures.h"
 #include "custom_filters.h"
+#include "starpu_data_interfaces.h"
 #include "sys/types.h"
 #include <stdio.h>
 
@@ -76,17 +77,6 @@ dahl_matrix* matrix_init_random(dahl_arena* arena, dahl_shape2d const shape)
     }
 
     return matrix;
-}
-
-dahl_matrix* matrix_clone(dahl_arena* arena, dahl_matrix const* matrix)
-{
-    dahl_shape2d shape = matrix_get_shape(matrix);
-
-    starpu_data_acquire(matrix->handle, STARPU_R);
-    dahl_matrix* res = matrix_init_from(arena, shape, matrix->data);
-    starpu_data_release(matrix->handle);
-
-    return res;
 }
 
 dahl_shape2d matrix_get_shape(dahl_matrix const* matrix)

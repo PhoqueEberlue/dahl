@@ -33,6 +33,7 @@ dahl_traits dahl_traits_vector = {
     .type = DAHL_VECTOR,
 };
 
+// FIX: Nullptr on the functions here make it though to debug...
 dahl_traits dahl_traits_scalar = {
     .init_from_ptr = nullptr, // No function for scalar
     .get_handle = _scalar_get_handle,

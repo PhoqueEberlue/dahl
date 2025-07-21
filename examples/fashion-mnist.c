@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #define LEARNING_RATE 0.1F
-#define N_EPOCHS 200
+#define N_EPOCHS 2
 
 void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
 {
@@ -21,7 +21,7 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
     {
         printf("Epoch %lu\n", epoch);
 
-        double total_loss = 0.0F;
+        dahl_scalar* total_loss = scalar_init(epoch_arena);
         dahl_scalar* correct_predictions = scalar_init(epoch_arena);
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
@@ -33,7 +33,10 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
             dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out); // Returns the predictions for each batch
 
-            total_loss += task_vector_cross_entropy_loss_batch(dense_out, target_batch);
+            // TODO: remove clone and replace by starpu temporary data inside the cross entropy task?
+            dahl_matrix* dense_out_copy = matrix_init(batch_arena, matrix_get_shape(dense_out));
+            TASK_COPY(dense_out, dense_out_copy);
+            task_cross_entropy_loss_batch(dense_out_copy, target_batch, total_loss);
             task_check_predictions_batch(dense_out, target_batch, correct_predictions);
             dahl_matrix* gradients = task_vector_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch);
 
@@ -45,7 +48,7 @@ void train_network(dahl_block* images, dahl_matrix* classes, dahl_convolution* c
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n",
-           total_loss / (dahl_fp)n_samples,
+           scalar_get_value(total_loss) / (dahl_fp)n_samples,
            scalar_get_value(correct_predictions) / (dahl_fp)n_samples * 100);
 
         dahl_arena_reset(epoch_arena);

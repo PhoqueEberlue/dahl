@@ -109,6 +109,7 @@ static void starpu_block_filter_pick_matrix_z_as_matrix(
             break;
     }
 
+    matrix_child->ld = matrix_child->nx;
 	matrix_child->elemsize = elemsize;
 	matrix_child->allocsize = matrix_child->nx * matrix_child->ny * elemsize;
 
@@ -214,6 +215,7 @@ static void starpu_matrix_filter_vertical_matrix(
 
     matrix_child->nx = nx;
     matrix_child->ny = new_ny;
+    matrix_child->ld = matrix_child->nx;
 
 	matrix_child->elemsize = elemsize;
 	matrix_child->allocsize = matrix_child->nx * matrix_child->ny * elemsize;

@@ -45,9 +45,8 @@ DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
 
 // Vector
 DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_dot_product, 2, STARPU_R, STARPU_R);
+DEFINE_STARPU_CODELET(vector_dot_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_cross_entropy_loss, 2, STARPU_R, STARPU_R);
 DEFINE_STARPU_CODELET(vector_cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
 
@@ -63,8 +62,10 @@ DEFINE_STARPU_CODELET(clip, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(sum, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(wait, 1, STARPU_W);
+DEFINE_STARPU_CODELET(copy, 2, STARPU_R, STARPU_W);
 
 // ---------------------------------------- ML Related ----------------------------------------
 DEFINE_STARPU_CODELET(check_predictions_batch, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 
 #endif //!DAHL_CODELETS_H

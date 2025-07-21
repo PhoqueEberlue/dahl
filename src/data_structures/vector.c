@@ -61,17 +61,6 @@ dahl_vector* vector_init_random(dahl_arena* arena, size_t const len)
     return vector;
 }
 
-dahl_vector* vector_clone(dahl_arena* arena, dahl_vector const* vector)
-{
-    size_t shape = vector_get_len(vector);
-
-    starpu_data_acquire(vector->handle, STARPU_R);
-    dahl_vector* res = vector_init_from(arena, shape, vector->data);
-    starpu_data_release(vector->handle);
-
-    return res;
-}
-
 size_t vector_get_len(dahl_vector const *const vector)
 {
     return starpu_vector_get_nx(vector->handle);

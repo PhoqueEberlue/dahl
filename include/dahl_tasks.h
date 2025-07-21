@@ -78,11 +78,12 @@ void task_matrix_as_flat_col(dahl_matrix*);
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
 dahl_vector* task_vector_softmax_init(dahl_arena*, dahl_vector const* in);
 
-// Performs `a`  `b`, where:
+// Performs `a`  `b` = `c`, where:
 // - `` is the dot product
 // - `a`, `b` are dahl_vector of the same length
-// - returns the result as a dahl_fp
-dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b);
+// - `c` is a scalar containing the result
+void task_vector_dot_product(dahl_vector const* a, dahl_vector const* b, dahl_scalar* c);
+dahl_scalar* task_vector_dot_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b);
 
 // Create and return a diagonal dahl_matrix of the input dahl_vector
 dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
@@ -91,15 +92,6 @@ dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
 void task_vector_softmax_derivative(dahl_vector const* in, dahl_matrix* out);
 dahl_matrix* task_vector_softmax_derivative_init(dahl_arena*, dahl_vector const* in);
 
-dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets);
-dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
-
-void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
-dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vector const* predictions, dahl_vector const* targets);
-
-void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
-dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
-                                                                dahl_matrix const* target_batch);
 void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
 
 // Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
@@ -121,8 +113,9 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits);
 dahl_scalar* task_sum_init(dahl_arena*, void const* object, dahl_traits* traits);
-void task_fill(void const* object, dahl_fp value, dahl_traits* traits);
+void task_fill(void* object, dahl_fp value, dahl_traits* traits);
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
+void task_copy(void const* in, void* out, dahl_traits* traits);
 
 // Apply a relu function to every value of `in` and store the result in `out`.
 #define TASK_RELU(IN, OUT)                                     \
@@ -243,6 +236,14 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 // Useful for debug purposes to investigate possible synchronization issues.
 #define TASK_WAIT(OBJECT, DURATION) task_wait(OBJECT, DURATION, GET_TRAITS(OBJECT))
 
+// Copy `in` values into `out`.
+#define TASK_COPY(IN, OUT)                              \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),        \
+                   "A and B must be of the same type"); \
+        task_copy(IN, OUT, GET_TRAITS(OUT));            \
+    } while (0)
+
 // ---------------------------- VARIOUS TASKS RELATED TO ML ----------------------------
 // Increment `good_predictions` with the number of good predictions from the `prediction_batch` and `target_batch`.
 void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions);
@@ -250,4 +251,17 @@ void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matr
 // Init and return the number of good predictions from the `prediction_batch` and `target_batch`.
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
+void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
+dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch);
+
+// TODO: refactor that
+void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
+// TODO: refactor that
+dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vector const* predictions, dahl_vector const* targets);
+
+// TODO: refactor that
+void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
+// TODO: refactor that
+dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
+                                                                dahl_matrix const* target_batch);
 #endif //!DAHL_TASKS_H

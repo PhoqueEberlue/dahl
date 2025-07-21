@@ -55,9 +55,6 @@ dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape);
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* data);
 
-// Clone a tensor
-dahl_tensor* tensor_clone(dahl_arena*, dahl_tensor const*);
-
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
 
@@ -102,9 +99,6 @@ dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape);
 // - shape: dahl_shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data);
-
-// Clone a block
-dahl_block* block_clone(dahl_arena*, dahl_block const*);
 
 // Returns a new block with added padding. 
 // The new_shape should be larger than the previous block.
@@ -176,9 +170,6 @@ dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape);
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
 
-// Clone a matrix
-dahl_matrix* matrix_clone(dahl_arena*, dahl_matrix const*);
-
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
 
@@ -237,9 +228,6 @@ dahl_vector* vector_init_random(dahl_arena*, size_t len);
 // - shape: dahl_shape2d object describing the dimensions of the vector
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
-
-// Clone a vector
-dahl_vector* vector_clone(dahl_arena*, dahl_vector const*);
 
 // Returns the vector len
 size_t vector_get_len(dahl_vector const*);

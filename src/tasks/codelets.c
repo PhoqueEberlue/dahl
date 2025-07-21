@@ -435,28 +435,22 @@ void vector_softmax(void* buffers[2], void* cl_arg)
     }
 }
 
-void vector_dot_product(void* buffers[2], void* cl_arg)
+void vector_dot_product(void* buffers[3], void* cl_arg)
 {
-    dahl_fp *res_p;
-    starpu_codelet_unpack_args(cl_arg, &res_p);
-
     size_t const a_len = STARPU_VECTOR_GET_NX(buffers[0]);
     dahl_fp const* a = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
 
     size_t const b_len = STARPU_VECTOR_GET_NX(buffers[1]);
     dahl_fp const* b = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
 
-    assert(a_len == b_len);
+    dahl_fp* c = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[2]);
 
-    dahl_fp res = 0;
+    assert(a_len == b_len);
 
     for (size_t i = 0; i < a_len; i++)
     {
-        res += a[i] * b[i];
+        *c += a[i] * b[i];
     }
-
-    // Pass return value as a pointer within the arguments of the codelet
-    *res_p = res;
 }
 
 void vector_diag(void* buffers[2], void* cl_arg)
@@ -479,35 +473,6 @@ void vector_diag(void* buffers[2], void* cl_arg)
         // Copy the vector's elements in a diagonal manner into the matrix
         out[(i * out_ld) + i] = in[i];
     }
-}
-
-void vector_cross_entropy_loss(void* buffers[2], void* cl_arg)
-{
-    dahl_fp *res_p;
-    starpu_codelet_unpack_args(cl_arg, &res_p);
-
-    // Predictions vector
-    size_t const pred_len = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp const* pred = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    // Targets vector
-    size_t const targ_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp const* targ = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
-
-    assert(pred_len == targ_len);
-
-    dahl_fp loss = 0;
-
-    for (size_t i = 0; i < pred_len; i++)
-    {
-        loss += (targ[i] * log(pred[i]));
-    }
-
-    // Divide by the number of classes and reverse the sign
-    loss = - (loss / (dahl_fp)pred_len);
-
-    // Pass return value as a pointer within the arguments of the codelet
-    *res_p = loss;
 }
 
 void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
@@ -710,6 +675,20 @@ void wait(void* buffers[1], void* cl_arg)
     usleep(duration);
 }
 
+void copy(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        out[i] = in[i];
+    }
+}
+
 // ---------------------------------------- ML Related ----------------------------------------
 void check_predictions_batch(void* buffers[3], void* cl_arg)
 {
@@ -722,7 +701,7 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
     size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
     dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
 
-    dahl_fp* correct_predictions = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[3]);
+    dahl_fp* correct_predictions = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[2]);
 
     assert(pred_nx == targ_nx);
     assert(pred_ny == targ_ny);
@@ -743,4 +722,41 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
 
         *correct_predictions += targ[max_index] == 1;
     }
+}
+
+void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
+{
+    // Predictions batch
+    size_t const pred_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const pred_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const pred_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* pred = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Targets vector
+    size_t const targ_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const targ_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    dahl_fp* out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[2]);
+
+    assert(pred_nx == targ_nx);
+    assert(pred_ny == targ_ny);
+    assert(pred_ld == targ_ld);
+
+    for (size_t y = 0; y < pred_ny; y++)
+    {
+        dahl_fp loss = 0;
+
+        for (size_t x = 0; x < pred_nx; x++)
+        {
+            loss += (targ[(y*targ_ld)+x] * log(pred[(y*pred_ld)+x]));
+        }
+
+        // Divide by the number of classes and reverse the sign
+        *out -= loss / (dahl_fp)pred_nx;
+    }
+
+    // Divide by batch size
+    *out /= (dahl_fp)pred_ny;
 }

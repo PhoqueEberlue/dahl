@@ -265,33 +265,19 @@ dahl_vector* task_vector_softmax_init(dahl_arena* arena, dahl_vector const* in)
     return out;
 }
 
-dahl_fp task_vector_dot_product(dahl_vector const* a, dahl_vector const* b)
+void task_vector_dot_product(dahl_vector const* a, dahl_vector const* b, dahl_scalar* c)
 {
-    dahl_fp res = 0;
-    dahl_fp* res_p = &res;
+    int ret = starpu_task_insert(&cl_vector_dot_product,
+                                 STARPU_R, a->handle, 
+                                 STARPU_R, b->handle, 
+                                 STARPU_W, c->handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
 
-    struct starpu_task* task = starpu_task_create();
-    task->cl = &cl_vector_dot_product;
-
-    // Initialize argument buffer to obtain the return value with a pointer pointer
-    char *arg_buffer;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
-
-    task->cl_arg = arg_buffer;
-    task->cl_arg_size = arg_buffer_size;
-    task->nbuffers = 2;
-    task->handles[0] = a->handle;
-    task->handles[1] = b->handle;
-    task->detach = 0;
-
-    int ret = starpu_task_submit(task); 
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    ret = starpu_task_wait(task);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
+dahl_scalar* task_vector_dot_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_vector_dot_product(a, b, res);
     return res;
 }
 
@@ -329,72 +315,6 @@ dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_vector 
     dahl_matrix* result = task_vector_diag_init(arena, in); // FIX Weird no?
     task_vector_softmax_derivative(in, result);
     return result;
-}
-
-dahl_fp task_vector_cross_entropy_loss(dahl_vector const* predictions, dahl_vector const* targets)
-{
-    dahl_arena* tmp_arena = dahl_arena_new(); // for temporary results
-    
-    // TODO: same as `task_vector_softmax_derivative`
-    dahl_fp const epsilon = 1e-7F;
-    size_t const n_classes = vector_get_len(predictions);
-
-    dahl_vector* tmp = vector_init(tmp_arena, n_classes);
-
-    TASK_CLIP(predictions, tmp, epsilon, 1 - epsilon);
-
-    dahl_fp res = 0;
-    dahl_fp* res_p = &res;
-
-    struct starpu_task* task = starpu_task_create();
-    task->cl = &cl_vector_cross_entropy_loss;
-
-    // Initialize argument buffer to obtain the return value with a pointer pointer
-    char *arg_buffer;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &res_p, sizeof(&res_p), 0);
-
-    task->cl_arg = arg_buffer;
-    task->cl_arg_size = arg_buffer_size;
-    task->nbuffers = 2;
-    task->handles[0] = tmp->handle;
-    task->handles[1] = targets->handle;
-    task->detach = 0;
-
-    int ret = starpu_task_submit(task); 
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    ret = starpu_task_wait(task);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-
-    dahl_arena_delete(tmp_arena);
-
-    return res;
-}
-
-// TODO: We should vectorize this to prevent partitionning
-dahl_fp task_vector_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
-{
-    dahl_fp total_loss = 0.0F;
-
-    matrix_partition_along_y(prediction_batch);
-    matrix_partition_along_y(target_batch);
-
-    size_t const batch_size = GET_NB_CHILDREN(prediction_batch);
-
-    for (size_t i = 0; i < batch_size; i++)
-    {
-        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
-        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
-
-        total_loss += task_vector_cross_entropy_loss(predictions, targets);
-    }
-
-    matrix_unpartition(prediction_batch);
-    matrix_unpartition(target_batch);
-
-    return total_loss / (dahl_fp)batch_size;
 }
 
 void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
@@ -552,7 +472,7 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
 
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
 {
-    size_t nb_elem = traits->get_nb_elem(out);
+    size_t nb_elem = traits->get_nb_elem(in);
     int ret = starpu_task_insert(&cl_sum,
                                  STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
                                  STARPU_R, traits->get_handle(in),
@@ -567,7 +487,7 @@ dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* t
     return res;
 }
 
-void task_fill(void const* object, dahl_fp value, dahl_traits* traits)
+void task_fill(void* object, dahl_fp value, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(object);
     int ret = starpu_task_insert(&cl_fill,
@@ -586,6 +506,17 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+void task_copy(void const* in, void* out, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(in);
+
+    int ret = starpu_task_insert(&cl_copy,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
 // ---------------------------------------- ML Related ----------------------------------------
 void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions)
 {
@@ -600,5 +531,24 @@ dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix co
 {
     dahl_scalar* res = scalar_init(arena);
     task_check_predictions_batch(prediction_batch, target_batch, res);
+    return res;
+}
+
+void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out)
+{
+    dahl_fp const epsilon = 1e-7F;
+    TASK_CLIP_SELF(prediction_batch, epsilon, 1 - epsilon);
+
+    int ret = starpu_task_insert(&cl_cross_entropy_loss_batch,
+                                 STARPU_R, prediction_batch->handle,
+                                 STARPU_R, target_batch->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_cross_entropy_loss_batch(prediction_batch, target_batch, res);
     return res;
 }
