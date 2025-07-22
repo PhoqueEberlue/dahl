@@ -69,6 +69,7 @@
                 fxt
                 pajeng
                 vite
+                gzip
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 

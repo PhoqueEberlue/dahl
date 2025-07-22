@@ -2,6 +2,10 @@
 
 ## Important
 
+- fix layers unit tests
+  - hard code bias and weights values to prevent rng problems
+- fix cifar-10 training
+
 - Try to do shuffling to fix the accuracy?
 - benchmark with different task granularity?
 - benchmark with different batch sizes?

@@ -53,14 +53,9 @@ add_executable(tests
 )
 
 add_executable(example-mnist
-    "./examples/fashion-mnist.c"
-)
-
-add_executable(example-mnist-dp
-    "./examples/fashion-mnist-dp.c"
+    "./examples/fashion_mnist.c"
 )
 
 target_link_libraries(dahl PRIVATE czmq scal_obj)
 target_link_libraries(tests PUBLIC dahl)
 target_link_libraries(example-mnist PUBLIC dahl)
-target_link_libraries(example-mnist-dp PUBLIC dahl)

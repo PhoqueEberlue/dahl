@@ -17,13 +17,8 @@ Checks: "*,
         -readability-magic-numbers,
         -readability-function-cognitive-complexity,
         -readability-braces-around-statements,
+        -bugprone-easily-swappable-parameters
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle:     none
-
-
-
-
-
-

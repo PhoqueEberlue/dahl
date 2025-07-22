@@ -29,12 +29,12 @@ This project can be built with Nix
 [Download Nix on whatever OS](https://nixos.org/download/#multi-user-installation-recommended)
 
 Enter the development environment
-```shell
+```bash
 nix develop
 ```
 
 Compiling
-```shell
+```bash
 mkdir build
 cd build
 cmake ..
@@ -47,18 +47,15 @@ Try the tests to see if it works with `./tests/`
 
 The first available example is a CNN trained with the fashion mnist dataset
 
-Download the dataset:
-```shell
-mkdir fashion-mnist
-cd fashion-mnist
-wget http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-images-idx3-ubyte.gz
-wget http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-labels-idx1-ubyte.gz
-wget http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-images-idx3-ubyte.gz
-wget http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-labels-idx1-ubyte.gz
+Download the dataset, see `./datasets/`
+
+```bash
+cd ./datasets
+./download_fashion_mnist.bash
 ```
 
 Train the CNN
-```shell
+```bash
 ./example-mnist ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
 ```
 

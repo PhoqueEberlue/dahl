@@ -41,6 +41,7 @@ build/
 # Datasets
 datasets/mushroom-species/
 datasets/fashion-mnist/
+datasets/cifar-10/
 
 # ------ Draw.io ------
 *.drawio.bkp

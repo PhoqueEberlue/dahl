@@ -1,21 +1,22 @@
+#include "../include/dahl.h"
 #include "stdlib.h"
-#include "utils.h"
 #include <stdio.h>
 
 #define LEARNING_RATE 0.1F
-#define N_EPOCHS 2
+#define N_EPOCHS 200
 
-void train_network(dahl_arena* scratch_arena, dahl_block* images, dahl_matrix* classes, dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, size_t batch_size)
+void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset, 
+                   dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, 
+                   size_t batch_size, size_t num_samples)
 {
     dahl_arena* epoch_arena = dahl_arena_new();
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
 
-    block_partition_along_z_batch(images, batch_size);
-    matrix_partition_along_y_batch(classes, batch_size);
+    tensor_partition_along_t_batch(dataset->train_images, batch_size);
+    matrix_partition_along_y_batch(dataset->train_labels, batch_size);
 
-    // size_t const n_samples = block_get_nb_children(image_block);
-    size_t const n_samples = 6000; // block_get_shape(image_block).z
-    size_t const n_batches_per_epoch = n_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
+    num_samples = 6000; // Only use first 6k samples for now
+    size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)
     {
@@ -26,14 +27,14 @@ void train_network(dahl_arena* scratch_arena, dahl_block* images, dahl_matrix* c
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
-            dahl_block const* image_batch = GET_SUB_BLOCK(images, i);
-            dahl_matrix const* target_batch = GET_SUB_MATRIX(classes, i);
+            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, i);
+            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
 
             dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
             dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out); 
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out); // Returns the predictions for each batch 
 
-            // TODO: remove clone and replace by starpu temporary data inside the cross entropy task?
+            // TODO: remove copy and replace by starpu temporary data inside the cross entropy task?
             dahl_matrix* dense_out_copy = matrix_init(batch_arena, matrix_get_shape(dense_out));
             TASK_COPY(dense_out, dense_out_copy);
             task_cross_entropy_loss_batch(dense_out_copy, target_batch, total_loss);
@@ -42,22 +43,21 @@ void train_network(dahl_arena* scratch_arena, dahl_block* images, dahl_matrix* c
 
             dahl_tensor* dense_back = dense_backward(batch_arena, dense, gradients, pool_out, dense_out, LEARNING_RATE);
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back);
-            dahl_block* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
+            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
             // Why aren't we using bacward convolution result?
             dahl_arena_reset(scratch_arena);
             dahl_arena_reset(batch_arena);
-            abort();
         }
 
         printf("Average loss: %f - Accuracy: %f\%\n",
-           scalar_get_value(total_loss) / (dahl_fp)n_samples,
-           scalar_get_value(correct_predictions) / (dahl_fp)n_samples * 100);
+           scalar_get_value(total_loss) / (dahl_fp)num_samples,
+           scalar_get_value(correct_predictions) / (dahl_fp)num_samples * 100);
 
         dahl_arena_reset(epoch_arena);
     }
 
-    block_unpartition(images);
-    matrix_unpartition(classes);
+    tensor_unpartition(dataset->train_images);
+    matrix_unpartition(dataset->train_labels);
 }
 
 int main(int argc, char **argv)
@@ -67,20 +67,26 @@ int main(int argc, char **argv)
     srand(42);
     dahl_init();
 
-    size_t const num_channels = 1;
+    // Everything instanciated here will remain allocated till the training finishes.
+    // So we put the dataset and the layers containing the trainable parameters (weights & baises).
+    dahl_arena* network_arena = dahl_arena_new(); 
+
+    // dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
+    dahl_dataset* dataset = dataset_load_cifar_10(network_arena, argv[1]);
+    dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
+
+    // FIXME: support batch size that do not divide the dataset size
+    size_t const batch_size = 100;
+    size_t const num_samples = images_shape.t;
+    size_t const num_channels = images_shape.z;
+    dahl_shape4d const input_shape = { 
+        .x = images_shape.x, .y = images_shape.x, 
+        .z = num_channels, .t = batch_size 
+    };
     size_t const num_classes = 10;
     size_t const filter_size = 6;
     size_t const pool_size = 2;
-    // FIXME: support batch size that do not divide the dataset size
-    size_t constexpr batch_size = 100;
-    dahl_shape3d constexpr input_shape = { .x = 28, .y = 28, .z = batch_size };
 
-    // Everything instanciated here will remain allocated till the training finishes
-    dahl_arena* network_arena = dahl_arena_new();
-
-    dataset* set = load_mnist(network_arena, argv[1], argv[2]);
-    dahl_block* images = set->train_images;
-    dahl_matrix* classes = vector_to_categorical(network_arena, set->train_labels, num_classes);
 
     // An arena for temporary results that shouldn't leak to their respective scope
     dahl_arena* scratch_arena = dahl_arena_new();
@@ -89,7 +95,7 @@ int main(int argc, char **argv)
     dahl_pooling* pool = pooling_init(network_arena, pool_size, conv->output_shape);
     dahl_dense* dense = dense_init(network_arena, scratch_arena, pool->output_shape, num_classes);
     
-    train_network(scratch_arena, images, classes, conv, pool, dense, batch_size);
+    train_network(scratch_arena, dataset, conv, pool, dense, batch_size, num_samples);
 
     dahl_arena_delete(network_arena);
     dahl_arena_delete(scratch_arena);
