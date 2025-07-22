@@ -43,13 +43,15 @@ typedef struct
     dahl_partition* partitions[];
 } metadata;
 
-#define TENSOR_NB_PARTITION_TYPE 1
+// IMPORTANT: Don't forget to update these counters when updating the enums
+#define TENSOR_NB_PARTITION_TYPE 2
 #define BLOCK_NB_PARTITION_TYPE 5
 #define MATRIX_NB_PARTITION_TYPE 2
 
 typedef enum 
 {
     TENSOR_PARTITION_ALONG_T,
+    TENSOR_PARTITION_ALONG_T_BATCH,
 } tensor_partition_type;
 
 typedef enum 

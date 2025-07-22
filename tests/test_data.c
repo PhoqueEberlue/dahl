@@ -2,6 +2,133 @@
 #include "unistd.h"
 #include <stdio.h>
 
+void test_tensor_partition_along_t()
+{
+    dahl_shape4d data_shape = { .x = 4, .y = 3, .z = 2, .t = 2 };
+
+    dahl_fp data[2][2][3][4] = {
+        {
+            {
+                {-2.0F, 1.0F, 2.0F,-1.0F },
+                { 3.0F, 1.0F,-3.0F, 1.0F },
+                { 4.0F,-1.0F, 4.0F,-1.0F },
+            },
+            {
+                { 3.0F, 1.0F,-8.0F,-3.0F },
+                {-7.0F,-3.0F, 3.0F, 2.0F },
+                { 1.0F, 1.0F, 9.0F, 1.0F },
+            },
+        },
+        {
+            {
+                { 2.0F,-1.0F,-2.0F, 1.0F },
+                {-3.0F,-1.0F, 3.0F,-1.0F },
+                {-4.0F, 1.0F,-4.0F, 1.0F },
+            },
+            {
+                {-3.0F,-1.0F, 8.0F, 3.0F },
+                { 7.0F, 3.0F,-3.0F,-2.0F },
+                {-1.0F,-1.0F,-9.0F,-1.0F },
+            },
+        }
+    };
+
+    dahl_tensor* tensor = tensor_init_from(testing_arena, data_shape, (dahl_fp*)&data);
+
+    dahl_shape3d expect_shape = { .x = 4, .y = 3, .z = 2 };
+
+    dahl_fp expect_0[2][3][4] = {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    };
+
+    dahl_fp expect_1[2][3][4] = {
+        {
+            { 2.0F,-1.0F,-2.0F, 1.0F },
+            {-3.0F,-1.0F, 3.0F,-1.0F },
+            {-4.0F, 1.0F,-4.0F, 1.0F },
+        },
+        {
+            {-3.0F,-1.0F, 8.0F, 3.0F },
+            { 7.0F, 3.0F,-3.0F,-2.0F },
+            {-1.0F,-1.0F,-9.0F,-1.0F },
+        },
+    };
+
+    dahl_block const* expect_block_0 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
+    dahl_block const* expect_block_1 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
+
+    tensor_partition_along_t(tensor);
+
+    dahl_block const* sub_block_0 = GET_SUB_BLOCK(tensor, 0);
+    dahl_shape3d shape_0 = block_get_shape(sub_block_0);
+    ASSERT_SHAPE3D_EQUALS(expect_shape, shape_0);
+    ASSERT_BLOCK_EQUALS(expect_block_0, sub_block_0);
+
+    dahl_block const* sub_block_1 = GET_SUB_BLOCK(tensor, 1);
+    dahl_shape3d shape_1 = block_get_shape(sub_block_1);
+    ASSERT_SHAPE3D_EQUALS(expect_shape, shape_1);
+    ASSERT_BLOCK_EQUALS(expect_block_1, sub_block_1);
+
+    tensor_unpartition(tensor);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_tensor_partition_along_t_batch()
+{
+    dahl_shape4d data_shape = { .x = 2, .y = 1, .z = 1, .t = 4 };
+
+    dahl_fp data[4][1][1][2] = {
+        { { { 1.0F, 2.0F }, }, },
+        { { { 3.0F, 4.0F }, }, },
+        { { { 5.0F, 6.0F }, }, },
+        { { { 7.0F, 8.0F }, }, }
+    };
+
+    dahl_tensor* tensor = tensor_init_from(testing_arena, data_shape, (dahl_fp*)&data);
+
+    dahl_shape4d expect_shape = { .x = 2, .y = 1, .z = 1, .t = 2 };
+
+    dahl_fp expect_0[2][1][1][2] = { 
+        { { { 1.0F, 2.0F }, }, },
+        { { { 3.0F, 4.0F }, }, }
+    };
+
+    dahl_fp expect_1[2][1][1][2] = { 
+        { { { 5.0F, 6.0F }, }, },
+        { { { 7.0F, 8.0F }, }, }
+    };
+
+    dahl_tensor const* expect_tensor_0 = tensor_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
+    dahl_tensor const* expect_tensor_1 = tensor_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
+
+    size_t const batch_size = 2;
+    tensor_partition_along_t_batch(tensor, batch_size);
+
+    dahl_tensor const* sub_tensor_0 = GET_SUB_TENSOR(tensor, 0);
+    dahl_shape4d shape_0 = tensor_get_shape(sub_tensor_0);
+    ASSERT_SHAPE4D_EQUALS(expect_shape, shape_0);
+    ASSERT_TENSOR_EQUALS(expect_tensor_0, sub_tensor_0);
+
+    dahl_tensor const* sub_tensor_1 = GET_SUB_TENSOR(tensor, 1);
+    dahl_shape4d shape_1 = tensor_get_shape(sub_tensor_1);
+    ASSERT_SHAPE4D_EQUALS(expect_shape, shape_1);
+    ASSERT_TENSOR_EQUALS(expect_tensor_1, sub_tensor_1);
+
+    tensor_unpartition(tensor);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_block_partition_along_z()
 {
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
@@ -362,6 +489,8 @@ void test_partition_reuse()
 
 void test_data()
 {
+    test_tensor_partition_along_t();
+    test_tensor_partition_along_t_batch();
     test_block_partition_along_z();
     test_block_partition_flatten_to_vector();
     test_matrix_partition_along_y();

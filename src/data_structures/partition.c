@@ -1,4 +1,5 @@
 #include "data_structures.h"
+#include "starpu_data.h"
 #include "starpu_data_interfaces.h"
 #include <stdio.h>
 
@@ -71,6 +72,29 @@ size_t get_nb_children(void const* object, dahl_traits* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     return p->nb_children;
+}
+
+dahl_tensor* _get_sub_tensor(dahl_partition const* p, size_t index)
+{
+    assert(p->type == DAHL_TENSOR
+        && index < p->nb_children
+        && p->children[index] != nullptr);
+
+    return p->children[index];
+}
+
+dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits* traits)
+{
+    dahl_partition* p = traits->get_partition(object);
+    assert(p->is_mut);
+    return _get_sub_tensor(p, index);
+}
+
+dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits)
+{
+    dahl_partition* p = traits->get_partition(object);
+    assert(!p->is_mut);
+    return _get_sub_tensor(p, index);
 }
 
 dahl_block* _get_sub_block(dahl_partition const* p, size_t index)

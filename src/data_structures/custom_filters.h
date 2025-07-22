@@ -5,6 +5,13 @@
 #include "starpu_data_filters.h"
 
 // ---------------------------------------- GETTERS ----------------------------------------
+// To get a tensor from a tensor
+static struct starpu_data_interface_ops *starpu_tensor_filter_pick_tensor_child_ops(
+    STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter *f, STARPU_ATTRIBUTE_UNUSED unsigned child)
+{
+	return &starpu_interface_tensor_ops;
+}
+
 // To get a vector from a block
 static struct starpu_data_interface_ops *starpu_block_filter_pick_vector_child_ops(
     STARPU_ATTRIBUTE_UNUSED struct starpu_data_filter *f, STARPU_ATTRIBUTE_UNUSED unsigned child)
@@ -20,6 +27,52 @@ static struct starpu_data_interface_ops *starpu_matrix_filter_pick_matrix_child_
 }
 
 // ---------------------------------------- TENSOR ----------------------------------------
+static void starpu_tensor_filter_t_tensor(void *parent_interface, void *child_interface, 
+                                          struct starpu_data_filter *f,
+                                          unsigned id, unsigned nparts)
+{
+	struct starpu_tensor_interface *tensor_parent = (struct starpu_tensor_interface *) parent_interface;
+	struct starpu_tensor_interface *tensor_child = (struct starpu_tensor_interface *) child_interface;
+
+	unsigned blocksize;
+
+	size_t nx = tensor_parent->nx;
+	size_t ny = tensor_parent->ny;
+	size_t nz = tensor_parent->nz;
+	size_t nt = tensor_parent->nt;
+    blocksize = tensor_parent->ldt;
+
+	size_t elemsize = tensor_parent->elemsize;
+
+	STARPU_ASSERT_MSG(nparts <= nt, "cannot split %zu elements in %u parts", nt, nparts);
+
+	size_t new_nt;
+	size_t offset;
+	starpu_filter_nparts_compute_chunk_size_and_offset(nt, nparts, elemsize, id, blocksize, &new_nt, &offset);
+
+	size_t new_ldt = new_nt * nz * ny * nx;
+
+	STARPU_ASSERT_MSG(tensor_parent->id == STARPU_TENSOR_INTERFACE_ID, "%s can only be applied on a tensor data", __func__);
+	tensor_child->id = tensor_parent->id;
+
+    tensor_child->nx = nx;
+    tensor_child->ny = ny;
+    tensor_child->nz = nz;
+    tensor_child->nt = new_nt;
+
+	tensor_child->elemsize = elemsize;
+
+	if (tensor_parent->dev_handle)
+	{
+		if (tensor_parent->ptr)
+			tensor_child->ptr = tensor_parent->ptr + offset;
+		tensor_child->ldy = tensor_parent->ldy;
+		tensor_child->ldz = tensor_parent->ldz;
+		tensor_child->ldt = new_ldt;
+		tensor_child->dev_handle = tensor_parent->dev_handle;
+		tensor_child->offset = tensor_parent->offset + offset;
+	}
+}
 
 // ---------------------------------------- BLOCK ----------------------------------------
 // Pick the matrices along z axis, but instanciate them vith the vector interface so they can be read as vectors

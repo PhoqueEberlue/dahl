@@ -3,6 +3,7 @@
 #include "starpu_data.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"
+#include "custom_filters.h"
 #include "starpu_util.h"
 #include "sys/types.h"
 #include <stdint.h>
@@ -214,6 +215,44 @@ void tensor_partition_along_t_mut(dahl_tensor* tensor)
 void tensor_partition_along_t(dahl_tensor const* tensor)
 {
     _tensor_partition_along_t(tensor, false);
+}
+
+void _tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size, bool is_mut)
+{
+    assert(tensor->meta->current_partition == -1);
+    tensor_partition_type t = TENSOR_PARTITION_ALONG_T_BATCH;
+
+    size_t const nparts = tensor_get_shape(tensor).t / batch_size;
+
+    dahl_partition* p = tensor->meta->partitions[t];
+    // If the partition already exists AND had the same batch size, no need to create it. 
+    // FIX Warning, here the memory is lost if we create many partitions with different batch size
+    if (p != nullptr && p->nb_children == nparts)
+        goto submit;
+
+    struct starpu_data_filter f =
+	{
+		.filter_func = starpu_tensor_filter_t_tensor,
+		.nchildren = nparts,
+		.get_child_ops = starpu_tensor_filter_pick_tensor_child_ops
+	};
+
+    // Create and set the partition
+    tensor->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_tensor,
+                                        &f, tensor->handle, tensor->meta->origin_arena);
+
+submit:
+    _partition_submit_if_needed(tensor->meta, t, is_mut, tensor->handle);
+}
+
+void tensor_partition_along_t_batch_mut(dahl_tensor* tensor, size_t batch_size)
+{
+    _tensor_partition_along_t_batch(tensor, batch_size, true);
+}
+
+void tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size)
+{
+    _tensor_partition_along_t_batch(tensor, batch_size, false);
 }
 
 void tensor_unpartition(dahl_tensor const* tensor)

@@ -77,6 +77,9 @@ void tensor_data_release(dahl_tensor const*);
 void tensor_partition_along_t(dahl_tensor const*);
 void tensor_partition_along_t_mut(dahl_tensor*);
 
+void tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size);
+void tensor_partition_along_t_batch_mut(dahl_tensor* tensor, size_t batch_size);
+
 // Unpartition a tensor
 void tensor_unpartition(dahl_tensor const*);
 
@@ -268,6 +271,9 @@ void scalar_print(dahl_scalar const* scalar);
 
 size_t get_nb_children(void const* object, dahl_traits* traits);
 
+dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits);
+dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits* traits);
+
 dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits* traits);
 dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits* traits);
 
@@ -278,6 +284,9 @@ dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits*
 dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits);
 
 #define GET_NB_CHILDREN(OBJECT) get_nb_children(OBJECT, GET_TRAITS(OBJECT))
+
+#define GET_SUB_TENSOR(OBJECT, INDEX) get_sub_tensor(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_TENSOR_MUT(OBJECT, INDEX) get_sub_tensor_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
 
 #define GET_SUB_BLOCK(OBJECT, INDEX) get_sub_block(OBJECT, INDEX, GET_TRAITS(OBJECT))
 #define GET_SUB_BLOCK_MUT(OBJECT, INDEX) get_sub_block_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
