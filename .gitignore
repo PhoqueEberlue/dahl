@@ -38,8 +38,9 @@ build/
 # Clangd cache
 .cache/
 
-# Mnist dataset
-fashion-mnist/
+# Datasets
+datasets/mushroom-species/
+datasets/fashion-mnist/
 
 # ------ Draw.io ------
 *.drawio.bkp
