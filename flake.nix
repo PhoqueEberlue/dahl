@@ -2,7 +2,7 @@
   description = "Nix flake for DAHL's development environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
     # Required to run CUDA because of problems between cuda drivers (usually handled by the machine OS) and
     # the runtime cuda dependencies, here handled by this nix flake.
@@ -44,8 +44,8 @@
 
           # Building from my local derivation of StarPU until it is available on nixpkgs
           starpu = pkgs.callPackage ./nix/starpu.nix { 
-            cudaPackages = cudaPackages;
-            enableCUDA = enableCUDA;
+            # cudaPackages = cudaPackages;
+            # enableCUDA = enableCUDA;
             hwloc = hwloc;
 
             # Tracing libs
@@ -70,6 +70,7 @@
                 pajeng
                 vite
                 gzip
+                zig
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
