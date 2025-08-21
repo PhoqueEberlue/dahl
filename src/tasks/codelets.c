@@ -694,11 +694,13 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
 {
     size_t const pred_nx = STARPU_MATRIX_GET_NX(buffers[0]);
     size_t const pred_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const pred_ld = STARPU_MATRIX_GET_LD(buffers[0]);
     dahl_fp const* pred = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
 
     // Targets vector
     size_t const targ_nx = STARPU_MATRIX_GET_NX(buffers[1]);
     size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const targ_ld = STARPU_MATRIX_GET_LD(buffers[1]);
     dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
 
     dahl_fp* correct_predictions = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[2]);
@@ -706,6 +708,7 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
     assert(pred_nx == targ_nx);
     assert(pred_ny == targ_ny);
 
+    // Loop through each batch
     for (size_t y = 0; y < pred_ny; y++)
     {
         dahl_fp max_val = 0.0F;
@@ -713,14 +716,16 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
 
         for (size_t x = 0; x < pred_nx; x++)
         {
-            if (pred[x] > max_val)
+            dahl_fp current_value = pred[(y * pred_ld) + x];
+
+            if (current_value > max_val)
             {
-                max_val = pred[x];
+                max_val = current_value;
                 max_index = x;
             }
         }
 
-        *correct_predictions += targ[max_index] == 1;
+        *correct_predictions += targ[(y * targ_ld) + max_index] == 1;
     }
 }
 
