@@ -744,6 +744,8 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     assert(pred_ny == targ_ny);
     assert(pred_ld == targ_ld);
 
+    dahl_fp batch_loss = 0;
+
     for (size_t y = 0; y < pred_ny; y++)
     {
         dahl_fp loss = 0;
@@ -753,10 +755,10 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
             loss += (targ[(y*targ_ld)+x] * log(pred[(y*pred_ld)+x]));
         }
 
-        // Divide by the number of classes and reverse the sign
-        *out -= loss / (dahl_fp)pred_nx;
+        // Divide by the number of classes and reverse the sign (decrement)
+        batch_loss -= loss / (dahl_fp)pred_nx;
     }
 
-    // Divide by batch size
-    *out /= (dahl_fp)pred_ny;
+    // Divide by batch size and increment into out
+    *out += batch_loss / (dahl_fp)pred_ny;
 }
