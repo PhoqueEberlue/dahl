@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.28)
+cmake_minimum_required (VERSION 3.30.5)
 project(dahl)
  
 set(CMAKE_C_STANDARD 23)
@@ -10,12 +10,14 @@ enable_language(CUDA)
 # Shows compile command in ./build/compile_commands.json, useful for clangd language server
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# ------------ RELEASE OPTIONS ------------
 # set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
 
+# ------------ DEBUG OPTIONS ------------
 # Enable debug flags and avoid optimizations
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
 
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)
@@ -56,6 +58,6 @@ add_executable(example-mnist
     "./examples/fashion_mnist.c"
 )
 
-target_link_libraries(dahl PRIVATE czmq scal_obj)
-target_link_libraries(tests PUBLIC dahl)
-target_link_libraries(example-mnist PUBLIC dahl)
+target_link_libraries(dahl PRIVATE czmq scal_obj -fsanitize=undefined)
+target_link_libraries(tests PUBLIC dahl -fsanitize=undefined)
+target_link_libraries(example-mnist PUBLIC dahl -fsanitize=undefined)
