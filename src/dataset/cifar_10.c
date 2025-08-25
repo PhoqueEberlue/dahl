@@ -1,6 +1,7 @@
 #include "../../include/dahl_dataset.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "../utils.h"
 
 dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_file)
@@ -40,11 +41,13 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
     dahl_fp* labels = matrix_data_acquire_mut(label_set);
 
     unsigned char buffer;
+    unsigned int n_bytes_read = 0;
 
     for (size_t t = 0; t < samples; t++)
     {
         // Read the label
         fread(&buffer, sizeof(unsigned char), 1, file);
+        n_bytes_read++;
         // Store labels categorical format
         labels[(t * n_classes) + buffer] = 1;
 
@@ -55,6 +58,7 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
                 for (size_t x = 0; x < nx; x++)
                 {
                     fread(&buffer, sizeof(unsigned char), 1, file);
+                    n_bytes_read++;
                     images[(t * nx * ny * channels) + (z * nx * ny ) + (y * nx) + x] = (dahl_fp)buffer / 255.0F;
                 }
             }
@@ -64,6 +68,9 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
     tensor_data_release(image_set);
     matrix_data_release(label_set);
 
+    // "Each file contains 10000 such 3073-byte "rows" of images, although there is nothing delimiting the rows. 
+    // Therefore each file should be exactly 30730000 bytes long."
+    assert(n_bytes_read == 30730000);
     res->train_images = image_set;
     res->train_labels = label_set;
 
