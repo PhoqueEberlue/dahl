@@ -276,7 +276,7 @@ void tensor_print(dahl_tensor const* tensor)
 
 	starpu_data_acquire(tensor->handle, STARPU_R);
 
-    printf("tensor=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu ldt=%zu\n", tensor->data, shape.x, shape.y, shape.z, ldy, ldz, ldt);
+    printf("tensor=%p nx=%zu ny=%zu nz=%zu nt=%zu ldy=%zu ldz=%zu ldt=%zu\n", tensor->data, shape.x, shape.y, shape.z, shape.t, ldy, ldz, ldt);
 
 	for(size_t t = 0; t < shape.t; t++)
     {

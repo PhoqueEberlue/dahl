@@ -50,8 +50,6 @@ static void starpu_tensor_filter_t_tensor(void *parent_interface, void *child_in
 	size_t offset;
 	starpu_filter_nparts_compute_chunk_size_and_offset(nt, nparts, elemsize, id, blocksize, &new_nt, &offset);
 
-	size_t new_ldt = new_nt * nz * ny * nx;
-
 	STARPU_ASSERT_MSG(tensor_parent->id == STARPU_TENSOR_INTERFACE_ID, "%s can only be applied on a tensor data", __func__);
 	tensor_child->id = tensor_parent->id;
 
@@ -68,7 +66,7 @@ static void starpu_tensor_filter_t_tensor(void *parent_interface, void *child_in
 			tensor_child->ptr = tensor_parent->ptr + offset;
 		tensor_child->ldy = tensor_parent->ldy;
 		tensor_child->ldz = tensor_parent->ldz;
-		tensor_child->ldt = new_ldt;
+		tensor_child->ldt = tensor_parent->ldt;
 		tensor_child->dev_handle = tensor_parent->dev_handle;
 		tensor_child->offset = tensor_parent->offset + offset;
 	}
