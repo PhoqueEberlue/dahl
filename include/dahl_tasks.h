@@ -114,6 +114,8 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits);
 dahl_scalar* task_sum_init(dahl_arena*, void const* object, dahl_traits* traits);
+void task_mean(void const* in, dahl_scalar* out, dahl_traits* traits);
+dahl_scalar* task_mean_init(dahl_arena*, void const* object, dahl_traits* traits);
 void task_fill(void* object, dahl_fp value, dahl_traits* traits);
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 void task_copy(void const* in, void* out, dahl_traits* traits);
@@ -229,6 +231,12 @@ void task_copy(void const* in, void* out, dahl_traits* traits);
 // Sum every elements of `in` and allocate/return the result into the `arena`.
 #define TASK_SUM_INIT(ARENA, OBJECT) task_sum_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
 
+// Compute mean for every elements of `in` and write the result into a scalar `out`.
+#define TASK_MEAN(IN, OUT) task_mean(IN, OUT, GET_TRAITS(OBJECT))
+
+// Compute mean for every elements of `in` and allocate/return the result into the `arena`.
+#define TASK_MEAN_INIT(ARENA, OBJECT) task_mean_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
+
 // Fill every elements of `object` with `value`.
 // No self version of this macro because this is obviously the default behavior.
 #define TASK_FILL(OBJECT, VALUE) task_fill(OBJECT, VALUE, GET_TRAITS(OBJECT))
@@ -252,7 +260,10 @@ void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matr
 // Init and return the number of good predictions from the `prediction_batch` and `target_batch`.
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
+// Compute the cross entropy loss over the given batch and increments the result into `out`.
 void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
+
+// Compute the cross entropy loss over the given batch and return the result into a new scalar.
 dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch);
 
 // TODO: refactor that

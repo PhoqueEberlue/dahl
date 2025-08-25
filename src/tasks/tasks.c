@@ -489,6 +489,23 @@ dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* t
     return res;
 }
 
+void task_mean(void const* in, dahl_scalar* out, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(in);
+    int ret = starpu_task_insert(&cl_mean,
+                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_scalar* task_mean_init(dahl_arena* arena, void const* object, dahl_traits* traits)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_mean(object, res, traits);
+    return res;
+}
+
 void task_fill(void* object, dahl_fp value, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(object);
