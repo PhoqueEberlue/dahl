@@ -33,15 +33,15 @@ void _pooling_forward_sample(dahl_block const* input, dahl_block* output,
     block_partition_along_z_mut(output);
     block_partition_along_z_mut(mask);
 
-    size_t const n_channels = GET_NB_CHILDREN(input);
+    size_t const n_filters = GET_NB_CHILDREN(input);
 
-    for (int c = 0; c < n_channels; c++)
+    for (int c = 0; c < n_filters; c++)
     {
-        dahl_matrix const* sub_input = GET_SUB_MATRIX(input, c);
+        dahl_matrix const* feature_map = GET_SUB_MATRIX(input, c);
         dahl_matrix* sub_output = GET_SUB_MATRIX_MUT(output, c);
         dahl_matrix* sub_mask = GET_SUB_MATRIX_MUT(mask, c);
 
-        task_matrix_max_pooling(sub_input, sub_output, sub_mask, pool_size);
+        task_matrix_max_pooling(feature_map, sub_output, sub_mask, pool_size);
     }
 
     block_unpartition(input);
