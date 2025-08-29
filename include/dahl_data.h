@@ -22,7 +22,8 @@ extern dahl_traits dahl_traits_block;
 extern dahl_traits dahl_traits_matrix;
 extern dahl_traits dahl_traits_vector;
 
-// Get the traits structure of an object at compile time
+// Get the traits structure of an object at compile time.
+// It is useful to infer an object type.
 #define GET_TRAITS(OBJECT) _Generic((OBJECT), \
     dahl_tensor*: &dahl_traits_tensor,        \
     dahl_block*:  &dahl_traits_block,         \
@@ -55,6 +56,15 @@ dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape);
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* data);
 
+// Set values of the `tensor` from an array `data` that should be of the same size.
+// This is a blocking function.
+void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data);
+
+// Flatten a tensor along the t dimension, producing a new matrix object of the shape (x*y*z, t).
+// Note that no data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the tensor.
+// You should stop using the tensor after calling this function because it's internal data is pointing to the same place as the matrix (that's why there is no copy) and the coherency is not managed.
+dahl_matrix* tensor_flatten_along_t(dahl_tensor const* tensor);
+
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
 
@@ -86,6 +96,14 @@ void tensor_unpartition(dahl_tensor const*);
 // Print a tensor
 void tensor_print(dahl_tensor const*);
 
+// Helper to create a tensor on the fly by providing the values directly at the end of the macro. 
+// Careful! Here we fill values by writing on T, Z, Y then X dimension, this way values on X are contiguous in the memory.
+#define TENSOR(ARENA, NT, NZ, NY, NX, ...) tensor_init_from(          \
+        (ARENA),                                                      \
+        (dahl_shape4d){ .x = (NX), .y = (NY), .z = (NZ), .t = (NT) }, \
+        (dahl_fp*)(dahl_fp[NT][NZ][NY][NX]) __VA_ARGS__               \
+    )
+
 // ---------------------------------------- BLOCK ----------------------------------------
 // Initialize a dahl_block with every values at 0.
 // parameters:
@@ -102,6 +120,10 @@ dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape);
 // - shape: dahl_shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data);
+
+// Set values of the `block` from an array `data` that should be of the same size.
+// This is a blocking function.
+void block_set_from(dahl_block* block, dahl_fp const* data);
 
 // Returns a new block with added padding. 
 // The new_shape should be larger than the previous block.
@@ -156,6 +178,14 @@ void block_unpartition(dahl_block const*);
 // Print a block
 void block_print(dahl_block const*);
 
+// Helper to create a block on the fly by providing the values directly at the end of the macro. 
+// Careful! Here we fill values by writing on Z, Y then X dimension, this way values on X are contiguous in the memory.
+#define BLOCK(ARENA, NZ, NY, NX, ...) block_init_from(     \
+        (ARENA),                                           \
+        (dahl_shape3d){ .x = (NX), .y = (NY), .z = (NZ) }, \
+        (dahl_fp*)(dahl_fp[NZ][NY][NX]) __VA_ARGS__        \
+    )
+
 // ---------------------------------------- MATRIX ----------------------------------------
 // Initialize a dahl_matrix with every values at 0.
 // parameters:
@@ -172,6 +202,10 @@ dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape);
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
+
+// Set values of the `matrix` from an array `data` that should be of the same size.
+// This is a blocking function.
+void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
@@ -215,6 +249,14 @@ void matrix_print(dahl_matrix const*);
 // Print a matrix with ascii format, useful to print images in the terminal
 void matrix_print_ascii(dahl_matrix const*, dahl_fp threshold);
 
+// Helper to create a matrix on the fly by providing the values directly at the end of the macro.
+// Careful! Here we fill values by writing on Y then X dimension, this way values on X are contiguous in the memory.
+#define MATRIX(ARENA, NY, NX, ...) matrix_init_from( \
+        (ARENA),                                     \
+        (dahl_shape2d){ .x = (NX), .y = (NY) },      \
+        (dahl_fp*)(dahl_fp[NY][NX]) __VA_ARGS__      \
+    )
+
 // ---------------------------------------- VECTOR ----------------------------------------
 // Initialize a dahl_vector with every values at 0.
 // parameters:
@@ -234,6 +276,16 @@ dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
 
 // Returns the vector len
 size_t vector_get_len(dahl_vector const*);
+
+// Returns the value at `index`. This is a blocking function.
+dahl_fp vector_get_value(dahl_vector const* vector, size_t index);
+
+// Set `value` at `index`. This is a blocking function.
+void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value);
+
+// Set values of the `vector` from an array `data` that should be of the same size.
+// This is a blocking function.
+void vector_set_from(dahl_vector* vector, dahl_fp const* data);
 
 // Acquire the vector data, will wait any associated tasks to finish.
 dahl_fp const* vector_data_acquire(dahl_vector const*);
@@ -260,6 +312,9 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool rounding, u_
 
 // Print a vector
 void vector_print(dahl_vector const*);
+
+// Helper to create a vector on the fly by providing the values directly at the end of the macro.
+#define VECTOR(ARENA, LEN, ...) vector_init_from(ARENA, LEN, (dahl_fp[LEN]) __VA_ARGS__ )
 
 // ---------------------------------------- SCALAR ----------------------------------------
 dahl_scalar* scalar_init(dahl_arena* arena);

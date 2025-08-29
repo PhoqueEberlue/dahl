@@ -1,5 +1,6 @@
 #include "data_structures.h"
 #include "starpu_data.h"
+#include "starpu_data_interfaces.h"
 #include <math.h>
 
 void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
@@ -74,6 +75,37 @@ starpu_data_handle_t _vector_get_handle(void const* vector)
 size_t _vector_get_nb_elem(void const* vector)
 {
     return vector_get_len((dahl_vector*)vector);
+}
+
+dahl_fp vector_get_value(dahl_vector const* vector, size_t index)
+{
+    assert(index < starpu_vector_get_nx(vector->handle));
+    vector_data_acquire(vector);
+    dahl_fp res = vector->data[index];
+    vector_data_release(vector);
+    return res;
+}
+
+void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value)
+{
+    assert(index < starpu_vector_get_nx(vector->handle));
+    vector_data_acquire(vector);
+    vector->data[index] = value;
+    vector_data_release(vector);
+}
+
+void vector_set_from(dahl_vector* vector, dahl_fp const* data)
+{
+    size_t len = starpu_vector_get_nx(vector->handle);
+
+    vector_data_acquire(vector);
+
+    for (int i = 0; i < len; i += 1)
+    {
+        vector->data[i] = data[i];
+    }
+
+    vector_data_release(vector);
 }
 
 dahl_fp const* vector_data_acquire(dahl_vector const* vector)

@@ -80,6 +80,21 @@ dahl_matrix* matrix_init_random(dahl_arena* arena, dahl_shape2d const shape)
     return matrix;
 }
 
+void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data)
+{
+    dahl_shape2d shape = matrix_get_shape(matrix);
+    size_t nb_elems = shape.x * shape.y;
+
+    matrix_data_acquire(matrix);
+
+    for (int i = 0; i < nb_elems; i += 1)
+    {
+        matrix->data[i] = data[i];
+    }
+
+    matrix_data_release(matrix);
+}
+
 dahl_shape2d matrix_get_shape(dahl_matrix const* matrix)
 {
     size_t nx = starpu_matrix_get_nx(matrix->handle);
@@ -271,7 +286,7 @@ void matrix_print(dahl_matrix const* matrix)
 
         for(size_t x = 0; x < shape.x; x++)
         {
-            printf("%f ", matrix->data[(y*ld)+x]);
+            printf("%.15f ", matrix->data[(y*ld)+x]);
         }
         printf("\n");
     }

@@ -91,6 +91,41 @@ dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape)
     return tensor;
 }
 
+void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data)
+{
+    dahl_shape4d shape = tensor_get_shape(tensor);
+    size_t nb_elems = shape.x * shape.y * shape.z * shape.t;
+
+    tensor_data_acquire(tensor);
+
+    for (int i = 0; i < nb_elems; i += 1)
+    {
+        tensor->data[i] = data[i];
+    }
+
+    tensor_data_release(tensor);
+}
+
+dahl_matrix* tensor_flatten_along_t(dahl_tensor const* tensor)
+{
+    dahl_shape4d shape = tensor_get_shape(tensor);
+    size_t new_nx = shape.x * shape.y * shape.z;
+    size_t new_ny = shape.t;
+
+    starpu_data_handle_t handle = nullptr;
+    starpu_matrix_data_register(
+        &handle,
+        STARPU_MAIN_RAM,
+        (uintptr_t)tensor->data,
+        new_nx,
+        new_nx,
+        new_ny,
+        sizeof(dahl_fp)
+    );
+
+    return _matrix_init_from_ptr(tensor->meta->origin_arena, handle, tensor->data);
+}
+
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
 {
     size_t nx = starpu_tensor_get_nx(tensor->handle);
@@ -286,7 +321,7 @@ void tensor_print(dahl_tensor const* tensor)
             {
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    printf("%f ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
+                    printf("%.15f ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
                 }
                 printf("\n");
             }
