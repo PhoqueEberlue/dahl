@@ -80,6 +80,31 @@ dahl_matrix* matrix_init_random(dahl_arena* arena, dahl_shape2d const shape)
     return matrix;
 }
 
+dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d const new_shape)
+{
+    dahl_shape2d shape = matrix_get_shape(matrix);
+    assert(shape.x * shape.y == new_shape.x * new_shape.y * new_shape.z * new_shape.t);
+
+    starpu_data_handle_t handle = nullptr;
+    starpu_tensor_data_register(
+        &handle,
+        STARPU_MAIN_RAM,
+        (uintptr_t)matrix->data,
+        new_shape.x,
+        new_shape.x*new_shape.y,
+        new_shape.x*new_shape.y*new_shape.z,
+        new_shape.x,
+        new_shape.y,
+        new_shape.z,
+        new_shape.t,
+        sizeof(dahl_fp)
+    );
+
+    dahl_arena_attach_handle(matrix->meta->origin_arena, handle);
+
+    return _tensor_init_from_ptr(matrix->meta->origin_arena, handle, matrix->data);
+}
+
 void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data)
 {
     dahl_shape2d shape = matrix_get_shape(matrix);

@@ -487,6 +487,61 @@ void test_partition_reuse()
     dahl_arena_reset(testing_arena);
 }
 
+void test_tensor_flatten_along_t_no_copy()
+{
+    dahl_tensor* tensor = TENSOR(testing_arena, 2, 1, 4, 3, {
+        {{
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+        }},
+        {{
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+        }},
+    });
+
+    dahl_matrix* expect = MATRIX(testing_arena, 2, 12, {
+        { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 }, 
+        { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
+    });
+
+    dahl_matrix* matrix = tensor_flatten_along_t_no_copy(tensor);
+
+    ASSERT_MATRIX_EQUALS(expect, matrix);
+}
+
+void test_matrix_to_tensor_no_copy()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 2, 12, {
+        { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 }, 
+        { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
+    });
+
+    dahl_tensor* expect = TENSOR(testing_arena, 2, 1, 4, 3, {
+        {{
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+        }},
+        {{
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+                { 2, 4, 6 },
+        }},
+    });
+
+    dahl_shape4d shape = { .x = 3, .y = 4, .z = 1, .t = 2 };
+    dahl_tensor* tensor = matrix_to_tensor_no_copy(matrix, shape);
+
+    ASSERT_TENSOR_EQUALS(expect, tensor);
+}
+
 void test_data()
 {
     test_tensor_partition_along_t();
@@ -499,4 +554,6 @@ void test_data()
     test_recursive_partitioning();
     test_mut_partitioning();
     test_partition_reuse();
+    test_tensor_flatten_along_t_no_copy();
+    test_matrix_to_tensor_no_copy();
 }

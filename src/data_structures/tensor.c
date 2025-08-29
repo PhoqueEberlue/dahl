@@ -106,7 +106,7 @@ void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data)
     tensor_data_release(tensor);
 }
 
-dahl_matrix* tensor_flatten_along_t(dahl_tensor const* tensor)
+dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
 {
     dahl_shape4d shape = tensor_get_shape(tensor);
     size_t new_nx = shape.x * shape.y * shape.z;
@@ -122,6 +122,8 @@ dahl_matrix* tensor_flatten_along_t(dahl_tensor const* tensor)
         new_ny,
         sizeof(dahl_fp)
     );
+
+    dahl_arena_attach_handle(tensor->meta->origin_arena, handle);
 
     return _matrix_init_from_ptr(tensor->meta->origin_arena, handle, tensor->data);
 }

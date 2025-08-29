@@ -61,9 +61,9 @@ dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* da
 void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data);
 
 // Flatten a tensor along the t dimension, producing a new matrix object of the shape (x*y*z, t).
-// Note that no data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the tensor.
+// No data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the parent tensor.
 // You should stop using the tensor after calling this function because it's internal data is pointing to the same place as the matrix (that's why there is no copy) and the coherency is not managed.
-dahl_matrix* tensor_flatten_along_t(dahl_tensor const* tensor);
+dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor);
 
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
@@ -206,6 +206,11 @@ dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* da
 // Set values of the `matrix` from an array `data` that should be of the same size.
 // This is a blocking function.
 void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data);
+
+// Reshape the `matrix` into a tensor, as long as the `new_shape` is exactly equal to the current number of elements in the `matrix`.
+// No data is getting copied under the hood, and every new memory allocated (for the tensor object) will be in the same arena as the parent matrix.
+// You should stop using the matrix after calling this function because no coherency/synchronization is guaranteed.
+dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d new_shape);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
