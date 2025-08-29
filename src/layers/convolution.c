@@ -1,27 +1,22 @@
 #include "../../include/dahl_convolution.h"
 #include "../arena/arena.h"
+#include "starpu_task.h"
 #include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
 {
-    dahl_shape3d filter_shape = {
+    dahl_shape4d filter_shape = {
         .x = filter_size,
         .y = filter_size,
-        .z = num_filters, // Equivalent to the number of channels of an image
+        .z = input_shape.z, // number of channels of the input image
+        .t = num_filters, // number of feature maps
     };
 
     dahl_shape4d output_shape = {
         .x = input_shape.x - filter_size + 1, // The convolution will reduce the size of the images
         .y = input_shape.y - filter_size + 1,
-        .z = input_shape.z, // nb channels
+        .z = num_filters, // number of feature maps
         .t = input_shape.t, // batch size
-    };
-
-    // Same as output_shape but without the batch size
-    dahl_shape3d bias_shape = {
-        .x = output_shape.x,
-        .y = output_shape.y,
-        .z = output_shape.z,
     };
 
     dahl_convolution* conv = dahl_arena_alloc(arena, sizeof(dahl_convolution));
@@ -31,8 +26,8 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
     conv->filter_size = filter_size;
     conv->filter_shape = filter_shape;
     conv->output_shape = output_shape;
-    conv->filters = block_init_random(arena, filter_shape);
-    conv->biases = block_init_random(arena, bias_shape);
+    conv->filters = tensor_init_random(arena, filter_shape);
+    conv->biases = vector_init_random(arena, num_filters); // One bias per feature map
     conv->scratch_arena = scratch_arena;
 
     return conv;
@@ -40,29 +35,31 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
 
 // Apply the forward pass to a sample
 void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
-                         dahl_block const* filters, dahl_block const* biases)
+                         dahl_tensor const* filters, dahl_vector const* biases)
 {
-    // Partition by channel dimension
-    block_partition_along_z(input);
-    block_partition_along_z(filters);
+    // Partition by the filter dimension, each iteration will tackle a feature map
     block_partition_along_z_mut(output);
+    tensor_partition_along_t(filters);
 
-    size_t const n_channels = GET_NB_CHILDREN(filters);
+    size_t const n_filters = GET_NB_CHILDREN(filters);
 
-    for (size_t c = 0; c < n_channels; c++)
+    for (size_t c = 0; c < n_filters; c++)
     {
-        dahl_matrix const* input_channel = GET_SUB_MATRIX(input, c);
-        dahl_matrix const* filters_channel = GET_SUB_MATRIX(filters, c);
-        dahl_matrix* output_channel = GET_SUB_MATRIX_MUT(output, c);
-        task_matrix_cross_correlation(input_channel, filters_channel, output_channel);
+        dahl_block const* filter = GET_SUB_BLOCK(filters, c);
+        dahl_matrix* feature_map = GET_SUB_MATRIX_MUT(output, c);
+
+        // Here the input is always the same because we need to compute as many
+        // feature map requested (num_filters) for the current sample.
+        task_convolution_2d(input, filter, feature_map);
+
+        // Add bias to the feature map
+        // TODO: make this non-blocking
+        TASK_ADD_VALUE_SELF(feature_map, vector_get_value(biases, c));
     }
 
-    block_unpartition(input);
-    block_unpartition(filters);
+    tensor_unpartition(filters);
     block_unpartition(output);
 
-    // Add biases to the output
-    TASK_ADD_SELF(output, biases);
     TASK_RELU_SELF(output);
 }
 
@@ -91,10 +88,11 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     return output_batch;
 }
 
-void _convolution_backward_sample(dahl_arena* arena,
+dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
                                   dahl_block const* dl_dout, dahl_block const* input, 
-                                  dahl_block* dl_dfilters, dahl_block* dl_dinput,
-                                  size_t filter_size, dahl_block const* filters)
+                                  dahl_block* dl_dinput, dahl_tensor* dl_dfilters,
+                                  dahl_vector* dl_dbiases,
+                                  size_t filter_size, dahl_tensor const* filters)
 {
     // Here we need padding on dl_dout
     size_t padding = (filter_size - 1) * 2;
@@ -103,37 +101,57 @@ void _convolution_backward_sample(dahl_arena* arena,
     padding_shape.y += padding;
     dahl_block const* dl_dout_padded = block_add_padding_init(arena, dl_dout, padding_shape);
 
+    dahl_shape4d filters_shape = tensor_get_shape(filters);
+
     // Partition by channel dimension
     block_partition_along_z(input);
     block_partition_along_z(dl_dout_padded);
     block_partition_along_z(dl_dout);
     block_partition_along_z_mut(dl_dinput);
-    block_partition_along_z_mut(dl_dfilters);
 
-    size_t const n_channels = GET_NB_CHILDREN(filters);
+    // Partition by filters dimension
+    tensor_partition_along_t_mut(dl_dfilters);
 
-    for (int c = 0; c < n_channels; c++)
+    size_t const num_filters = filters_shape.t; // Output channels
+    size_t const num_channel = filters_shape.z; // Input channels
+
+    for (int f = 0; f < num_filters; f++)
     {
-        dahl_matrix const* sub_input = GET_SUB_MATRIX(input, c);
-        dahl_matrix const* sub_dl_dout = GET_SUB_MATRIX(dl_dout, c);
-        dahl_matrix* sub_dl_dfilters = GET_SUB_MATRIX_MUT(dl_dfilters, c);
+        dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
+        dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters, f);
+        block_partition_along_z_mut(dl_df);
 
-        task_matrix_cross_correlation(sub_input, sub_dl_dout, sub_dl_dfilters);
+        for (int c = 0; c < num_channel; c++)
+        {
+            dahl_matrix const* input_chann = GET_SUB_MATRIX(input, c);
+            dahl_matrix* dl_df_chann = GET_SUB_MATRIX_MUT(dl_df, c);
 
-        // Next lines
-        // dL_dinput[i] = correlate2d(dL_dout[i],self.filters[i], mode="full")
-        dahl_matrix const* sub_filters = GET_SUB_MATRIX(filters, c);
-        dahl_matrix const* sub_dl_dout_padded = GET_SUB_MATRIX(dl_dout_padded, c);
-        dahl_matrix* sub_dl_dinput = GET_SUB_MATRIX_MUT(dl_dinput, c);
+            task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
 
-        task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, sub_dl_dinput);
+            // FIX: ignore for this time because we don't use the result anyways
+            // Next lines
+            // dL_dinput[i] = correlate2d(dL_dout[i],self.filters[i], mode="full")
+            // dahl_matrix const* sub_filters = GET_SUB_MATRIX(filters, c);
+            // dahl_matrix const* sub_dl_dout_padded = GET_SUB_MATRIX(dl_dout_padded, c);
+            // dahl_matrix* sub_dl_dinput = GET_SUB_MATRIX_MUT(dl_dinput, c);
+
+            // task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, sub_dl_dinput);
+        }
+
+        block_unpartition(dl_df);
+
+        dahl_scalar* res = TASK_SUM_INIT(arena, dl_dout_filter);
+        // TODO: make this non-blocking
+        vector_set_value(dl_dbiases, f, scalar_get_value(res));
     }
 
     block_unpartition(input);
     block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
     block_unpartition(dl_dinput);
-    block_unpartition(dl_dfilters);
+    tensor_unpartition(dl_dfilters);
+
+    return dl_dfilters;
 }
 
 dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
@@ -143,55 +161,50 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     // Initialize the result buffer, which is the derivative of the input we got from the forward pass
     dahl_tensor* dl_dinput_batch = tensor_init(arena, conv->input_shape);
 
-    dahl_shape4d dl_dfilters_shape = {
-        conv->filter_shape.x,
-        conv->filter_shape.y,
-        conv->filter_shape.z,
-        conv->input_shape.t,  // batch size
-    };
-
-    dahl_tensor* dl_dfilters_batch = tensor_init(conv->scratch_arena, dl_dfilters_shape);
-
     // Partition by batch dimension
     tensor_partition_along_t(dl_dout_batch);
     tensor_partition_along_t(input_batch);
     tensor_partition_along_t_mut(dl_dinput_batch);
-    tensor_partition_along_t_mut(dl_dfilters_batch);
 
-    // Already partition the filters because they will be accessed in every batches
-    block_partition_along_z(conv->filters);
+    // Already partition the filters (over feature maps: num_filters) because they will be accessed in every batches
+    tensor_partition_along_t(conv->filters);
 
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);
 
+    dahl_tensor* summed_dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
+    dahl_vector* summed_dl_dbiases = vector_init(conv->scratch_arena, conv->filter_shape.t);
+
     for (size_t i = 0; i < batch_size; i++)
     {
+        dahl_tensor* dl_dfilters = tensor_init(arena, conv->filter_shape);
+        dahl_vector* dl_dbiases = vector_init(arena, conv->filter_shape.t); // num filters
+
         _convolution_backward_sample(
             conv->scratch_arena,
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
-            GET_SUB_BLOCK_MUT(dl_dfilters_batch, i),
             GET_SUB_BLOCK_MUT(dl_dinput_batch, i),
+            dl_dfilters,
+            dl_dbiases,
             conv->filter_size, 
             conv->filters);
+
+        // Accumulate dl_dfilters and dl_dbiases
+        TASK_ADD_SELF(summed_dl_dfilters, dl_dfilters);
+        TASK_ADD_SELF(summed_dl_dbiases, dl_dbiases);
     }
 
-    tensor_unpartition(dl_dfilters_batch);
     tensor_unpartition(dl_dout_batch);
     tensor_unpartition(input_batch);
     tensor_unpartition(dl_dinput_batch);
-    block_unpartition(conv->filters);
-    
-    dahl_block* summed_dl_dfilters = task_tensor_sum_t_axis_init(conv->scratch_arena, dl_dfilters_batch);
-    dahl_block* summed_dl_dout = task_tensor_sum_t_axis_init(conv->scratch_arena, dl_dout_batch);
+    tensor_unpartition(conv->filters);
 
     // Updating filters and biases
-    // filters -= dl_dfilters * learning_rate
-    // biases -= dl_dout * learning_rate
     TASK_SCAL_SELF(summed_dl_dfilters, learning_rate / batch_size);
     TASK_SUB_SELF(conv->filters, summed_dl_dfilters);
 
-    TASK_SCAL_SELF(summed_dl_dout, learning_rate / batch_size);
-    TASK_SUB_SELF(conv->biases, summed_dl_dout);
+    TASK_SCAL_SELF(summed_dl_dbiases, learning_rate / batch_size);
+    TASK_SUB_SELF(conv->biases, summed_dl_dbiases);
 
     return dl_dinput_batch;
 }

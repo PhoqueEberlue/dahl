@@ -15,11 +15,11 @@ typedef struct
     size_t filter_size;
 
     // size * size * num_filters
-    dahl_shape3d filter_shape;
+    dahl_shape4d filter_shape;
     dahl_shape4d output_shape;
 
-    dahl_block* filters;
-    dahl_block* biases;
+    dahl_tensor* filters;
+    dahl_vector* biases;
 
     dahl_arena* scratch_arena;
 } dahl_convolution;
