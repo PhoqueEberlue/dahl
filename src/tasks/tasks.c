@@ -571,3 +571,12 @@ dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* 
     task_cross_entropy_loss_batch(prediction_batch, target_batch, res);
     return res;
 }
+
+void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out)
+{
+    int ret = starpu_task_insert(&cl_convolution_2d,
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}

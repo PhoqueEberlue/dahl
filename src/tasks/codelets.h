@@ -11,19 +11,19 @@
 // - starpu_perfmodel
 // - starpu_codelet, referencing the function, number of buffers, their access modes and
 //   the perfmodel
-#define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                         \
-    void func_name(void* buffers[num_buffers], void* cl_arg);                      \
-                                                                                   \
-    static struct starpu_perfmodel perf_model_##func_name = {                      \
-        .type = STARPU_HISTORY_BASED,                                              \
-        .symbol = #func_name                                                       \
-    };                                                                             \
-                                                                                   \
-    static struct starpu_codelet cl_##func_name = {                                \
-        .cpu_funcs = { func_name },                                                \
-        .nbuffers = num_buffers,                                                   \
-        .modes = { __VA_ARGS__ },                                                  \
-        .model = &perf_model_##func_name                                           \
+#define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)    \
+    void func_name(void* buffers[num_buffers], void* cl_arg); \
+                                                              \
+    static struct starpu_perfmodel perf_model_##func_name = { \
+        .type = STARPU_HISTORY_BASED,                         \
+        .symbol = #func_name                                  \
+    };                                                        \
+                                                              \
+    static struct starpu_codelet cl_##func_name = {           \
+        .cpu_funcs = { func_name },                           \
+        .nbuffers = num_buffers,                              \
+        .modes = { __VA_ARGS__ },                             \
+        .model = &perf_model_##func_name                      \
     };
 
 // Tensor
@@ -68,5 +68,6 @@ DEFINE_STARPU_CODELET(copy, 2, STARPU_R, STARPU_W);
 // ---------------------------------------- ML Related ----------------------------------------
 DEFINE_STARPU_CODELET(check_predictions_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(convolution_2d, 3, STARPU_R, STARPU_R, STARPU_W);
 
 #endif //!DAHL_CODELETS_H

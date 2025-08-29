@@ -276,4 +276,11 @@ void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction
 // TODO: refactor that
 dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
                                                                 dahl_matrix const* target_batch);
+
+// Performs `out` = `in` x `kernel`, where:
+// - x is the cross correlation operator over multiple channels
+// - `in`, `kernel` and `out` are dahl_block objects
+// - the shape of `out` must respect: out_nx = in_nx - kernel_nx + 1 and out_ny = in_ny - kernel_ny + 1. No restriction on Z axis because its the channel dimension and the results gets accumulated into `out` which is a matrix.
+// - the shape of the `kernel` should be smaller than the shape of `in` 
+void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out);
 #endif //!DAHL_TASKS_H

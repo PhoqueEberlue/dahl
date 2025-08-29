@@ -783,5 +783,62 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     }
 
     // Divide by batch size and increment into out
-    *out += batch_loss / (dahl_fp)pred_ny;
+    *out += batch_loss; // / (dahl_fp)pred_ny; // FIXME I think dividing by batch size is not needed but we need to confirm that
+}
+
+void convolution_2d(void* buffers[3], void* cl_arg)
+{
+    // Input matrix
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    size_t const in_ldy = STARPU_BLOCK_GET_LDY(buffers[0]);
+    size_t const in_ldz = STARPU_BLOCK_GET_LDZ(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // Kernel matrix
+    size_t const k_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const k_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const k_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+    size_t const k_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+    size_t const k_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+    dahl_fp const* kernel = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // Output matrix
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
+    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+
+    assert(out_nx == in_nx - k_nx + 1);
+    assert(out_ny == in_ny - k_ny + 1);
+    assert(in_nz == k_nz);
+
+    // loop through i,j on axes x,y of the output matrix
+    for (size_t j = 0; j < out_ny; j++)
+    {
+        for (size_t i = 0; i < out_nx; i++)
+        {
+            dahl_fp cell_res = 0.0F;
+
+            // loop through k,l,m on axes x,y,z of the kernel
+            for (size_t m = 0; m < k_nz; m++)
+            {
+                for (size_t l = 0; l < k_ny; l++)
+                {
+                    for (size_t k = 0; k < k_nx; k++)
+                    {
+                        dahl_fp kernel_value = kernel[(m * k_ldz) + (l * k_ldy) + k];
+                        // Here we add the offset of the slidding window (i,j) to (k,l)
+                        // as they both correspond to (x,y).
+                        dahl_fp in_value = in[(m * in_ldz) + ((l + j) * in_ldy) + k + i];
+                        
+                        cell_res += in_value * kernel_value;
+                    }
+                }
+            }
+
+            out[(j * out_ld) + i] = cell_res;
+        }
+    }
 }
