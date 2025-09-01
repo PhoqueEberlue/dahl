@@ -8,7 +8,7 @@ dahl_arena* testing_arena = nullptr;
 
 int main(int argc, char **argv)
 {
-    srand(RANDOM_SEED);
+    // srand(RANDOM_SEED);
 
     dahl_init();
 
