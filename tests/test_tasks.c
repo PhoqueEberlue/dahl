@@ -164,10 +164,10 @@ void test_tensor_sum_t_axis()
         }
     };
 
-    dahl_tensor* a_block = tensor_init_from(testing_arena, a_shape, (dahl_fp*)&a);
+    dahl_tensor* a_tensor = tensor_init_from(testing_arena, a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect);
     dahl_block* result_block = block_init(testing_arena, expect_shape);
-    task_tensor_sum_t_axis(a_block, result_block);
+    task_tensor_sum_t_axis(a_tensor, result_block);
 
     ASSERT_BLOCK_EQUALS(expect_block, result_block);
 
