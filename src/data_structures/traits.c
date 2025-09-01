@@ -6,6 +6,7 @@ dahl_traits dahl_traits_tensor = {
     .get_handle = _tensor_get_handle,
     .get_partition = _tensor_get_current_partition,
     .get_nb_elem = _tensor_get_nb_elem,
+    .print_file = _tensor_print_file,
     .type = DAHL_TENSOR,
 };
 
@@ -14,6 +15,7 @@ dahl_traits dahl_traits_block = {
     .get_handle = _block_get_handle,
     .get_partition = _block_get_current_partition,
     .get_nb_elem = _block_get_nb_elem,
+    .print_file = _block_print_file,
     .type = DAHL_BLOCK,
 };
 
@@ -22,6 +24,7 @@ dahl_traits dahl_traits_matrix = {
     .get_handle = _matrix_get_handle,
     .get_partition = _matrix_get_current_partition,
     .get_nb_elem = _matrix_get_nb_elem,
+    .print_file = _matrix_print_file,
     .type = DAHL_MATRIX,
 };
 
@@ -30,6 +33,7 @@ dahl_traits dahl_traits_vector = {
     .get_handle = _vector_get_handle,
     .get_partition = nullptr, // Vectors cannot be partitioned
     .get_nb_elem = _vector_get_nb_elem,
+    .print_file = _vector_print_file,
     .type = DAHL_VECTOR,
 };
 
@@ -39,5 +43,6 @@ dahl_traits dahl_traits_scalar = {
     .get_handle = _scalar_get_handle,
     .get_partition = nullptr, // Scalars cannot be partitioned
     .get_nb_elem = nullptr, // No number 
+    .print_file = _scalar_print_file,
     .type = DAHL_SCALAR,
 };

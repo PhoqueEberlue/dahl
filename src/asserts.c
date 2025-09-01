@@ -1,10 +1,41 @@
 #include "../include/dahl_asserts.h"
 #include <assert.h>
 #include <stdio.h>
+#include "utils.h"
+#include "stdlib.h"
+#include "data_structures/data_structures.h"
 
 void log_prefix(char const* file, int const line, char const* function)
 {
     printf("[DAHL][FAIL][%s:%s:%d] ", file, function, line);
+}
+
+void print_diff(void const* a, void const* b, char const* a_expr, char const* b_expr, dahl_traits* traits)
+{
+    char fname1[256];
+    char fname2[256];
+
+    snprintf(fname1, sizeof(fname1), "/tmp/%s_XXXXXX", a_expr);
+    snprintf(fname2, sizeof(fname2), "/tmp/%s_XXXXXX", b_expr);
+
+    FILE *fp1 = temp_file_create(fname1);
+    FILE *fp2 = temp_file_create(fname2);
+
+    traits->print_file(a, fp1);
+    traits->print_file(b, fp2);
+
+    fflush(fp1);
+    fflush(fp2);
+    rewind(fp1);
+    rewind(fp2);
+
+    char cmd[256];
+    // Launch riff in no-pager mode to print everything in the terminal
+    snprintf(cmd, sizeof(cmd), "riff \"%s\" \"%s\" --no-pager", fname1, fname2);
+    system(cmd);
+
+    temp_file_delete(fname1, fp1);
+    temp_file_delete(fname2, fp2);
 }
 
 void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
@@ -16,10 +47,7 @@ void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
     {
         log_prefix(file, line, function);
         printf("Assert scalar equals: %s != %s\n", a_expr, b_expr);
-        printf("%s: ", a_expr);
-        scalar_print(a);
-        printf("%s: ", b_expr);
-        scalar_print(b);
+        PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
 }
@@ -33,10 +61,7 @@ void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
     {
         log_prefix(file, line, function);
         printf("Assert vector equals: %s != %s\n", a_expr, b_expr);
-        printf("%s: ", a_expr);
-        vector_print(a);
-        printf("%s: ", b_expr);
-        vector_print(b);
+        PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
 }
@@ -50,10 +75,7 @@ void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
     {
         log_prefix(file, line, function);
         printf("Assert matrix equals: %s != %s\n", a_expr, b_expr);
-        printf("%s: ", a_expr);
-        matrix_print(a);
-        printf("%s: ", b_expr);
-        matrix_print(b);
+        PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
 }
@@ -67,10 +89,7 @@ void assert_block_equals(dahl_block const* a, dahl_block const* b,
     {
         log_prefix(file, line, function);
         printf("Assert block equals: %s != %s\n", a_expr, b_expr);
-        printf("%s: ", a_expr);
-        block_print(a);
-        printf("%s: ", b_expr);
-        block_print(b);
+        PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
 }
@@ -84,10 +103,7 @@ void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
     {
         log_prefix(file, line, function);
         printf("Assert block equals: %s != %s\n", a_expr, b_expr);
-        printf("%s: ", a_expr);
-        tensor_print(a);
-        printf("%s: ", b_expr);
-        tensor_print(b);
+        PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
 }

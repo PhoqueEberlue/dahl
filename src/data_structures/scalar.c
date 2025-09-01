@@ -60,8 +60,13 @@ bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const roundi
     }
 }
 
+void _scalar_print_file(void const* vscalar, FILE* fp)
+{
+    dahl_fp value = scalar_get_value((dahl_scalar const*)vscalar);
+    fprintf(fp, "scalar=%f\n", value);
+}
+
 void scalar_print(dahl_scalar const* scalar)
 {
-    dahl_fp value = scalar_get_value(scalar);
-    printf("scalar=%f\n", value);
+    _scalar_print_file(scalar, stdout);
 }

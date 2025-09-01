@@ -1,7 +1,6 @@
 #include "data_structures.h"
 #include "starpu_data.h"
 #include "starpu_data_interfaces.h"
-#include <math.h>
 
 void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
@@ -163,21 +162,30 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
     return res;
 }
 
-void vector_print(dahl_vector const* vector)
+void _vector_print_file(void const* vvector, FILE* fp)
 {
+    auto vector = (dahl_vector const*)vvector;
     const size_t len = vector_get_len(vector);
 
 	starpu_data_acquire(vector->handle, STARPU_R);
 
-    printf("vector=%p nx=%zu\n", vector->data, len);
-
+    fprintf(fp, "vector=%p nx=%zu\n{ ", vector->data, len);
     for(size_t x = 0; x < len; x++)
     {
-        printf("%f ", vector->data[x]);
+        fprintf(fp, "%f", vector->data[x]);
+
+        // Omit last comma
+        if (x != len - 1)
+            fprintf(fp, ", ");
     }
-    printf("\n");
+    fprintf(fp, " }\n");
 
 	starpu_data_release(vector->handle);
+}
+
+void vector_print(dahl_vector const* vector)
+{
+    _vector_print_file(vector, stdout);
 }
 
 // TODO: why wouldn't it be a codelet?

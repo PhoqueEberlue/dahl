@@ -421,31 +421,37 @@ void block_unpartition(dahl_block const* block)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void block_print(dahl_block const* block)
+void _block_print_file(void const* vblock, FILE* fp)
 {
+    auto block = (dahl_block const*)vblock;
     const dahl_shape3d shape = block_get_shape(block);
 	const size_t ldy = starpu_block_get_local_ldy(block->handle);
 	const size_t ldz = starpu_block_get_local_ldz(block->handle);
 
 	starpu_data_acquire(block->handle, STARPU_R);
 
-    printf("block=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu\n", block->data, shape.x, shape.y, shape.z, ldy, ldz);
-
+    fprintf(fp, "block=%p nx=%zu ny=%zu nz=%zu ldy=%zu ldz=%zu\n{\n", block->data, shape.x, shape.y, shape.z, ldy, ldz);
 	for(size_t z = 0; z < shape.z; z++)
 	{
+        fprintf(fp, "\t{\n");
 		for(size_t y = 0; y < shape.y; y++)
 		{
-            // printf("%s", space_offset(shape.y - y - 1));
+            fprintf(fp, "\t\t{ ");
 
 			for(size_t x = 0; x < shape.x; x++)
 			{
-				printf("%f ", block->data[(z*ldz)+(y*ldy)+x]);
+				fprintf(fp, "%f, ", block->data[(z*ldz)+(y*ldy)+x]);
 			}
-			printf("\n");
+			fprintf(fp, "},\n");
 		}
-		printf("\n");
+		fprintf(fp, "\t},\n");
 	}
-	printf("\n");
+	fprintf(fp, "}\n");
 
 	starpu_data_release(block->handle);
+}
+
+void block_print(dahl_block const* block)
+{
+    _block_print_file(block, stdout);
 }

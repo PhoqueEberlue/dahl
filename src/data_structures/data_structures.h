@@ -21,6 +21,7 @@ typedef const struct _dahl_traits
     starpu_data_handle_t (*get_handle)(void const*);
     dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
+    void (*print_file)(void const*, FILE*);
     dahl_type type;
 } dahl_traits;
 
@@ -133,5 +134,11 @@ size_t _block_get_nb_elem(void const* block);
 size_t _matrix_get_nb_elem(void const* matrix);
 size_t _vector_get_nb_elem(void const* vector);
 size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar); // Defined just for compatibility
+
+void _tensor_print_file(void const*, FILE*);
+void _block_print_file(void const*, FILE*);
+void _matrix_print_file(void const*, FILE*);
+void _vector_print_file(void const*, FILE*);
+void _scalar_print_file(void const*, FILE*);
 
 #endif //!DAHL_DATA_STRUCTURES_H

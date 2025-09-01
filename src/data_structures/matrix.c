@@ -295,29 +295,33 @@ void matrix_unpartition(dahl_matrix const* matrix)
     // This means that when submitting a new identical partition, the same handles will be reused.
 }
 
-void matrix_print(dahl_matrix const* matrix)
+void _matrix_print_file(void const* vmatrix, FILE* fp)
 {
+    auto matrix = (dahl_matrix const*)vmatrix;
     const dahl_shape2d shape = matrix_get_shape(matrix);
 
 	size_t ld = starpu_matrix_get_local_ld(matrix->handle);
 
 	starpu_data_acquire(matrix->handle, STARPU_R);
 
-    printf("matrix=%p nx=%zu ny=%zu ld=%zu\n", matrix->data, shape.x, shape.y, ld);
-
+    fprintf(fp, "matrix=%p nx=%zu ny=%zu ld=%zu\n{ ", matrix->data, shape.x, shape.y, ld);
     for(size_t y = 0; y < shape.y; y++)
     {
-        // printf("%s", space_offset(shape.y - y - 1));
-
+        fprintf(fp, "\n\t{ ");
         for(size_t x = 0; x < shape.x; x++)
         {
-            printf("%.15f ", matrix->data[(y*ld)+x]);
+            fprintf(fp, "%.15f, ", matrix->data[(y*ld)+x]);
         }
-        printf("\n");
+        fprintf(fp, "},");
     }
-    printf("\n");
+    fprintf(fp, "\n}\n");
 
 	starpu_data_release(matrix->handle);
+}
+
+void matrix_print(dahl_matrix const* matrix)
+{
+    _matrix_print_file(matrix, stdout);
 }
 
 void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)

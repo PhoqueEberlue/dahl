@@ -304,8 +304,9 @@ void tensor_unpartition(dahl_tensor const* tensor)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void tensor_print(dahl_tensor const* tensor)
+void _tensor_print_file(void const* vtensor, FILE* fp)
 {
+    dahl_tensor const* tensor = (dahl_tensor const*)vtensor;
     const dahl_shape4d shape = tensor_get_shape(tensor);
 	const size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
 	const size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
@@ -313,25 +314,32 @@ void tensor_print(dahl_tensor const* tensor)
 
 	starpu_data_acquire(tensor->handle, STARPU_R);
 
-    printf("tensor=%p nx=%zu ny=%zu nz=%zu nt=%zu ldy=%zu ldz=%zu ldt=%zu\n", tensor->data, shape.x, shape.y, shape.z, shape.t, ldy, ldz, ldt);
-
+    fprintf(fp, "tensor=%p nx=%zu ny=%zu nz=%zu nt=%zu ldy=%zu ldz=%zu ldt=%zu\n{\n", tensor->data, shape.x, shape.y, shape.z, shape.t, ldy, ldz, ldt);
 	for(size_t t = 0; t < shape.t; t++)
     {
+        fprintf(fp, "\t{\n");
         for(size_t z = 0; z < shape.z; z++)
         {
+            fprintf(fp, "\t\t{\n");
             for(size_t y = 0; y < shape.y; y++)
             {
+                fprintf(fp, "\t\t\t{ ");
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    printf("%.15f ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
+                    fprintf(fp, "%.15f, ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
                 }
-                printf("\n");
+                fprintf(fp, "},\n");
             }
-            printf("\n");
+            fprintf(fp, "\t\t},\n");
         }
-        printf("\n");
+        fprintf(fp, "\t},\n");
     }
-	printf("\n");
+	fprintf(fp, "}\n");
 
 	starpu_data_release(tensor->handle);
+}
+
+void tensor_print(dahl_tensor const* tensor)
+{
+    _tensor_print_file(tensor, stdout);
 }
