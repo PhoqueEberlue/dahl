@@ -167,15 +167,15 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
     dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
 
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    size_t const mask_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const mask_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const mask_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp* mask = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
 
-    size_t const mask_nx = STARPU_MATRIX_GET_NX(buffers[2]);
-    size_t const mask_ny = STARPU_MATRIX_GET_NY(buffers[2]);
-    size_t const mask_ld = STARPU_MATRIX_GET_LD(buffers[2]);
-    dahl_fp* mask = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
+    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
 
     assert(out_nx == in_nx / pool_size);
     assert(out_ny == in_ny / pool_size);
@@ -193,9 +193,10 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
             size_t end_l = start_l + pool_size;
             size_t end_k = start_k + pool_size;
 
-            dahl_fp current_max = 0;
-            size_t current_max_y = 0;
-            size_t current_max_x = 0;
+            // Set max value and index to first element to handle cases with negative numbers
+            dahl_fp current_max = in[(start_l * in_ld) + start_k];
+            size_t current_max_y = start_l;
+            size_t current_max_x = start_k;
 
             // Loop through k,l on axes x,y of matrix `in`
             for (size_t l = start_l; l < end_l; l++)
@@ -255,7 +256,7 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
             size_t end_l = start_l + pool_size;
             size_t end_k = start_k + pool_size;
 
-            // Loop through k,l on axes x,y of matrix `out`
+            // Loop through k,l on axes x,y of matrix `out` and `mask`
             for (size_t l = start_l; l < end_l; l++)
             {
                 for (size_t k = start_k; k < end_k; k++)
@@ -263,6 +264,8 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
                     dahl_fp in_value = in[(j * in_ld) + i];
                     dahl_fp mask_value = mask[(l * mask_ld) + k];
 
+                    // If the current value of the mask mask is 0, the result is ignored.
+                    // I'm not sure if its better to check that conditionnaly, or to always write a result.
                     out[(l * out_ld) + k] = in_value * mask_value;
                 }
             }
@@ -472,29 +475,6 @@ void vector_diag(void* buffers[2], void* cl_arg)
     {
         // Copy the vector's elements in a diagonal manner into the matrix
         out[(i * out_ld) + i] = in[i];
-    }
-}
-
-void vector_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
-{
-    // Predictions vector
-    size_t const pred_len = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp const* pred = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    // Targets vector
-    size_t const targ_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp const* targ = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
-
-    // Output vector
-    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[2]);
-
-    assert(pred_len == targ_len);
-    assert(pred_len == out_len);
-
-    for (size_t i = 0; i < out_len; i++)
-    {
-        out[i] = (-targ[i]) / (pred[i] + 1e-7F) / (dahl_fp)pred_len;
     }
 }
 
@@ -755,35 +735,68 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     size_t const pred_ld = STARPU_MATRIX_GET_LD(buffers[0]);
     dahl_fp const* pred = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
 
-    // Targets vector
+    // Targets batch
     size_t const targ_nx = STARPU_MATRIX_GET_NX(buffers[1]);
     size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
     size_t const targ_ld = STARPU_MATRIX_GET_LD(buffers[1]);
     dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
 
+    // Output scalar
     dahl_fp* out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[2]);
 
     assert(pred_nx == targ_nx);
     assert(pred_ny == targ_ny);
     assert(pred_ld == targ_ld);
 
-    dahl_fp batch_loss = 0;
+    dahl_fp loss = 0;
 
     for (size_t y = 0; y < pred_ny; y++)
     {
-        dahl_fp loss = 0;
-
         for (size_t x = 0; x < pred_nx; x++)
         {
-            loss += (targ[(y*targ_ld)+x] * log(pred[(y*pred_ld)+x]));
+            loss -= (targ[(y*targ_ld)+x] * log(pred[(y*pred_ld)+x]));
         }
-
-        // Divide by the number of classes and reverse the sign (decrement)
-        batch_loss -= loss / (dahl_fp)pred_nx;
     }
 
     // Divide by batch size and increment into out
-    *out += batch_loss; // / (dahl_fp)pred_ny; // FIXME I think dividing by batch size is not needed but we need to confirm that
+    *out += loss / (dahl_fp)pred_ny;
+}
+
+void cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
+{
+    // Predictions batch
+    size_t const pred_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const pred_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const pred_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* pred = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Targets batch
+    size_t const targ_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const targ_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const targ_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp const* targ = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    // Output by batch
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
+    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+
+    assert(pred_nx == targ_nx);
+    assert(pred_ny == targ_ny);
+    assert(pred_nx == out_nx);
+    assert(pred_ny == out_ny);
+    assert(pred_ld == targ_ld);
+    assert(pred_ld == out_ld);
+
+    for (size_t y = 0; y < pred_ny; y++)
+    {
+        for (size_t x = 0; x < pred_nx; x++)
+        {
+            size_t i = (y * pred_ld) + x;
+            out[i] = (pred[i] - targ[i]) / (dahl_fp)pred_ny;
+        }
+    }
 }
 
 void convolution_2d(void* buffers[3], void* cl_arg)

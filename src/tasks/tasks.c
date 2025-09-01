@@ -93,13 +93,13 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t pool_size)
+void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matrix* out, size_t pool_size)
 {
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(&pool_size),
                              STARPU_R, in->handle,
-                             STARPU_W, out->handle, 
-                             STARPU_W, mask->handle, 0);
+                             STARPU_W, mask->handle, 
+                             STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -319,54 +319,6 @@ dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* 
     return result;
 }
 
-void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
-{
-    int ret = starpu_task_insert(&cl_vector_cross_entropy_loss_gradient,
-                             STARPU_R, predictions->handle,
-                             STARPU_R, targets->handle,
-                             STARPU_W, gradients->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-}
-
-// TODO: We should vectorize this to prevent partitionning / or at least support batch in the kernel
-void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch)
-{
-    matrix_partition_along_y(prediction_batch);
-    matrix_partition_along_y(target_batch);
-    matrix_partition_along_y_mut(gradient_batch);
-
-    for (size_t i = 0; i < GET_NB_CHILDREN(prediction_batch); i++)
-    {
-        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
-        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
-        dahl_vector* gradients = GET_SUB_VECTOR_MUT(gradient_batch, i);
-
-        task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
-    }
-
-    matrix_unpartition(prediction_batch);
-    matrix_unpartition(target_batch);
-    matrix_unpartition(gradient_batch);
-}
-
-dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
-                                                                dahl_matrix const* target_batch)
-{
-    dahl_matrix* gradient_batch = matrix_init(arena, matrix_get_shape(prediction_batch));
-    task_vector_cross_entropy_loss_gradient_batch(prediction_batch, target_batch, gradient_batch);
-    return gradient_batch;
-}
-
-dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena* arena, dahl_vector const* predictions, dahl_vector const* targets)
-{
-    // TODO: same as `task_vector_softmax_derivative`
-    size_t len = vector_get_len(predictions);
-    dahl_vector* gradients = vector_init(arena, len);
-    task_vector_cross_entropy_loss_gradient(predictions, targets, gradients);
-
-    return gradients;
-}
-
 void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out)
 {
     int ret = starpu_task_insert(&cl_vector_to_matrix,
@@ -555,7 +507,7 @@ dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix co
 
 void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out)
 {
-    dahl_fp const epsilon = 1e-7F;
+    dahl_fp const epsilon = 1e-12F;
     TASK_CLIP_SELF(prediction_batch, epsilon, 1 - epsilon);
 
     int ret = starpu_task_insert(&cl_cross_entropy_loss_batch,
@@ -570,6 +522,23 @@ dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* 
     dahl_scalar* res = scalar_init(arena);
     task_cross_entropy_loss_batch(prediction_batch, target_batch, res);
     return res;
+}
+
+void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients)
+{
+    int ret = starpu_task_insert(&cl_cross_entropy_loss_gradient,
+                             STARPU_R, predictions->handle,
+                             STARPU_R, targets->handle,
+                             STARPU_W, gradients->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
+                                                                dahl_matrix const* target_batch)
+{
+    dahl_matrix* gradient_batch = matrix_init(arena, matrix_get_shape(prediction_batch));
+    task_cross_entropy_loss_gradient_batch(prediction_batch, target_batch, gradient_batch);
+    return gradient_batch;
 }
 
 void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out)

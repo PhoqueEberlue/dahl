@@ -40,7 +40,7 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 // Performs max dahl_pooling on `in`, write output on `out` and store mask of the max values indexes in `mask`
 // - `out` shape should be equal to `in` shape / `pool_size` (euclidian division)
 // - `mask` shape should be the same as `in` shape.
-void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* out, dahl_matrix* mask, size_t pool_size);
+void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matrix* out, size_t pool_size);
 
 // Sum the matrix values over the y axis and return it as a vector of len x.
 void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out);
@@ -266,15 +266,9 @@ void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix co
 // Compute the cross entropy loss over the given batch and return the result into a new scalar.
 dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch);
 
-// TODO: refactor that
-void task_vector_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
-// TODO: refactor that
-dahl_vector* task_vector_cross_entropy_loss_gradient_init(dahl_arena*, dahl_vector const* predictions, dahl_vector const* targets);
+void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients);
 
-// TODO: refactor that
-void task_vector_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
-// TODO: refactor that
-dahl_matrix* task_vector_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
+dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
                                                                 dahl_matrix const* target_batch);
 
 // Performs `out` = `in` x `kernel`, where:
