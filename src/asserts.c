@@ -93,10 +93,22 @@ void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
 }
 
 void assert_fp_equals(dahl_fp const a, dahl_fp const b,
+                          bool const rounding, u_int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
-    if (a != b)
+    bool match = false;
+
+    if (rounding)
+    {
+        match = fp_round(a, precision) == fp_round(b, precision);
+    }
+    else
+    {
+        match = a == b;
+    }
+    
+    if (!match)
     {
         log_prefix(file, line, function);
         printf("Assert dahl_fp equals: %s != %s\n", a_expr, b_expr);
