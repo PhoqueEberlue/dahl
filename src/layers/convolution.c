@@ -121,6 +121,10 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
         dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters, f);
         block_partition_along_z_mut(dl_df);
 
+        dahl_matrix const* dl_dout_padded_filter = GET_SUB_MATRIX(dl_dout_padded, f);
+        dahl_block const* filter = GET_SUB_BLOCK(filters, f);
+        block_partition_along_z(filter);
+
         for (int c = 0; c < num_channel; c++)
         {
             dahl_matrix const* input_chann = GET_SUB_MATRIX(input, c);
@@ -128,17 +132,14 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
 
             task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
 
-            // FIX: ignore for this time because we don't use the result anyways
-            // Next lines
-            // dL_dinput[i] = correlate2d(dL_dout[i],self.filters[i], mode="full")
-            // dahl_matrix const* sub_filters = GET_SUB_MATRIX(filters, c);
-            // dahl_matrix const* sub_dl_dout_padded = GET_SUB_MATRIX(dl_dout_padded, c);
-            // dahl_matrix* sub_dl_dinput = GET_SUB_MATRIX_MUT(dl_dinput, c);
+            dahl_matrix const* filter_chann = GET_SUB_MATRIX(filter, c);
+            dahl_matrix* dl_dinput_chann = GET_SUB_MATRIX_MUT(dl_dinput, c);
 
-            // task_matrix_cross_correlation(sub_dl_dout_padded, sub_filters, sub_dl_dinput);
+            task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann, dl_dinput_chann);
         }
 
         block_unpartition(dl_df);
+        block_unpartition(filter);
 
         dahl_scalar* res = TASK_SUM_INIT(arena, dl_dout_filter);
         // TODO: make this non-blocking
