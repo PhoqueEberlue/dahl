@@ -46,7 +46,7 @@ void test_miscellaneous()
             // block_unpartition(block);
             // block_unpartition(res);
             
-            TASK_WAIT(block, 50000);
+            TASK_WAIT(block, 5000);
             TASK_POWER(block, res, 2);
         }
         printf("finished submitting everything for cpu %lu\n", cpu);
