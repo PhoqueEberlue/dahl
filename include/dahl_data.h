@@ -21,18 +21,21 @@ extern dahl_traits dahl_traits_tensor;
 extern dahl_traits dahl_traits_block;
 extern dahl_traits dahl_traits_matrix;
 extern dahl_traits dahl_traits_vector;
+extern dahl_traits dahl_traits_scalar;
 
 // Get the traits structure of an object at compile time.
 // It is useful to infer an object type.
 #define GET_TRAITS(OBJECT) _Generic((OBJECT), \
     dahl_tensor*: &dahl_traits_tensor,        \
-    dahl_block*:  &dahl_traits_block,         \
+    dahl_block* : &dahl_traits_block,         \
     dahl_matrix*: &dahl_traits_matrix,        \
     dahl_vector*: &dahl_traits_vector,        \
+    dahl_scalar*: &dahl_traits_scalar,        \
     dahl_tensor const*: &dahl_traits_tensor,  \
-    dahl_block const*:  &dahl_traits_block,   \
+    dahl_block  const*: &dahl_traits_block,   \
     dahl_matrix const*: &dahl_traits_matrix,  \
-    dahl_vector const*: &dahl_traits_vector   \
+    dahl_vector const*: &dahl_traits_vector,  \
+    dahl_scalar const*: &dahl_traits_scalar   \
 )
 
 // Type comparison without taking into account const qualifiers
