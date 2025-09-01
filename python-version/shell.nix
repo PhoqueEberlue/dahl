@@ -8,5 +8,10 @@ pkgs.mkShell {
       ipython
       tensorflow
       keras
+      torch
+      torchvision
+      scikit-learn
+      matplotlib
+      seaborn
   ];
 }

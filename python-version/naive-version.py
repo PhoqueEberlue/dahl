@@ -153,6 +153,7 @@ def cross_entropy_loss(predictions, targets):
     epsilon = 1e-7
     predictions = np.clip(predictions, epsilon, 1 - epsilon)
     loss = -np.sum(targets * np.log(predictions)) / num_samples
+    print(f"cross entropy loss: {loss}")
     return loss
 
 def cross_entropy_loss_gradient(actual_labels, predicted_probs):
@@ -186,6 +187,8 @@ def train_network(X, y, conv, pool, full, lr=0.01, epochs=200):
                 correct_predictions += 1
             # Backward pass
             gradient = cross_entropy_loss_gradient(y[i], full_out.flatten()).reshape((-1, 1))
+
+            print(f"gradient {gradient}")
             full_back = full.backward(gradient, lr)
             pool_back = pool.backward(full_back, lr)
             conv_back = conv.backward(pool_back, lr)
