@@ -978,6 +978,26 @@ void test_backward_max_pooling()
     ASSERT_MATRIX_EQUALS(expect, output);
 }
 
+void test_block_sum_xy_axes()
+{
+    dahl_block* block = BLOCK(testing_arena, 2, 3, 4, {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    });
+
+    dahl_vector* expect = VECTOR(testing_arena, 2, { 8.0F, 0.0F });
+    dahl_vector* out = task_block_sum_xy_axes_init(testing_arena, block);
+    ASSERT_VECTOR_EQUALS(expect, out);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1008,4 +1028,5 @@ void test_tasks()
     test_check_predictions_batch();
     test_max_pooling();
     test_backward_max_pooling();
+    test_block_sum_xy_axes();
 }

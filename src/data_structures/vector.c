@@ -188,7 +188,6 @@ void vector_print(dahl_vector const* vector)
     _vector_print_file(vector, stdout);
 }
 
-// TODO: why wouldn't it be a codelet?
 dahl_matrix* vector_to_categorical(dahl_arena* arena, dahl_vector const* vector, size_t const num_classes)
 {
     size_t len = vector_get_len(vector);

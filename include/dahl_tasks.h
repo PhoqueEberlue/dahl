@@ -29,6 +29,12 @@ dahl_matrix* task_block_sum_z_axis_init(dahl_arena*, dahl_block const* in);
 void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out);
 dahl_matrix* task_block_sum_y_axis_init(dahl_arena*, dahl_block const* in);
 
+// Sum the block values over the x and y axes and store the result in the vector `out` of len z.
+void task_block_sum_xy_axes(dahl_block const* in, dahl_vector* out);
+
+// Sum the block values over the x and y axes and return a new vector `out` of len z.
+dahl_vector* task_block_sum_xy_axes_init(dahl_arena*, dahl_block const* in);
+
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator

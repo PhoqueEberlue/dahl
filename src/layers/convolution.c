@@ -140,11 +140,10 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
 
         block_unpartition(dl_df);
         block_unpartition(filter);
-
-        dahl_scalar* res = TASK_SUM_INIT(arena, dl_dout_filter);
-        // TODO: make this non-blocking
-        vector_set_value(dl_dbiases, f, scalar_get_value(res));
     }
+
+    // Sum the derivative values of each feature map into the vector `dl_dbiases`
+    task_block_sum_xy_axes(dl_dout, dl_dbiases);
 
     block_unpartition(input);
     block_unpartition(dl_dout_padded);

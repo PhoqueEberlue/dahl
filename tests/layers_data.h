@@ -5313,7 +5313,6 @@ static constexpr dahl_fp expect_pool_forward[batch_size][num_filters][13][13] =
                     0.000000000000000, 0.000000000000000, 0.000000000000000,
                     0.000000000000000}}}};
 
-// TODO: we can get the result from an execution its fine
 static constexpr dahl_fp expect_pool_mask[batch_size][num_filters][26][26] = {
     {
         {
