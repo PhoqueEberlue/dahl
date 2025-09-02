@@ -35,6 +35,15 @@ void task_block_sum_xy_axes(dahl_block const* in, dahl_vector* out);
 // Sum the block values over the x and y axes and return a new vector `out` of len z.
 dahl_vector* task_block_sum_xy_axes_init(dahl_arena*, dahl_block const* in);
 
+// Add padding to the block `in` by fitting it to `out` that should be of a greater shape.
+// E.g.: in(4,3,2) with out(6,5,2) will add zeros on the corner of the matrices, but not on the z dimension.
+// If the new padding is even, the remainder is placed at the end of the axis.
+void task_block_add_padding(dahl_block const* in, dahl_block* out);
+
+// Add padding to the block `in` by returning a new block with the `new_shape` that should be greater than `in`'s shape.
+// If the new padding is even, the remainder is placed at the end of the axis.
+dahl_block* task_block_add_padding_init(dahl_arena*, dahl_block const* in, dahl_shape3d new_shape);
+
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator

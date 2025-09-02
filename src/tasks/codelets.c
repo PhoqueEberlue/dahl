@@ -135,6 +135,42 @@ void block_sum_xy_axes(void* buffers[2], void* cl_arg)
     }
 }
 
+void block_add_padding(void* buffers[2], void* cl_arg)
+{
+    size_t const in_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const in_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    size_t const in_ldy = STARPU_BLOCK_GET_LDY(buffers[0]);
+    size_t const in_ldz = STARPU_BLOCK_GET_LDZ(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+    size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+    size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(out_nx >= in_nx && out_ny >= in_ny && out_nz >= in_nz);
+
+    size_t diff_z = (out_nz - in_nz) / 2;
+    size_t diff_y = (out_ny - in_ny) / 2;
+    size_t diff_x = (out_nx - in_nx) / 2;
+
+    for (size_t z = 0; z < in_nz; z++)
+    {
+        for (size_t y = 0; y < in_ny; y++)
+        {
+            for (size_t x = 0; x < in_nx; x++)
+            {
+                dahl_fp value = in[(z * in_ldz) + (y * in_ldy) + x];
+                out[((z + diff_z) * out_ldz) + ((y + diff_y) * out_ldy) + (x + diff_x)] = value;
+            }
+        }
+
+    }
+}
+
 // ---------------------------------------- MATRIX ----------------------------------------
 void matrix_cross_correlation(void* buffers[3], void* cl_arg)
 {

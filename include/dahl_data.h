@@ -128,12 +128,6 @@ dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data
 // This is a blocking function.
 void block_set_from(dahl_block* block, dahl_fp const* data);
 
-// Returns a new block with added padding. 
-// The new_shape should be larger than the previous block.
-// If it is exactly the same, it just produces a copy of the bolck.
-// If the new padding is even, the remainder is placed at the end of the axis.
-dahl_block* block_add_padding_init(dahl_arena*, dahl_block const*, dahl_shape3d new_shape);
-
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const*);
 

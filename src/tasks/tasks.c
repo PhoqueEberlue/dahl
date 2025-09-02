@@ -99,6 +99,21 @@ dahl_vector* task_block_sum_xy_axes_init(dahl_arena* arena, dahl_block const* in
     return out;
 }
 
+void task_block_add_padding(dahl_block const* in, dahl_block* out)
+{
+    int ret = starpu_task_insert(&cl_block_add_padding,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_block* task_block_add_padding_init(dahl_arena* arena, dahl_block const* in, dahl_shape3d const new_shape)
+{
+    dahl_block* out = block_init(arena, new_shape);
+    task_block_add_padding(in, out);
+    return out;
+}
+
 // ---------------------------------------- MATRIX ----------------------------------------
 void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* kernel, dahl_matrix* out)
 {

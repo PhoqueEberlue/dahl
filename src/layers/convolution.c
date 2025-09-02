@@ -99,7 +99,7 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
     dahl_shape3d padding_shape = block_get_shape(dl_dout);
     padding_shape.x += padding;
     padding_shape.y += padding;
-    dahl_block const* dl_dout_padded = block_add_padding_init(arena, dl_dout, padding_shape);
+    dahl_block const* dl_dout_padded = task_block_add_padding_init(arena, dl_dout, padding_shape);
 
     dahl_shape4d filters_shape = tensor_get_shape(filters);
 

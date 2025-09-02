@@ -26,15 +26,16 @@
         .model = &perf_model_##func_name                      \
     };
 
-// Tensor
+// ---------------------------------------- TENSOR ----------------------------------------
 DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
 
-// Block
+// ---------------------------------------- BLOCK ----------------------------------------
 DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_y_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_xy_axes, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(block_add_padding, 2, STARPU_R, STARPU_W);
 
-// Matrix
+// ---------------------------------------- MATRIX ----------------------------------------
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_max_pooling, 3, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, STARPU_R, STARPU_R, STARPU_W);
@@ -44,7 +45,7 @@ DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
 
-// Vector
+// ---------------------------------------- VECTOR ----------------------------------------
 DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_dot_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
