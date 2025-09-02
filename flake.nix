@@ -70,6 +70,7 @@
                 pajeng
                 vite
                 gzip
+                riffdiff
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
