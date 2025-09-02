@@ -79,10 +79,7 @@ void test_matrix_cross_correlation_2()
 
 void test_relu()
 {
-    dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
-    dahl_shape3d expect_shape = a_shape;
-
-    dahl_fp a[2][3][4] = {
+    dahl_block* block = BLOCK(testing_arena, 2, 3, 4, {
         {
             {-2.0F, 1.0F, 2.0F,-1.0F },
             { 3.0F, 1.0F,-3.0F, 1.0F },
@@ -93,9 +90,9 @@ void test_relu()
             {-7.0F,-3.0F, 3.0F, 2.0F },
             { 1.0F, 1.0F, 9.0F, 1.0F },
         },
-    };
+    });
 
-    dahl_fp expect[2][3][4] = {
+    dahl_block* expect_block = BLOCK(testing_arena, 2, 3, 4, {
         {
             { 0.0F, 1.0F, 2.0F, 0.0F },
             { 3.0F, 1.0F, 0.0F, 1.0F },
@@ -106,17 +103,34 @@ void test_relu()
             { 0.0F, 0.0F, 3.0F, 2.0F },
             { 1.0F, 1.0F, 9.0F, 1.0F },
         },
-    };
+    });
 
-    dahl_block* a_block = block_init_from(testing_arena, a_shape, (dahl_fp*)&a);
-    dahl_block* expect_block = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect);
+    TASK_RELU_SELF(block);
+    ASSERT_BLOCK_EQUALS(expect_block, block);
 
-    TASK_RELU_SELF(a_block);
+    dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
+        { 3.0F, 1.0F,-8.0F,-3.0F },
+        {-7.0F,-3.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    });
 
-    ASSERT_BLOCK_EQUALS(expect_block, a_block);
+    dahl_matrix* expect_matrix = MATRIX(testing_arena, 3, 4, {
+        { 3.0F, 1.0F, 0.0F, 0.0F },
+        { 0.0F, 0.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    });
+
+    TASK_RELU_SELF(matrix);
+    ASSERT_MATRIX_EQUALS(expect_matrix, matrix);
+
+    dahl_vector* vector = VECTOR(testing_arena, 4, { 3.0F, 1.0F,-8.0F,-3.0F });
+    dahl_vector* out_vector = vector_init(testing_arena, 4);
+    dahl_vector* expect_vector = VECTOR(testing_arena, 4, { 3.0F, 1.0F, 0.0F, 0.0F });
+
+    TASK_RELU(vector, out_vector);
+    ASSERT_VECTOR_EQUALS(expect_vector, out_vector);
 
     dahl_arena_reset(testing_arena);
-    // TODO: add test for other types and task relu without self
 }
 
 void test_tensor_sum_t_axis()

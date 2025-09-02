@@ -514,6 +514,10 @@ void relu(void* buffers[2], void* cl_arg)
         {
             out[i] = 0.0F;
         }
+        else 
+        {
+            out[i] = in[i];
+        }
     }
 }
 
