@@ -112,7 +112,7 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
 void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matrix* out, size_t pool_size)
 {
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
-                             STARPU_VALUE, &pool_size, sizeof(&pool_size),
+                             STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
                              STARPU_W, mask->handle, 
                              STARPU_W, out->handle, 0);
@@ -122,7 +122,7 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
 void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t pool_size)
 {
     int ret = starpu_task_insert(&cl_matrix_backward_max_pooling,
-                             STARPU_VALUE, &pool_size, sizeof(&pool_size),
+                             STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
                              STARPU_R, mask->handle, 
                              STARPU_W, out->handle, 0);
@@ -230,9 +230,9 @@ void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape)
     char *arg_buffer;
     size_t arg_buffer_size;
     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                         STARPU_VALUE, &new_nx, sizeof(&new_nx),
-                         STARPU_VALUE, &new_ny, sizeof(&new_ny),
-                         STARPU_VALUE, &new_ld, sizeof(&new_ld), 0);
+                         STARPU_VALUE, &new_nx, sizeof(new_nx),
+                         STARPU_VALUE, &new_ny, sizeof(new_ny),
+                         STARPU_VALUE, &new_ld, sizeof(new_ld), 0);
 
     task->cl_arg = arg_buffer;
     task->cl_arg_size = arg_buffer_size;
@@ -367,7 +367,7 @@ void task_relu(void const* in, void* out, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_relu,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in), 
                                  STARPU_W, traits->get_handle(out), 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
@@ -377,8 +377,8 @@ void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_scal,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                                 STARPU_VALUE, &factor, sizeof(&factor),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &factor, sizeof(factor),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -388,8 +388,8 @@ void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_power,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                                 STARPU_VALUE, &power, sizeof(&power),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &power, sizeof(power),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -399,7 +399,7 @@ void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_sub,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  STARPU_W, traits->get_handle(c), 0);
@@ -410,7 +410,7 @@ void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_add,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  STARPU_W, traits->get_handle(c), 0);
@@ -421,8 +421,8 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
 {
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_add_value,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                                 STARPU_VALUE, &value, sizeof(&value),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &value, sizeof(value),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -432,9 +432,9 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
 {
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_clip,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                                 STARPU_VALUE, &min, sizeof(&min),
-                                 STARPU_VALUE, &max, sizeof(&max),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &min, sizeof(min),
+                                 STARPU_VALUE, &max, sizeof(max),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -444,7 +444,7 @@ void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(in);
     int ret = starpu_task_insert(&cl_sum,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -461,7 +461,7 @@ void task_mean(void const* in, dahl_scalar* out, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(in);
     int ret = starpu_task_insert(&cl_mean,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
@@ -478,9 +478,8 @@ void task_fill(void* object, dahl_fp value, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(object);
     int ret = starpu_task_insert(&cl_fill,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
-                                 // FIXME: sizeof(&value) is probably a mistake
-                                 STARPU_VALUE, &value, sizeof(&value),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &value, sizeof(value),
                                  STARPU_W, traits->get_handle(object), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
@@ -498,7 +497,7 @@ void task_copy(void const* in, void* out, dahl_traits* traits)
     size_t nb_elem = traits->get_nb_elem(in);
 
     int ret = starpu_task_insert(&cl_copy,
-                                 STARPU_VALUE, &nb_elem, sizeof(&nb_elem),
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
