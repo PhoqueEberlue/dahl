@@ -535,22 +535,23 @@ dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix co
     return res;
 }
 
-void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out)
+void task_cross_entropy_loss_batch(dahl_arena* scratch_arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out)
 {
     dahl_fp const epsilon = 1e-12F;
-    TASK_CLIP_SELF(prediction_batch, epsilon, 1 - epsilon);
+    dahl_matrix* tmp = matrix_init(scratch_arena, matrix_get_shape(prediction_batch));
+    TASK_CLIP(prediction_batch, tmp, epsilon, 1 - epsilon);
 
     int ret = starpu_task_insert(&cl_cross_entropy_loss_batch,
-                                 STARPU_R, prediction_batch->handle,
+                                 STARPU_R, tmp->handle,
                                  STARPU_R, target_batch->handle,
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch)
+dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* scratch_arena, dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
 {
     dahl_scalar* res = scalar_init(arena);
-    task_cross_entropy_loss_batch(prediction_batch, target_batch, res);
+    task_cross_entropy_loss_batch(scratch_arena, prediction_batch, target_batch, res);
     return res;
 }
 

@@ -104,7 +104,8 @@ void task_vector_diag(dahl_vector const* in, dahl_matrix* out);
 // Create and return a diagonal dahl_matrix of the input dahl_vector
 dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
 
-// Performs the softmax derivative on `in` and store into `out`
+// Performs the softmax derivative on `in` and store into `out`. 
+// The `scratch_arena` is used to store partial results of this task.
 void task_vector_softmax_derivative(dahl_arena* scratch_arena, dahl_vector const* in, dahl_matrix* out);
 dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_vector const* in);
 
@@ -276,10 +277,10 @@ void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matr
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 // Compute the cross entropy loss over the given batch and increments the result into `out`.
-void task_cross_entropy_loss_batch(dahl_matrix* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
+void task_cross_entropy_loss_batch(dahl_arena* scratch_arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
 
 // Compute the cross entropy loss over the given batch and return the result into a new scalar.
-dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix* prediction_batch, dahl_matrix const* target_batch);
+dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* scratch_arena, dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients);
 

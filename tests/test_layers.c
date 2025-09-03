@@ -1,5 +1,6 @@
 #include "layers_data.h"
 #include "../include/dahl_convolution.h"
+#include "tests.h"
 #include <stdio.h>
 
 void test_convolution()
@@ -104,26 +105,23 @@ void test_dense()
     // ----------- Backward ----------- 
     dahl_matrix const* targets = matrix_init_from(testing_arena, dense_output_shape, (dahl_fp*)&init_targets);
 
-    // TODO: remove copy and replace by starpu temporary data inside the cross entropy task?
-    dahl_matrix* dense_out_copy = matrix_init(testing_arena, matrix_get_shape(dense_forward_out));
-    TASK_COPY(dense_forward_out, dense_out_copy);
-    dahl_scalar* loss = task_cross_entropy_loss_batch_init(testing_arena, dense_out_copy, targets);
+    dahl_scalar* loss = task_cross_entropy_loss_batch_init(scratch_arena, testing_arena, expect_forward, targets);
 
-    // TODO: same here, the precision is not on point
+    // FIXME: big drop in precision
     ASSERT_FP_EQUALS_ROUND(expect_dense_loss, scalar_get_value(loss), 2);
 
-    dahl_matrix* gradient_batch = task_cross_entropy_loss_gradient_batch_init(testing_arena, dense_forward_out, targets);
+    dahl_matrix* gradient_batch = task_cross_entropy_loss_gradient_batch_init(testing_arena, expect_forward, targets);
     dahl_matrix const* expect_gradients = matrix_init_from(testing_arena, dense_output_shape, (dahl_fp*)&expect_dense_gradients);
 
+    // FIXME: big drop in precision
     ASSERT_MATRIX_EQUALS_ROUND(expect_gradients, gradient_batch, 2);
 
-    dahl_matrix* dense_backward_out = dense_backward(testing_arena, dense, gradient_batch, input_flattened, dense_forward_out, learning_rate);
+    dahl_matrix* dense_backward_out = dense_backward(testing_arena, dense, expect_gradients, input_flattened, expect_forward, learning_rate);
 
     dahl_matrix const* expect_backward = matrix_init_from(testing_arena, dense_input_shape, (dahl_fp*)&expect_dense_backward);
 
     ASSERT_SHAPE2D_EQUALS(dense_input_shape, matrix_get_shape(dense_backward_out));
-    // TODO: big drop in precision, probably due to cross entropy loss gradient function
-    ASSERT_MATRIX_EQUALS_ROUND(expect_backward, dense_backward_out, 2);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_backward, dense_backward_out, 11);
 
     // testing that weights and biases are correctly updated
     dahl_shape2d const expect_weigths_shape = { .x = 676, .y = num_classes };
@@ -131,6 +129,7 @@ void test_dense()
     dahl_vector const* expect_biases = vector_init_from(testing_arena, num_classes, (dahl_fp*)&expect_dense_biases);
 
     ASSERT_SHAPE2D_EQUALS(expect_weigths_shape, matrix_get_shape(dense->weights));
+    // FIXME: big drop in precision
     ASSERT_MATRIX_EQUALS_ROUND(expect_weights, dense->weights, 3);
     ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 4);
 

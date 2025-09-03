@@ -644,14 +644,14 @@ void test_cross_entropy_loss()
     dahl_matrix* target_mat = matrix_init_from(testing_arena, pred_shape, (dahl_fp*)&targets);
 
     // Testing the init version
-    dahl_scalar* res = task_cross_entropy_loss_batch_init(testing_arena, pred_mat, target_mat);
+    dahl_scalar* res = task_cross_entropy_loss_batch_init(testing_arena, testing_arena, pred_mat, target_mat);
     ASSERT_FP_EQUALS(scalar_get_value(res), 1.6118095639272222996396521921269595623016357421875);
 
     // Testing the cumulative version, this will increment res
-    task_cross_entropy_loss_batch(pred_mat, target_mat, res);
+    task_cross_entropy_loss_batch(testing_arena, pred_mat, target_mat, res);
     ASSERT_FP_EQUALS(scalar_get_value(res), 3.2236191278544445992793043842539191246032714843750);
 
-    task_cross_entropy_loss_batch(pred_mat, target_mat, res);
+    task_cross_entropy_loss_batch(testing_arena, pred_mat, target_mat, res);
     ASSERT_FP_EQUALS(scalar_get_value(res), 4.8354286917816668989189565763808786869049072265625);
     dahl_arena_reset(testing_arena);
 }

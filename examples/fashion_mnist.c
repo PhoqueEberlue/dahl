@@ -36,10 +36,7 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
             
-            // TODO: remove copy and replace by starpu temporary data inside the cross entropy task?
-            dahl_matrix* dense_out_copy = matrix_init(batch_arena, matrix_get_shape(dense_out));
-            TASK_COPY(dense_out, dense_out_copy);
-            task_cross_entropy_loss_batch(dense_out_copy, target_batch, total_loss);
+            task_cross_entropy_loss_batch(scratch_arena, dense_out, target_batch, total_loss);
             task_check_predictions_batch(dense_out, target_batch, correct_predictions);
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
@@ -81,7 +78,7 @@ int main(int argc, char **argv)
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
 
     // FIXME: support batch size that do not divide the dataset size
-    size_t const batch_size = 10;
+    size_t const batch_size = 1;
     size_t const num_samples = images_shape.t;
     size_t const num_channels = images_shape.z;
     size_t const num_filters = 32;

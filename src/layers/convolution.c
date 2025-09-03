@@ -52,8 +52,8 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
         // feature map requested (num_filters) for the current sample.
         task_convolution_2d(input, filter, feature_map);
 
-        // Add bias to the feature map
-        // TODO: make this non-blocking
+        // Add bias to the feature map 
+        // TODO: This should not be blocking too much, cause biases is readonly, but watch out
         TASK_ADD_VALUE_SELF(feature_map, vector_get_value(biases, c));
     }
 
@@ -99,6 +99,7 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
     dahl_shape3d padding_shape = block_get_shape(dl_dout);
     padding_shape.x += padding;
     padding_shape.y += padding;
+    // TODO: here this is not efficient, a better way would be to create "valid" and "same" mode for the cross_correlation
     dahl_block const* dl_dout_padded = task_block_add_padding_init(arena, dl_dout, padding_shape);
 
     dahl_shape4d filters_shape = tensor_get_shape(filters);

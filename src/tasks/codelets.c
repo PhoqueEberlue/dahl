@@ -73,7 +73,6 @@ void block_sum_z_axis(void* buffers[2], void* cl_arg)
         {
             for (int x = 0; x < in_nx; x++)
             {
-                // FIX ME
                 out[(y * out_ld) + x] += in[(z * in_ldz) + (y * in_ldy) + x];
             }
         }
