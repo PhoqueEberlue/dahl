@@ -402,7 +402,7 @@ void _block_print_file(void const* vblock, FILE* fp)
 
 			for(size_t x = 0; x < shape.x; x++)
 			{
-				fprintf(fp, "%f, ", block->data[(z*ldz)+(y*ldy)+x]);
+				fprintf(fp, "%+.15f, ", block->data[(z*ldz)+(y*ldy)+x]);
 			}
 			fprintf(fp, "},\n");
 		}

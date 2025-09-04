@@ -172,7 +172,7 @@ void _vector_print_file(void const* vvector, FILE* fp)
     fprintf(fp, "vector=%p nx=%zu\n{ ", vector->data, len);
     for(size_t x = 0; x < len; x++)
     {
-        fprintf(fp, "%f", vector->data[x]);
+        fprintf(fp, "%+.15f", vector->data[x]);
 
         // Omit last comma
         if (x != len - 1)

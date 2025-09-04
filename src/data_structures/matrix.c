@@ -310,7 +310,7 @@ void _matrix_print_file(void const* vmatrix, FILE* fp)
         fprintf(fp, "\n\t{ ");
         for(size_t x = 0; x < shape.x; x++)
         {
-            fprintf(fp, "%.15f, ", matrix->data[(y*ld)+x]);
+            fprintf(fp, "%+.15f, ", matrix->data[(y*ld)+x]);
         }
         fprintf(fp, "},");
     }

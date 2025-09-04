@@ -326,7 +326,7 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
                 fprintf(fp, "\t\t\t{ ");
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    fprintf(fp, "%.15f, ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
+                    fprintf(fp, "%+.15f, ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
                 }
                 fprintf(fp, "},\n");
             }

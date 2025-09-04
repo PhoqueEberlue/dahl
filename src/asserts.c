@@ -5,6 +5,15 @@
 #include "stdlib.h"
 #include "data_structures/data_structures.h"
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_FLUSH   "\33[0m"
+
 void log_prefix(char const* file, int const line, char const* function)
 {
     printf("[DAHL][FAIL][%s:%s:%d] ", file, function, line);
@@ -30,8 +39,16 @@ void print_diff(void const* a, void const* b, char const* a_expr, char const* b_
     rewind(fp2);
 
     char cmd[256];
+    // with custom python script
+    snprintf(cmd, sizeof(cmd), "python3 ../diff.py '%s' '%s'", fname1, fname2);
+    // with icdiff
+    // snprintf(cmd, sizeof(cmd), "icdiff --highlight -L '%s' -L '%s' '%s' '%s'", a_expr, b_expr, fname1, fname2);
+    // with diff + diff-so-fancy
+    // snprintf(cmd, sizeof(cmd), "diff -u '%s' '%s' | diff-so-fancy", fname1, fname2);
+    // with git
+    // snprintf(cmd, sizeof(cmd), "git diff --word-diff=color --word-diff-regex=. '%s' '%s'", fname1, fname2);
     // Launch riff in no-pager mode to print everything in the terminal
-    snprintf(cmd, sizeof(cmd), "riff \"%s\" \"%s\" --no-pager", fname1, fname2);
+    // snprintf(cmd, sizeof(cmd), "riff '%s' '%s' --no-pager", fname1, fname2);
     system(cmd);
 
     temp_file_delete(fname1, fp1);
@@ -46,7 +63,7 @@ void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
     if (!scalar_equals(a, b, rounding, precision))
     {
         log_prefix(file, line, function);
-        printf("Assert scalar equals: %s != %s\n", a_expr, b_expr);
+        printf("Assert scalar equals: " ANSI_COLOR_GREEN "%s" ANSI_COLOR_FLUSH " != " ANSI_COLOR_RED "%s" ANSI_COLOR_FLUSH "\n", a_expr, b_expr);
         PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
@@ -60,7 +77,7 @@ void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
     if (!vector_equals(a, b, rounding, precision))
     {
         log_prefix(file, line, function);
-        printf("Assert vector equals: %s != %s\n", a_expr, b_expr);
+        printf("Assert vector equals: " ANSI_COLOR_GREEN "%s" ANSI_COLOR_FLUSH " != " ANSI_COLOR_RED "%s" ANSI_COLOR_FLUSH "\n", a_expr, b_expr);
         PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
@@ -74,7 +91,7 @@ void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
     if (!matrix_equals(a, b, rounding, precision))
     {
         log_prefix(file, line, function);
-        printf("Assert matrix equals: %s != %s\n", a_expr, b_expr);
+        printf("Assert matrix equals: " ANSI_COLOR_GREEN "%s" ANSI_COLOR_FLUSH " != " ANSI_COLOR_RED "%s" ANSI_COLOR_FLUSH "\n", a_expr, b_expr);
         PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
@@ -88,7 +105,7 @@ void assert_block_equals(dahl_block const* a, dahl_block const* b,
     if (!block_equals(a, b, rounding, precision))
     {
         log_prefix(file, line, function);
-        printf("Assert block equals: %s != %s\n", a_expr, b_expr);
+        printf("Assert block equals: " ANSI_COLOR_GREEN "%s" ANSI_COLOR_FLUSH " != " ANSI_COLOR_RED "%s" ANSI_COLOR_FLUSH "\n", a_expr, b_expr);
         PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }
@@ -102,7 +119,7 @@ void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
     if (!tensor_equals(a, b, rounding, precision))
     {
         log_prefix(file, line, function);
-        printf("Assert block equals: %s != %s\n", a_expr, b_expr);
+        printf("Assert tensor equals: " ANSI_COLOR_GREEN "%s" ANSI_COLOR_FLUSH " != " ANSI_COLOR_RED "%s" ANSI_COLOR_FLUSH "\n", a_expr, b_expr);
         PRINT_DIFF_EXPR(a, b, a_expr, b_expr);
         printf("\n");
     }

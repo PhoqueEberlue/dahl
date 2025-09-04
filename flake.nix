@@ -71,6 +71,10 @@
                 vite
                 gzip
                 riffdiff
+                icdiff
+                diff-so-fancy
+                python312
+                python312Packages.termcolor
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
