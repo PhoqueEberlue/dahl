@@ -105,16 +105,14 @@ void test_dense()
     // ----------- Backward ----------- 
     dahl_matrix const* targets = matrix_init_from(testing_arena, dense_output_shape, (dahl_fp*)&init_targets);
 
-    dahl_scalar* loss = task_cross_entropy_loss_batch_init(scratch_arena, testing_arena, expect_forward, targets);
+    dahl_scalar* loss = task_cross_entropy_loss_batch_init(testing_arena, expect_forward, targets);
 
-    // FIXME: big drop in precision
-    ASSERT_FP_EQUALS_ROUND(expect_dense_loss, scalar_get_value(loss), 2);
+    ASSERT_FP_EQUALS_ROUND(expect_dense_loss, scalar_get_value(loss), 14);
 
     dahl_matrix* gradient_batch = task_cross_entropy_loss_gradient_batch_init(testing_arena, expect_forward, targets);
     dahl_matrix const* expect_gradients = matrix_init_from(testing_arena, dense_output_shape, (dahl_fp*)&expect_dense_gradients);
 
-    // FIXME: big drop in precision
-    ASSERT_MATRIX_EQUALS_ROUND(expect_gradients, gradient_batch, 2);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_gradients, gradient_batch, 13);
 
     dahl_matrix* dense_backward_out = dense_backward(testing_arena, dense, expect_gradients, input_flattened, expect_forward, learning_rate);
 

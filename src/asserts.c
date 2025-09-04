@@ -145,8 +145,8 @@ void assert_fp_equals(dahl_fp const a, dahl_fp const b,
     {
         log_prefix(file, line, function);
         printf("Assert dahl_fp equals: %s != %s\n", a_expr, b_expr);
-        printf("%s = %f\n", a_expr, a);
-        printf("%s = %f\n", b_expr, b);
+        printf("%s = %+.15f\n", a_expr, a);
+        printf("%s = %+.15f\n", b_expr, b);
         printf("\n");
     }
 }

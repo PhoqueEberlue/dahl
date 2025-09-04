@@ -813,18 +813,48 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     assert(pred_ny == targ_ny);
     assert(pred_ld == targ_ld);
 
-    dahl_fp loss = 0;
+    dahl_fp batch_loss = 0.0F;
 
-    for (size_t y = 0; y < pred_ny; y++)
-    {
-        for (size_t x = 0; x < pred_nx; x++)
-        {
-            loss -= (targ[(y*targ_ld)+x] * log(pred[(y*pred_ld)+x]));
+    // Loop through batch
+    for (size_t y = 0; y < pred_ny; y++) {
+
+        dahl_fp max_pred = pred[0];
+        // Find max value in the prediction batch
+        for (size_t x = 0; x < pred_nx; x++) {
+            if (pred[(y * pred_ld) + x] > max_pred)
+            {
+                max_pred = pred[(y * pred_ld) + x];
+            }
         }
+
+        // Compute log-sum-exp
+        dahl_fp sum_exp = 0.0F;
+        for (size_t x = 0; x < pred_nx; x++) {
+            sum_exp += exp(pred[(y * pred_ld) + x] - max_pred);
+        }
+
+        dahl_fp log_sum_exp = log(sum_exp);
+
+        size_t index = 0;
+        // Finding the index of the true class because targ is in one-hot format
+        for (size_t x = 0; x < targ_nx; x++)
+        {
+            if (targ[(y * targ_ld) + x] == 1.0F)
+            {
+                index = x;
+                continue;
+            }
+        }
+
+        // Log probability of the true class
+        dahl_fp log_prob = pred[(y * pred_ld) + index] - max_pred - log_sum_exp;
+
+        // Accumulate loss (negative log likelihood)
+        batch_loss -= log_prob;
     }
 
-    // Divide by batch size and increment into out
-    *out += loss / (dahl_fp)pred_ny;
+    // Average over batch
+    *out += batch_loss / (float)pred_ny;
 }
 
 void cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
@@ -854,13 +884,43 @@ void cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     assert(pred_ld == targ_ld);
     assert(pred_ld == out_ld);
 
-    for (size_t y = 0; y < pred_ny; y++)
-    {
-        for (size_t x = 0; x < pred_nx; x++)
-        {
-            size_t i = (y * pred_ld) + x;
-            out[i] = (pred[i] - targ[i]) / (dahl_fp)pred_ny;
+    // Loop through batch
+    for (int y = 0; y < pred_ny; y++) {
+
+        dahl_fp max_pred = pred[0];
+        // Find max value in the prediction batch
+        for (size_t x = 0; x < pred_nx; x++) {
+            if (pred[(y * pred_ld) + x] > max_pred)
+            {
+                max_pred = pred[(y * pred_ld) + x];
+            }
         }
+
+        // Compute denominator of softmax
+        dahl_fp sum_exp = 0.0F;
+        for (size_t x = 0; x < pred_nx; x++) {
+            sum_exp += exp(pred[(y * pred_ld) + x] - max_pred);
+        }
+
+        // Softmax probabilities and gradient
+        for (size_t x = 0; x < pred_nx; x++) {
+            dahl_fp p = exp(pred[(y * pred_ld) + x] - max_pred) / sum_exp;
+            out[(y * out_ld) + x] = p / (float)pred_ny; // divide by batch size
+        }
+
+        size_t index = 0;
+        // Finding the index of the true class because targ is in one-hot format
+        for (size_t x = 0; x < targ_nx; x++)
+        {
+            if (targ[(y * targ_ld) + x] == 1.0F)
+            {
+                index = x;
+                continue;
+            }
+        }
+
+        // Subtract 1 for the true class
+        out[(y * out_ld) + index] -= 1.0F / (float)pred_ny; // divide by batch_size
     }
 }
 

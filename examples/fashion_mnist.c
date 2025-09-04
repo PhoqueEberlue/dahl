@@ -36,7 +36,7 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
             
-            task_cross_entropy_loss_batch(scratch_arena, dense_out, target_batch, total_loss);
+            task_cross_entropy_loss_batch(dense_out, target_batch, total_loss);
             task_check_predictions_batch(dense_out, target_batch, correct_predictions);
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 

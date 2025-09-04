@@ -277,10 +277,10 @@ void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matr
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 // Compute the cross entropy loss over the given batch and increments the result into `out`.
-void task_cross_entropy_loss_batch(dahl_arena* scratch_arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
+void task_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
 
 // Compute the cross entropy loss over the given batch and return the result into a new scalar.
-dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* scratch_arena, dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
+dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
 void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients);
 
