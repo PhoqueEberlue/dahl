@@ -645,14 +645,14 @@ void test_cross_entropy_loss()
 
     // Testing the init version
     dahl_scalar* res = task_cross_entropy_loss_batch_init(testing_arena, pred_mat, target_mat);
-    ASSERT_FP_EQUALS(scalar_get_value(res), 1.6118095639272222996396521921269595623016357421875);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 2.461150171736360);
 
     // Testing the cumulative version, this will increment res
     task_cross_entropy_loss_batch(pred_mat, target_mat, res);
-    ASSERT_FP_EQUALS(scalar_get_value(res), 3.2236191278544445992793043842539191246032714843750);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 4.922300343472720);
 
     task_cross_entropy_loss_batch(pred_mat, target_mat, res);
-    ASSERT_FP_EQUALS(scalar_get_value(res), 4.8354286917816668989189565763808786869049072265625);
+    ASSERT_FP_EQUALS(scalar_get_value(res), 7.383450515209081);
     dahl_arena_reset(testing_arena);
 }
 
@@ -698,7 +698,7 @@ void test_cross_entropy_loss_gradient_batch()
         9.84501704e-1F, 3.43327192e-6F, 4.29544630e-4F, 3.57638159e-6F, 5.04458589e-9F, 
         3.90385373e-5F, 9.91704419e-3F, 3.92555643e-6F, 3.66346782e-7F, 5.10136218e-3F 
     };
-    dahl_fp expect[batch_size][num_classes] = {{ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, -2.484128636854e4F, 0.0F, 0.0F }};
+    dahl_fp expect[batch_size][num_classes] = {{ +0.228914562258680, +0.085528577269011, +0.085565029732811, +0.085528589508979, +0.085528284058099, +0.085531622590777, +0.086380691080654, -0.914471380626588, +0.085528314959661, +0.085965709167916, }};
 
     dahl_shape2d shape = { .x = num_classes, .y = batch_size };
     dahl_matrix* targets_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&targets);
@@ -707,8 +707,7 @@ void test_cross_entropy_loss_gradient_batch()
 
     dahl_matrix* gradient = task_cross_entropy_loss_gradient_batch_init(testing_arena, predictions_vec, targets_vec);
 
-    // FIX: Only work with a precision of 2 digits, not more. Weird?
-    ASSERT_MATRIX_EQUALS_ROUND(expect_vec, gradient, 2);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_vec, gradient, 15);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1115,8 +1114,8 @@ void test_tasks()
     test_clip();
     test_matrix_matrix_product();
     // FIXME
-    // test_cross_entropy_loss();
-    // test_cross_entropy_loss_gradient_batch();
+    test_cross_entropy_loss();
+    test_cross_entropy_loss_gradient_batch();
     test_sum();
     test_convolution_2d_1();
     test_convolution_2d_2();
