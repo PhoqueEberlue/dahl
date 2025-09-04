@@ -144,7 +144,7 @@ will decide if it performs an inner product of vectors, matrix matrix multiplica
 
 [Thu Jun  5 02:10:35 PM CEST 2025]
 
-This solution worked really when all the dahl structures were using starpu_blocks under the hood to hold the data.
+This solution worked really well when all the dahl structures were using starpu_blocks under the hood to hold the data.
 In following to the changes made on the [data structure wrappers](./data-structure-wrappers.md#Getting-the-right-types-using-starpu-builtin-filters),
 it is no longer the case.
 So for now, commons functions have a codelet definition for every type.
@@ -205,7 +205,7 @@ but it makes no sense to do the following:
 If we know the type from the start why wrapping it then unwrapping it?
 Indeed the API is a bit bigger but at least it makes sense.
 
-Also we can still uses macros and `_Generic` but here in a way cleaner way, and without needing any wrappers.
+Also we can still use macros and `_Generic` but here in a way cleaner way, and without needing any wrappers.
 This is still very useful for the `SELF` versions some functions.
 
 ```c
@@ -235,7 +235,7 @@ Honestly the macros are way cleaner this way!
 The advantage of having a codelet by each type is that we can identify which codelet type take more time to run for example.
 (not convinced by my own argument? Note that nntile does that but with C++ template so they don't write it x times, whatever)
 
-Also we can define different implementation for the different types (may be useful if we can BLAS on matrix and vectors for example, coz I'm not sure
+Also we can define different implementation for the different types (may be useful if we can use BLAS on matrix and vectors for example, coz I'm not sure
 it exists equivalent for blocks).
 
 If we really want to merge down the implementations together however, we could use transform every data passed in the arguments as a vector,
@@ -247,11 +247,11 @@ Or we could implement a custom filter that return a single vector of the whole d
 
 So currently the API for common tasks looked like this: 
 
-```md
+```
 Generic arg          dahl type    handle + cl   starpu type   float array
-              /--> task_block_fn  --\       /--> block_fn  --\ 
-TASK MACRO FN ---> task_matrix_fn ---> task ---> matrix_fn ---> relu
-              \--> task_vector_fn --/       \--> vector_fn --/ 
+              ┌──► task_block_fn  ──┐       ┌──► block_fn  ──┐ 
+TASK MACRO FN ┼──► task_matrix_fn ──┼► task ┼──► matrix_fn ──┼► relu
+              └──► task_vector_fn ──┘       └──► vector_fn ──┘ 
 ```
 
 This does not make a lot of sense because we end up writing a macro that redirects to the correct task launcher function, that itself redirect to a common task launcher function, then to either of the codelets for each type, then to a common function implementation...

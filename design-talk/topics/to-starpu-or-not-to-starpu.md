@@ -40,4 +40,4 @@ Here the gap between estimations and reality could make our partition very bad.
 However we could have similar problems with a "fully static" approach, if we meticulously assign a task to a core/gpu in particular we could end up having problems or simply under-use our nodes.
 
 [Thu Jun  5 09:29:17 PM CEST 2025]
-See my [drawio graphs](../illustrating-graph-formalism.drawio) for further talks, globally I is perfectly correct to continue using StarPU, we keep on sailing.
+See my [drawio graphs](../illustrating-graph-formalism.drawio) for further talks, globally it is perfectly correct to continue using StarPU, we keep on sailing.
