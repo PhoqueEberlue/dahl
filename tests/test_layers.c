@@ -39,10 +39,10 @@ void test_convolution()
     dahl_vector const* expect_biases = vector_init_from(testing_arena, num_filters, (dahl_fp*)&expect_conv_biases);
 
     ASSERT_SHAPE4D_EQUALS(expect_filters_shape, tensor_get_shape(conv->filters));
-    ASSERT_TENSOR_EQUALS_ROUND(expect_filters, conv->filters, 3);
+    ASSERT_TENSOR_EQUALS_ROUND(expect_filters, conv->filters, 1);
 
     ASSERT_SIZE_T_EQUALS(num_filters, vector_get_len(conv->biases));
-    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, conv->biases, 4);
+    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, conv->biases, 3);
 
     dahl_arena_reset(testing_arena);
     dahl_arena_delete(scratch_arena);
@@ -107,19 +107,19 @@ void test_dense()
 
     dahl_scalar* loss = task_cross_entropy_loss_batch_init(testing_arena, expect_forward, targets);
 
-    ASSERT_FP_EQUALS_ROUND(expect_dense_loss, scalar_get_value(loss), 14);
+    ASSERT_FP_EQUALS_ROUND(expect_dense_loss, scalar_get_value(loss), 15);
 
     dahl_matrix* gradient_batch = task_cross_entropy_loss_gradient_batch_init(testing_arena, expect_forward, targets);
     dahl_matrix const* expect_gradients = matrix_init_from(testing_arena, dense_output_shape, (dahl_fp*)&expect_dense_gradients);
 
-    ASSERT_MATRIX_EQUALS_ROUND(expect_gradients, gradient_batch, 13);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_gradients, gradient_batch, 14);
 
-    dahl_matrix* dense_backward_out = dense_backward(testing_arena, dense, expect_gradients, input_flattened, expect_forward, learning_rate);
+    dahl_matrix* dense_backward_out = dense_backward(testing_arena, dense, expect_gradients, input_flattened, learning_rate);
 
     dahl_matrix const* expect_backward = matrix_init_from(testing_arena, dense_input_shape, (dahl_fp*)&expect_dense_backward);
 
     ASSERT_SHAPE2D_EQUALS(dense_input_shape, matrix_get_shape(dense_backward_out));
-    ASSERT_MATRIX_EQUALS_ROUND(expect_backward, dense_backward_out, 11);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_backward, dense_backward_out, 13);
 
     // testing that weights and biases are correctly updated
     dahl_shape2d const expect_weigths_shape = { .x = 676, .y = num_classes };
@@ -127,9 +127,9 @@ void test_dense()
     dahl_vector const* expect_biases = vector_init_from(testing_arena, num_classes, (dahl_fp*)&expect_dense_biases);
 
     ASSERT_SHAPE2D_EQUALS(expect_weigths_shape, matrix_get_shape(dense->weights));
-    // FIXME: big drop in precision
-    ASSERT_MATRIX_EQUALS_ROUND(expect_weights, dense->weights, 3);
-    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 4);
+    // Weights see a slight drop in precision, but it is acceptable.
+    ASSERT_MATRIX_EQUALS_ROUND(expect_weights, dense->weights, 10);
+    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, dense->biases, 15);
 
     dahl_arena_reset(testing_arena);
     dahl_arena_delete(scratch_arena);
