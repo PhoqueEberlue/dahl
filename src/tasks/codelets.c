@@ -461,6 +461,34 @@ void matrix_resize(void* buffers[1], void* cl_arg)
     STARPU_MATRIX_SET_LD(buffers[0], new_ld);
 }
 
+void matrix_rotate_180(void* buffers[2], void* cl_arg)
+{
+    // Input matrix
+    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Output matrix
+    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    assert(in_nx == out_nx);
+    assert(in_ny == out_ny);
+
+    for (size_t y = 0; y < in_ny; y++)
+    {
+        for (size_t x = 0; x < in_nx; x++)
+        {
+            size_t y_rot = (out_ny - 1 - y);
+            size_t x_rot = (out_nx - 1 - x);
+            out[(y_rot * out_ld) + x_rot] = in[(y * in_ld) + x];
+        }
+    }
+}
+
 // ---------------------------------------- VECTOR ----------------------------------------
 void vector_softmax(void* buffers[2], void* cl_arg)
 {
@@ -552,6 +580,31 @@ void vector_to_matrix(void* buffers[2], void* cl_arg)
     
     for (size_t i = 0; i < in_len; i++)
         out[i] = in[i];
+}
+
+void vector_outer_product(void* buffers[3], void* cl_arg)
+{
+    size_t const a_len = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp const* a = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    size_t const b_len = STARPU_VECTOR_GET_NX(buffers[1]);
+    dahl_fp const* b = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+
+    size_t const c_nx = STARPU_MATRIX_GET_NX(buffers[2]);
+    size_t const c_ny = STARPU_MATRIX_GET_NY(buffers[2]);
+    size_t const c_ld = STARPU_MATRIX_GET_LD(buffers[2]);
+    dahl_fp* c = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+
+    assert(a_len == c_nx);
+    assert(b_len == c_ny);
+
+    for (size_t y = 0; y < b_len; y++)
+    {
+        for (size_t x = 0; x < a_len; x++)
+        {
+            c[(y * c_ld) + x] = b[y] * a[x];
+        }
+    }
 }
 
 // ---------------------------------------- ANY ----------------------------------------

@@ -276,6 +276,21 @@ void task_matrix_as_flat_col(dahl_matrix* mat)
     task_matrix_resize(mat, shape);
 }
 
+void task_matrix_rotate_180(dahl_matrix const* in, dahl_matrix* out)
+{
+    int ret = starpu_task_insert(&cl_matrix_rotate_180,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* in)
+{
+    dahl_matrix* out = matrix_init(arena, matrix_get_shape(in));
+    task_matrix_rotate_180(in, out);
+    return out;
+}
+
 // ---------------------------------------- VECTOR ----------------------------------------
 // Note: do not implement a self function (in and out being the same buffers), as 
 // out buffer is used to store partial computations this would mess the results.
@@ -375,6 +390,23 @@ dahl_matrix* task_vector_to_row_matrix_init(dahl_arena* arena, dahl_vector const
 {
     dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
     return task_vector_to_matrix_init(arena, vector, new_shape);
+}
+
+void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_matrix* c)
+{
+    int ret = starpu_task_insert(&cl_vector_outer_product,
+                                 STARPU_R, a->handle, 
+                                 STARPU_R, b->handle, 
+                                 STARPU_W, c->handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
+dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b)
+{
+    dahl_shape2d shape = { .x = vector_get_len(a), .y = vector_get_len(b) };
+    dahl_matrix* c = matrix_init(arena, shape);
+    task_vector_outer_product(a, b, c);
+    return c;
 }
 
 // ---------------------------------------- TRAITS ----------------------------------------

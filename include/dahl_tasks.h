@@ -88,6 +88,12 @@ void task_matrix_as_flat_row(dahl_matrix*);
 // Flatten a matrix and consider it as a column matrix
 void task_matrix_as_flat_col(dahl_matrix*);
 
+// Rotate matrix `in` by 180 degrees and store result into `out`
+void task_matrix_rotate_180(dahl_matrix const* in, dahl_matrix* out);
+
+// Rotate matrix `in` by 180 degrees and return the result into a new matrix
+dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* in);
+
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
@@ -119,6 +125,12 @@ dahl_matrix* task_vector_to_column_matrix_init(dahl_arena*, dahl_vector const*);
 
 // Copy the vector into a new row matrix of shape (len, 1)
 dahl_matrix* task_vector_to_row_matrix_init(dahl_arena*, dahl_vector const*);
+
+// Compute the outer product of vectors `a` and `b`, storing the result into the matrix `c` with dimensions len(a) x len(b)
+void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_matrix* c);
+
+// Compute the outer product of vectors `a` and `b`, returning the result into a new matrix with dimensions len(a) x len(b)
+dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b);
 
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);

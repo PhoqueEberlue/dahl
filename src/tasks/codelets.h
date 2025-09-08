@@ -44,12 +44,14 @@ DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_rotate_180, 2, STARPU_R, STARPU_W);
 
 // ---------------------------------------- VECTOR ----------------------------------------
 DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_dot_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_outer_product, 3, STARPU_R, STARPU_R, STARPU_W);
 
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type

@@ -1093,6 +1093,40 @@ void test_block_add_padding()
     dahl_arena_reset(testing_arena);
 }
 
+void test_matrix_rotate_180()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
+        { 3.0F, 1.0F,-8.0F,-3.0F },
+        {-7.0F,-3.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    });
+
+    dahl_matrix* expect = MATRIX(testing_arena, 3, 4, {
+        { 1.0F, 9.0F, 1.0F, 1.0F },
+        { 2.0F, 3.0F,-3.0F,-7.0F },
+        {-3.0F,-8.0F, 1.0F, 3.0F },
+    });
+
+    dahl_matrix* out = task_matrix_rotate_180_init(testing_arena, matrix);
+    ASSERT_MATRIX_EQUALS(expect, out);
+}
+
+void test_vector_outer_product()
+{
+    dahl_vector* a = VECTOR(testing_arena, 4, { -4, 5, 6, -7 });
+    dahl_vector* b = VECTOR(testing_arena, 3, { 1, -2, 3 });
+
+    dahl_matrix* expect = MATRIX(testing_arena, 3, 4, {
+        {-4.0F, 5.0F, 6.0F,-7.0F },
+        { 8.0F,-10.0F, -12.0F, 14.0F },
+        { -12.0F, 15.0F, 18.0F, -21.0F },
+    });
+
+    dahl_matrix* out = task_vector_outer_product_init(testing_arena, a, b);
+
+    ASSERT_MATRIX_EQUALS(expect, out);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1113,7 +1147,6 @@ void test_tasks()
     test_matrix_vector_product();
     test_clip();
     test_matrix_matrix_product();
-    // FIXME
     test_cross_entropy_loss();
     test_cross_entropy_loss_gradient_batch();
     test_sum();
@@ -1126,4 +1159,6 @@ void test_tasks()
     test_block_sum_xy_axes();
     test_fill();
     test_block_add_padding();
+    test_matrix_rotate_180();
+    test_vector_outer_product();
 }
