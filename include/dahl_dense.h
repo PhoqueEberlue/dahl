@@ -25,9 +25,8 @@ dahl_matrix* dense_forward(dahl_arena*, dahl_dense*, dahl_matrix const* input_ba
 // Parameters:
 // - `dl_dout_batch` derivative output of the previous layer
 // - `input_batch` the input from the last forward pass
-// - `output_batch` the predictions from the last forward pass for each batch
 // - `learning_rate`
 dahl_matrix* dense_backward(dahl_arena*, dahl_dense*, dahl_matrix const* dl_dout_batch, 
-                            dahl_matrix const* input_batch, dahl_matrix const* output_batch, dahl_fp learning_rate);
+                            dahl_matrix const* input_batch, dahl_fp learning_rate);
 
 #endif //!DAHL_DENSE_H
