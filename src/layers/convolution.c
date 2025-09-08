@@ -134,9 +134,10 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
             task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
 
             dahl_matrix const* filter_chann = GET_SUB_MATRIX(filter, c);
+            dahl_matrix const* filter_chann_rot = task_matrix_rotate_180_init(arena, filter_chann);
             dahl_matrix* dl_dinput_chann = GET_SUB_MATRIX_MUT(dl_dinput, c);
 
-            task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann, dl_dinput_chann);
+            task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann_rot, dl_dinput_chann);
         }
 
         block_unpartition(dl_df);
@@ -200,11 +201,11 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     tensor_unpartition(dl_dinput_batch);
     tensor_unpartition(conv->filters);
 
-    // Updating filters and biases
-    TASK_SCAL_SELF(summed_dl_dfilters, learning_rate / batch_size);
+    // Updating filters and biases, here we need to divide by batch_size compared to dense layer
+    TASK_SCAL_SELF(summed_dl_dfilters, learning_rate);
     TASK_SUB_SELF(conv->filters, summed_dl_dfilters);
 
-    TASK_SCAL_SELF(summed_dl_dbiases, learning_rate / batch_size);
+    TASK_SCAL_SELF(summed_dl_dbiases, learning_rate);
     TASK_SUB_SELF(conv->biases, summed_dl_dbiases);
 
     return dl_dinput_batch;
