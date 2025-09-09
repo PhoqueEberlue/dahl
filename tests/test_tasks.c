@@ -1127,6 +1127,20 @@ void test_vector_outer_product()
     ASSERT_MATRIX_EQUALS(expect, out);
 }
 
+void test_vector_shuffle()
+{
+    dahl_vector* vec = VECTOR(testing_arena, 7, { -4, 5, 6, -7, 3, -2, 1 });
+    dahl_vector* expect = VECTOR(testing_arena, 7, { 3, 1, -7, 5, -2, 6, -4 });
+
+    task_vector_shuffle(vec);
+    ASSERT_VECTOR_EQUALS(expect, vec);
+
+    expect = VECTOR(testing_arena, 7, { -4, -2, 1, 6, 5, 3, -7 });
+
+    task_vector_shuffle(vec);
+    ASSERT_VECTOR_EQUALS(expect, vec);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1161,4 +1175,5 @@ void test_tasks()
     test_block_add_padding();
     test_matrix_rotate_180();
     test_vector_outer_product();
+    test_vector_shuffle();
 }
