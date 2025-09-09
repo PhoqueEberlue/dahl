@@ -1,3 +1,4 @@
+#include "../tasks/codelets.h"
 #include "data_structures.h"
 #include "custom_filters.h"
 #include "starpu_data.h"
@@ -101,8 +102,17 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d co
     );
 
     dahl_arena_attach_handle(matrix->meta->origin_arena, handle);
+    dahl_tensor* res = _tensor_init_from_ptr(matrix->meta->origin_arena, handle, matrix->data);
 
-    return _tensor_init_from_ptr(matrix->meta->origin_arena, handle, matrix->data);
+    // Here we use the same trick when doing manual partitioning:
+    // Use cl_switch to force data refresh in our new handle from the tensor handle
+	int ret = starpu_task_insert(&cl_switch, STARPU_RW, matrix->handle, STARPU_W, handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+
+    // Then deactivate the matrix handle
+    starpu_data_invalidate_submit(matrix->handle);
+
+    return res;
 }
 
 void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data)
