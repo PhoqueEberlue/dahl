@@ -132,6 +132,9 @@ void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_
 // Compute the outer product of vectors `a` and `b`, returning the result into a new matrix with dimensions len(a) x len(b)
 dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b);
 
+// Shuffles directly `vec`.
+void task_vector_shuffle(dahl_vector* vec);
+
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);

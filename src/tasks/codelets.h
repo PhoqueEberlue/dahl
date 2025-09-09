@@ -26,6 +26,14 @@
         .model = &perf_model_##func_name                      \
     };
 
+// Utility codelet to switch/refresh/synchronize buffers.
+// See manual partitioning: design-talk/topics/data-structure-wrappers.md#getting-the-right-types-with-manual-partitionning
+static struct starpu_codelet cl_switch =
+{
+	.where = STARPU_NOWHERE,
+	.nbuffers = STARPU_VARIABLE_NBUFFERS,
+};
+
 // ---------------------------------------- TENSOR ----------------------------------------
 DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
 
@@ -52,6 +60,7 @@ DEFINE_STARPU_CODELET(vector_dot_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_outer_product, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_shuffle, 1, STARPU_RW);
 
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type

@@ -607,6 +607,24 @@ void vector_outer_product(void* buffers[3], void* cl_arg)
     }
 }
 
+void vector_shuffle(void* buffers[1], void* cl_arg)
+{
+    size_t const vec_len = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp* vec = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    for (size_t i = vec_len - 1; i > 0; i--)
+    {
+        // Generate a random index respecting 0 <= j <= i
+        size_t j = ( rand() / (RAND_MAX / i));
+        assert(0 <= j && j <= i);
+
+        // Swap the two values
+        dahl_fp tmp = vec[i];
+        vec[i] = vec[j];
+        vec[j] = tmp;
+    }
+}
+
 // ---------------------------------------- ANY ----------------------------------------
 // Get the ptr of any StarPU data type. Does not perform any check.
 // This works because ptr is always the second field in the struct for vector, matrix, block and tensor,
@@ -827,7 +845,8 @@ void check_predictions_batch(void* buffers[3], void* cl_arg)
     // Loop through each batch
     for (size_t y = 0; y < pred_ny; y++)
     {
-        dahl_fp max_val = 0.0F;
+        // Take the first prediction of this batch
+        dahl_fp max_val = pred[(y * pred_ld)];
         size_t max_index = 0;
 
         for (size_t x = 0; x < pred_nx; x++)

@@ -409,6 +409,13 @@ dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const
     return c;
 }
 
+void task_vector_shuffle(dahl_vector* vec)
+{
+    int ret = starpu_task_insert(&cl_vector_shuffle,
+                                 STARPU_RW, vec->handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
 // ---------------------------------------- TRAITS ----------------------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
