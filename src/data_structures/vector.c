@@ -55,7 +55,7 @@ dahl_vector* vector_init_random(dahl_arena* arena, size_t const len)
 
     for (int i = 0; i < len; i += 1)
     {
-        vector->data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
+        vector->data[i] = ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX) / 10);
     }
 
     return vector;

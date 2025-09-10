@@ -85,7 +85,7 @@ dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape)
     for (int i = 0; i < n_elems; i += 1)
     {
         tensor->data[i] = (dahl_fp)( 
-            ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) 
+            ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX) / 10) 
         );
     }
 

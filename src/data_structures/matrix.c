@@ -75,7 +75,7 @@ dahl_matrix* matrix_init_random(dahl_arena* arena, dahl_shape2d const shape)
 
     for (int i = 0; i < n_elems; i += 1)
     {
-        matrix->data[i] = (dahl_fp)( ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX / DAHL_MAX_RANDOM_VALUES)) );
+        matrix->data[i] = ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX) / 10);
     }
 
     return matrix;
