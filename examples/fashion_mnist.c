@@ -2,7 +2,7 @@
 #include "stdlib.h"
 #include <stdio.h>
 
-#define LEARNING_RATE 0.01F
+#define LEARNING_RATE 0.001F
 #define N_EPOCHS 30
 
 void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset, 
@@ -25,14 +25,28 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
         dahl_scalar* total_loss = scalar_init(epoch_arena);
         dahl_scalar* correct_predictions = scalar_init(epoch_arena);
 
+        dahl_fp arr[n_batches_per_epoch];
+
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
-            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, i);
-            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
+            arr[i] = (dahl_fp)i;
+        }
+
+        dahl_vector* indices = vector_init_from(epoch_arena, n_batches_per_epoch, arr);
+        task_vector_shuffle(indices);
+        dahl_fp const* ind_data = vector_data_acquire(indices);
+
+        for (size_t i = 0; i < n_batches_per_epoch; i++)
+        {
+            size_t index = (size_t)ind_data[i];
+            // printf("batch number: %lu, batch index: %lu\n", i, index);
+            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, index);
+            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, index);
 
             dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
-            dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
+            TASK_RELU_SELF(conv_out);
 
+            dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
             dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
             
@@ -40,20 +54,25 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             task_check_predictions_batch(dense_out, target_batch, correct_predictions);
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
-            dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, dense_out, LEARNING_RATE);
-
+            dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, LEARNING_RATE);
             dahl_tensor* dense_back_unflattened = matrix_to_tensor_no_copy(dense_back, pool->output_shape);
-
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back_unflattened);
-            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
+            dahl_tensor* pool_back_relu = tensor_init(batch_arena, pool->input_shape);
+            TASK_RELU_BACKWARD(conv_out, pool_back, pool_back_relu);
+
+            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back_relu, LEARNING_RATE, image_batch);
             // Why aren't we using bacward convolution result?
             dahl_arena_reset(scratch_arena);
             dahl_arena_reset(batch_arena);
         }
 
-        printf("Average loss: %f - Accuracy: %f\%\n",
-           scalar_get_value(total_loss) / (dahl_fp)num_samples,
-           scalar_get_value(correct_predictions) / (dahl_fp)num_samples * 100);
+        vector_data_release(indices);
+
+        printf("Average loss: %f\nAccuracy: %f\%\nCorrect predictions: %i/%lu\n",
+            scalar_get_value(total_loss) / (dahl_fp)num_samples,
+            scalar_get_value(correct_predictions) / (dahl_fp)num_samples * 100,
+            (int)scalar_get_value(correct_predictions), num_samples
+        );
 
         dahl_arena_reset(epoch_arena);
     }
@@ -78,7 +97,7 @@ int main(int argc, char **argv)
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
 
     // FIXME: support batch size that do not divide the dataset size
-    size_t const batch_size = 1;
+    size_t const batch_size = 10;
     size_t const num_samples = images_shape.t;
     size_t const num_channels = images_shape.z;
     size_t const num_filters = 32;

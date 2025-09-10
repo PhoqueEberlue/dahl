@@ -59,8 +59,6 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
 
     tensor_unpartition(filters);
     block_unpartition(output);
-
-    TASK_RELU_SELF(output);
 }
 
 dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl_tensor const* input_batch)

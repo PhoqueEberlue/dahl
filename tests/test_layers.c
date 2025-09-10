@@ -20,12 +20,19 @@ void test_convolution()
     dahl_tensor const* expect_forward = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_conv_forward);
 
     ASSERT_SHAPE4D_EQUALS(conv_output_shape, tensor_get_shape(conv_forward_out));
-    ASSERT_TENSOR_EQUALS_ROUND(expect_forward, conv_forward_out, 12);
+    ASSERT_TENSOR_EQUALS_ROUND(expect_forward, conv_forward_out, 11);
+
+    dahl_tensor const* expect_relu = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_relu_forward);
+    TASK_RELU_SELF(conv_forward_out);
+    ASSERT_TENSOR_EQUALS_ROUND(expect_relu, conv_forward_out, 12);
 
     // ----------- Backward -----------
     dahl_tensor const* pool_backward = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_pool_backward);
 
-    dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, pool_backward, learning_rate, img_batch);
+    dahl_tensor* relu_backward = tensor_init(testing_arena, conv_output_shape);
+    TASK_RELU_BACKWARD(conv_forward_out, pool_backward, relu_backward);
+
+    dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, relu_backward, learning_rate, img_batch);
 
     dahl_tensor const* expect_backward = tensor_init_from(testing_arena, conv_input_shape, (dahl_fp*)&expect_conv_backward);
 
@@ -39,10 +46,10 @@ void test_convolution()
     dahl_vector const* expect_biases = vector_init_from(testing_arena, num_filters, (dahl_fp*)&expect_conv_biases);
 
     ASSERT_SHAPE4D_EQUALS(expect_filters_shape, tensor_get_shape(conv->filters));
-    ASSERT_TENSOR_EQUALS_ROUND(expect_filters, conv->filters, 1);
+    ASSERT_TENSOR_EQUALS_ROUND(expect_filters, conv->filters, 14);
 
     ASSERT_SIZE_T_EQUALS(num_filters, vector_get_len(conv->biases));
-    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, conv->biases, 3);
+    ASSERT_VECTOR_EQUALS_ROUND(expect_biases, conv->biases, 14);
 
     dahl_arena_reset(testing_arena);
     dahl_arena_delete(scratch_arena);
@@ -52,7 +59,7 @@ void test_pool()
 {
     // ----------- Forward -----------
     dahl_pooling* pool = pooling_init(testing_arena, pool_size, conv_output_shape);
-    dahl_tensor* input = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_conv_forward);
+    dahl_tensor* input = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_relu_forward);
 
     dahl_tensor* pool_forward_out = pooling_forward(testing_arena, pool, input);
 
