@@ -653,6 +653,28 @@ void relu(void* buffers[2], void* cl_arg)
     }
 }
 
+void relu_backward(void* buffers[3], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp const* input = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp const* gradients = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        if (input[i] > 0.0F)
+        {
+            out[i] = gradients[i];
+        }
+        else 
+        {
+            out[i] = 0.0F;
+        }
+    }
+}
+
 void scal(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;

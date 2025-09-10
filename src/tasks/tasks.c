@@ -427,6 +427,17 @@ void task_relu(void const* in, void* out, dahl_traits* traits)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
 
+void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(out);
+    int ret = starpu_task_insert(&cl_relu_backward,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_R, traits->get_handle(input), 
+                                 STARPU_R, traits->get_handle(gradients), 
+                                 STARPU_W, traits->get_handle(out), 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(out);

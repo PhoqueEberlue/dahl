@@ -137,6 +137,7 @@ void task_vector_shuffle(dahl_vector* vec);
 
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);
+void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits);
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
@@ -161,6 +162,16 @@ void task_copy(void const* in, void* out, dahl_traits* traits);
 
 // Update every value of `self` by applying a relu function.
 #define TASK_RELU_SELF(SELF) TASK_RELU(SELF, SELF)
+
+// Apply backward relu function to every value of `in` and store the result in `out`.
+#define TASK_RELU_BACKWARD(INPUT, GRADIENTS, OUT)                   \
+    do {                                                            \
+        _Static_assert(TYPES_MATCH((INPUT), (GRADIENTS)),           \
+                       "IN and OUT must be of the same type");      \
+        _Static_assert(TYPES_MATCH((INPUT), (OUT)),                 \
+                       "IN and OUT must be of the same type");      \
+        task_relu_backward(INPUT, GRADIENTS, OUT, GET_TRAITS(OUT)); \
+    } while (0)
 
 // Multiply every value of `in` by `divisor` and store the result in `out`.
 #define TASK_SCAL(IN, OUT, FACTOR)                             \

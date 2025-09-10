@@ -65,6 +65,7 @@ DEFINE_STARPU_CODELET(vector_shuffle, 1, STARPU_RW);
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type
 DEFINE_STARPU_CODELET(relu, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(relu_backward, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(scal, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(power, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(sub, 3, STARPU_R, STARPU_R, STARPU_W);
