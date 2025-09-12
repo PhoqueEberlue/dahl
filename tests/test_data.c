@@ -253,6 +253,47 @@ void test_matrix_partition_along_y()
     dahl_arena_reset(testing_arena);
 }
 
+void test_matrix_partition_along_y_batch()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 6, 4, {
+        {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+        { 8.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-3.0F, 4.0F,-1.0F },
+        { 8.0F, 8.0F,-5.0F, 3.0F },
+        { 4.0F,-1.0F, 9.0F,-2.0F },
+    });
+
+    dahl_matrix* expect_matrices[3];
+
+    expect_matrices[0] = MATRIX(testing_arena, 2, 4, {
+        {-2.0F, 1.0F, 2.0F,-1.0F },
+        { 3.0F, 1.0F,-3.0F, 1.0F },
+    });
+
+    expect_matrices[1] = MATRIX(testing_arena, 2, 4, {
+        { 8.0F, 1.0F,-3.0F, 1.0F },
+        { 4.0F,-3.0F, 4.0F,-1.0F },
+    });
+
+    expect_matrices[2] = MATRIX(testing_arena, 2, 4, {
+        { 8.0F, 8.0F,-5.0F, 3.0F },
+        { 4.0F,-1.0F, 9.0F,-2.0F },
+    });
+
+    matrix_partition_along_y_batch(matrix, 2);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
+    {
+        dahl_matrix const* sub_matrix = GET_SUB_MATRIX(matrix, i);
+        ASSERT_MATRIX_EQUALS(expect_matrices[i], sub_matrix);
+    }
+
+    matrix_unpartition(matrix);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_matrix_get_shape()
 {
     dahl_fp data[3][4] = {
@@ -497,6 +538,7 @@ void test_data()
     test_block_partition_along_z();
     test_block_partition_flatten_to_vector();
     test_matrix_partition_along_y();
+    test_matrix_partition_along_y_batch();
     test_matrix_get_shape();
     test_recursive_partitioning();
     test_mut_partitioning();

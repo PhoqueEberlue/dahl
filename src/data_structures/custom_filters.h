@@ -252,14 +252,11 @@ static void starpu_matrix_filter_vertical_matrix(
 
 	size_t elemsize = matrix_parent->elemsize;
 
-	size_t chunk_pos = (size_t)f->filter_arg_ptr;
+    STARPU_ASSERT_MSG(nparts <= ny, "cannot split %zu elements in %u parts", ny, nparts);
 
-	size_t new_ny = matrix_parent->ny / nparts;
-
-	STARPU_ASSERT_MSG(nparts <= ny, "cannot get %u vectors", nparts);
-	STARPU_ASSERT_MSG((chunk_pos + id) < ny, "the chosen sub matrix should be in the matrix");
-
-	size_t offset = (chunk_pos + id) * blocksize * elemsize;
+	size_t new_ny;
+	size_t offset;
+	starpu_filter_nparts_compute_chunk_size_and_offset(ny, nparts, elemsize, id, blocksize, &new_ny, &offset);
 
 	STARPU_ASSERT_MSG(matrix_parent->id == STARPU_MATRIX_INTERFACE_ID, "%s can only be applied on a block data", __func__);
 	matrix_child->id = STARPU_MATRIX_INTERFACE_ID;
