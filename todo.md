@@ -17,6 +17,7 @@
   - in the asserts fix the precision displaying, for example if I ask a precision of 15 and actually
     display 15 digit after comma, the last digit could be round up to the same number, meaning
     that the difference won't be noticable in the diff display.
+- for random functions, provide a min/max argument instead of hard coding the values
 
 - fix cifar-10 training
 
