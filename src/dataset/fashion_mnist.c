@@ -1,8 +1,8 @@
 #include "../../include/dahl_dataset.h"
 #include <assert.h>
 #include <stdlib.h>
-#include "../utils.h"
-#include "nvml.h"
+#include "../misc.h"
+#include "unistd.h"
 
 // Function to load MNIST images
 dahl_tensor* load_mnist_images(dahl_arena* arena, char const* filename)

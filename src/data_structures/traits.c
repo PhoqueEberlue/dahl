@@ -42,7 +42,7 @@ dahl_traits dahl_traits_scalar = {
     .init_from_ptr = nullptr, // No function for scalar
     .get_handle = _scalar_get_handle,
     .get_partition = nullptr, // Scalars cannot be partitioned
-    .get_nb_elem = nullptr, // No number 
+    .get_nb_elem = _scalar_get_nb_elem, // Always 1
     .print_file = _scalar_print_file,
     .type = DAHL_SCALAR,
 };

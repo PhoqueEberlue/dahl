@@ -62,9 +62,13 @@ void _partition_submit_if_needed(metadata* meta, int8_t index, bool should_be_mu
     if (need_resubmit)
     {
         if (should_be_mut)
+        {
             starpu_data_partition_submit(main_handle, p->nb_children, p->handles);
+        }
         else
+        {
             starpu_data_partition_readonly_submit(main_handle, p->nb_children, p->handles);
+        }
     }
 }
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "../utils.h"
+#include "../misc.h"
 
 dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_file)
 {

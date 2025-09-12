@@ -1,6 +1,6 @@
 #include "data_structures.h"
 #include "../tasks/codelets.h"
-#include "../utils.h"
+#include "../misc.h"
 #include "starpu_data.h"
 #include "starpu_data_filters.h"
 #include "starpu_data_interfaces.h"

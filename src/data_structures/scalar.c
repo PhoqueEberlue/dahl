@@ -40,7 +40,7 @@ starpu_data_handle_t _scalar_get_handle(void const* scalar)
     return ((dahl_scalar*)scalar)->handle;
 }
 
-size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar)
+inline size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar)
 {
     return 1;
 }

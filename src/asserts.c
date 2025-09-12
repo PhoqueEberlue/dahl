@@ -1,7 +1,7 @@
 #include "../include/dahl_asserts.h"
 #include <assert.h>
 #include <stdio.h>
-#include "utils.h"
+#include "misc.h"
 #include "stdlib.h"
 #include "data_structures/data_structures.h"
 
