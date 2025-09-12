@@ -1,4 +1,4 @@
-from os import _exit
+from os import _exit, system
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -38,12 +38,15 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=2, shuffle=False,
 testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=2, shuffle=False, num_workers=1)
 
+
+print(trainset.targets[0:10])
+_exit(0)
 # Define the class labels for the Fashion MNIST dataset.
 classes = ('T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 
            'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot')
 
 torch.set_default_dtype(torch.float64)
-torch.set_printoptions(precision=15, profile="full", sci_mode=False)
+torch.set_printoptions(precision=17, profile="full", sci_mode=False)
 
 class BasicCNN(nn.Module):
     def __init__(self):
@@ -61,7 +64,12 @@ class BasicCNN(nn.Module):
     def forward(self, x):
         # Input: [batch_size, 1, 28, 28]
         
-        x = F.relu(self.conv1(x))
+        #weights, biases = list(self.fc1.parameters())
+        #print(f"weigths value: {weights} {weights.shape}")
+        #print(f"biases value: {biases} {biases.shape}")
+
+        x = self.conv1(x)
+        x = F.relu(x)
 
         # print(f"res conv: shape {x.shape}, {x}")
 
@@ -80,12 +88,10 @@ class BasicCNN(nn.Module):
         
         x = x.view(-1, 4 * 13 * 13) # Flattening
 
-        weights, biases = list(self.fc1.parameters())
-        # print(f"weigths value: {weights} {weights.shape}")
-        # print(f"biases value: {biases} {biases.shape}")
 
         x = self.fc1(x)
-        return F.softmax(x, dim=1)
+        # print(x)
+        return x # F.log_softmax(x, dim=1)
 
 
 model = BasicCNN().to(device)
@@ -130,34 +136,44 @@ model.conv1.register_full_backward_hook(save_backward_input("conv1"))
 # Number of complete passes through the dataset
 num_epochs = 5
 
+losses = []
+
 # Start the training loop
 for epoch in range(num_epochs):
     # Set the model to training mode
     model.train()
     
+    i = 0
     # Iterate over each batch of the training data
     for images, labels in trainloader:
+        print(f"doing batch {i}")
         # Move the images and labels to the computational device (CPU or GPU)
         images, labels = images.to(device), labels.to(device)
         
+        # print(images)
+        # print(labels)
         # Clear the gradients from the previous iteration
         optimizer.zero_grad()
         
         # Forward pass: Pass the images through the model to get the predicted outputs
         outputs = model(images)
 
+        # print(outputs)
+
         # Compute the loss between the predicted outputs and the true labels
         outputs.retain_grad()
         loss = criterion(outputs, labels)
-        print(loss)
 
+        # print(loss)
         # Backward pass: Compute the gradient of the loss w.r.t. model parameters
         loss.backward()
 
+        # print(outputs.grad)
+
         # Save gradients for intermediate outputs
-        # for name, act in activations.items():
-        #     if act.grad is not None:
-        #         grads[name] = act.grad.detach()
+        for name, act in activations.items():
+            if act.grad is not None:
+                grads[name] = act.grad.detach()
         
         # Print stuff (shapes here, to avoid huge prints)
         # print(f"Epoch {epoch} | Loss: {loss.item()}")
@@ -165,20 +181,23 @@ for epoch in range(num_epochs):
         #     print(f"  {name} activation: {activations[name].shape}")
         #     if name in grads:
         #         print(f"  {name} grad: {grads[name].shape}")
-        # print(outputs.grad)
-        # print(f"{model.fc1.weight.grad} --- {model.fc1.weight.grad.shape}")
+        # print(outputs)
+        # print(f"{model.fc1.weight.grad[0]} --- {model.fc1.weight.grad.shape}")
 
         optimizer.step()
-        # print(f"Backward conv {backward_inputs["conv1"]} {backward_inputs["conv1"].shape}")
-        
-        # Update the model parameters
+        # print(f"Backward conv {backward_inputs["pool"]} {backward_inputs["pool"].shape}")
+        # print(f"weights: {model.conv1.weight.data} {model.conv1.weight.shape}")
+        # print(f"biasess: {model.conv1.bias.data} {model.conv1.bias.shape}")
 
-        print(f"weights: {model.conv1.weight.data} {model.conv1.weight.shape}")
-        print(f"biasess: {model.conv1.bias.data} {model.conv1.bias.shape}")
+        # print(f"weights grad: {model.conv1.weight.grad.data} {model.conv1.weight.grad.shape}")
 
-        _exit(0);
-
+        if i == 1:
+            _exit(0)
+        i += 1
+ 
     print(f'Epoch {epoch+1}, Loss: {loss.item():.4f}')
+
+print(losses)
 
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
