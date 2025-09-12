@@ -2,8 +2,8 @@
 #include "stdlib.h"
 #include <stdio.h>
 
-#define LEARNING_RATE 0.001F
-#define N_EPOCHS 30
+#define LEARNING_RATE 0.01F
+#define N_EPOCHS 20
 
 void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset, 
                    dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, 
@@ -15,6 +15,8 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
     tensor_partition_along_t_batch(dataset->train_images, batch_size);
     matrix_partition_along_y_batch(dataset->train_labels, batch_size);
 
+    char const* labels[10] = {"T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"};
+
     num_samples = 6000; // Only use first 6k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
@@ -25,6 +27,7 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
         dahl_scalar* total_loss = scalar_init(epoch_arena);
         dahl_scalar* correct_predictions = scalar_init(epoch_arena);
 
+        size_t count = 0;
         dahl_fp arr[n_batches_per_epoch];
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
@@ -38,10 +41,10 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
-            size_t index = (size_t)ind_data[i];
+            // size_t index = (size_t)ind_data[i];
             // printf("batch number: %lu, batch index: %lu\n", i, index);
-            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, index);
-            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, index);
+            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, i);
+            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
 
             dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
             TASK_RELU_SELF(conv_out);
@@ -50,8 +53,18 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
             dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
             
-            task_cross_entropy_loss_batch(dense_out, target_batch, total_loss);
-            task_check_predictions_batch(dense_out, target_batch, correct_predictions);
+            dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
+            TASK_ADD_SELF(total_loss, loss);
+
+            dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
+            TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
+
+            if (epoch == 19 && count < 5)
+            {
+                print_predictions_batch(dense_out, target_batch, image_batch, labels);
+                count++;
+            }
+
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
             dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, LEARNING_RATE);
@@ -100,7 +113,7 @@ int main(int argc, char **argv)
     size_t const batch_size = 10;
     size_t const num_samples = images_shape.t;
     size_t const num_channels = images_shape.z;
-    size_t const num_filters = 32;
+    size_t const num_filters = 4;
     dahl_shape4d const input_shape = { 
         .x = images_shape.x, .y = images_shape.y,
         .z = num_channels, .t = batch_size 
