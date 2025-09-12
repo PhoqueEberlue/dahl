@@ -199,7 +199,6 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     tensor_unpartition(dl_dinput_batch);
     tensor_unpartition(conv->filters);
 
-    // Updating filters and biases, here we need to divide by batch_size compared to dense layer
     TASK_SCAL_SELF(summed_dl_dfilters, learning_rate);
     TASK_SUB_SELF(conv->filters, summed_dl_dfilters);
 

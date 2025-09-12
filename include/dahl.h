@@ -9,6 +9,7 @@
 #include "dahl_dense.h"
 #include "dahl_dataset.h"
 #include "dahl_asserts.h"
+#include "dahl_utils.h"
 
 void dahl_init();
 void dahl_shutdown();

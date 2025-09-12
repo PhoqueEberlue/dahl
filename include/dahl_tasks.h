@@ -296,13 +296,13 @@ void task_copy(void const* in, void* out, dahl_traits* traits);
     } while (0)
 
 // ---------------------------- VARIOUS TASKS RELATED TO ML ----------------------------
-// Increment `good_predictions` with the number of good predictions from the `prediction_batch` and `target_batch`.
+// Count the number of good predictions from the `prediction_batch` and `target_batch`.
 void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions);
 
 // Init and return the number of good predictions from the `prediction_batch` and `target_batch`.
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
-// Compute the cross entropy loss over the given batch and increments the result into `out`.
+// Compute the cross entropy loss over the given batch and writes the result into `out`.
 void task_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* out);
 
 // Compute the cross entropy loss over the given batch and return the result into a new scalar.
