@@ -22,8 +22,7 @@ void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
         (TENSOR_NB_PARTITION_TYPE * sizeof(dahl_partition*)
     ));
 
-    for (size_t i = 0; i < TENSOR_NB_PARTITION_TYPE; i++)
-        md->partitions[i] = nullptr;
+    for (size_t i = 0; i < TENSOR_NB_PARTITION_TYPE; i++) { md->partitions[i] = nullptr; }
 
     md->current_partition = -1;
     md->origin_arena = arena;
@@ -67,44 +66,71 @@ dahl_tensor* tensor_init(dahl_arena* arena, dahl_shape4d const shape)
 dahl_tensor* tensor_init_from(dahl_arena* arena, dahl_shape4d const shape, dahl_fp const* data)
 {
     dahl_tensor* tensor = tensor_init(arena, shape);
-    size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
-
-    for (int i = 0; i < n_elems; i++)
-    {
-        tensor->data[i] = data[i];
-    }
-
+    tensor_set_from(tensor, data);
     return tensor;
 }
 
-dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape)
+dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape, dahl_fp min, dahl_fp max)
 {
     dahl_tensor* tensor = tensor_init(arena, shape);
-    size_t const n_elems = shape.x * shape.y * shape.z * shape.t;
+    tensor_acquire(tensor);
 
-    for (int i = 0; i < n_elems; i += 1)
+    for (size_t t = 0; t < shape.t; t++)
     {
-        tensor->data[i] = (dahl_fp)( 
-            ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX) / 10) 
-        );
+        for (size_t z = 0; z < shape.z; z++)
+        {
+            for (size_t y = 0; y < shape.y; y++)
+            {
+                for (size_t x = 0; x < shape.x; x++)
+                {
+                    tensor_set_value(tensor, x, y, z, t, fp_rand(min, max));
+                }
+            }
+        }
     }
 
+    tensor_release(tensor);
     return tensor;
 }
 
 void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data)
 {
     dahl_shape4d shape = tensor_get_shape(tensor);
-    size_t nb_elems = shape.x * shape.y * shape.z * shape.t;
+    tensor_acquire(tensor);
 
-    tensor_data_acquire(tensor);
-
-    for (int i = 0; i < nb_elems; i += 1)
+    size_t i = 0;
+    for (size_t t = 0; t < shape.t; t++)
     {
-        tensor->data[i] = data[i];
+        for (size_t z = 0; z < shape.z; z++)
+        {
+            for (size_t y = 0; y < shape.y; y++)
+            {
+                for (size_t x = 0; x < shape.x; x++)
+                {
+                    tensor_set_value(tensor, x, y, z, t, data[i]);
+                    i++;
+                }
+            }
+        }
     }
 
-    tensor_data_release(tensor);
+    tensor_release(tensor);
+}
+
+dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z, size_t t)
+{
+    size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
+    size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
+    size_t ldt = starpu_tensor_get_local_ldt(tensor->handle);
+    return tensor->data[(t * ldt) + (z * ldz) + (y * ldy) + x];
+}
+
+void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t t, dahl_fp value)
+{
+    size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
+    size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
+    size_t ldt = starpu_tensor_get_local_ldt(tensor->handle);
+    tensor->data[(t * ldt) + (z * ldz) + (y * ldy) + x] = value;
 }
 
 dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
@@ -170,19 +196,17 @@ size_t _tensor_get_nb_elem(void const* tensor)
     return shape.x * shape.y * shape.z * shape.t;
 }
 
-dahl_fp const* tensor_data_acquire(dahl_tensor const* tensor)
+void tensor_acquire(dahl_tensor const* tensor)
 {
     starpu_data_acquire(tensor->handle, STARPU_R);
-    return tensor->data;
 }
 
-dahl_fp* tensor_data_acquire_mut(dahl_tensor* tensor)
+void tensor_acquire_mut(dahl_tensor* tensor)
 {
     starpu_data_acquire(tensor->handle, STARPU_RW);
-    return tensor->data;
 }
 
-void tensor_data_release(dahl_tensor const* tensor)
+void tensor_release(dahl_tensor const* tensor)
 {
     starpu_data_release(tensor->handle);
 }
@@ -197,33 +221,33 @@ bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool const roundi
         && shape_a.z == shape_b.z 
         && shape_a.t == shape_b.t);
 
-    starpu_data_acquire(a->handle, STARPU_R);
-    starpu_data_acquire(b->handle, STARPU_R);
+    tensor_acquire(a);
+    tensor_acquire(b);
 
     bool res = true;
 
-    for (int i = 0; i < (shape_a.x * shape_a.y * shape_a.z * shape_a.t); i++)
+    for (size_t t = 0; t < shape_a.t; t++)
     {
-        if (rounding)
+        for (size_t z = 0; z < shape_a.z; z++)
         {
-            if (fp_round(a->data[i], precision) != fp_round(b->data[i], precision))
+            for (size_t y = 0; y < shape_a.y; y++)
             {
-                res = false;
-                break;
-            }
-        }
-        else 
-        {
-            if (a->data[i] != b->data[i])
-            {
-                res = false;
-                break;
+                for (size_t x = 0; x < shape_a.x; x++)
+                {
+                    dahl_fp a_val = tensor_get_value(a, x, y, z, t);
+                    dahl_fp b_val = tensor_get_value(b, x, y, z, t);
+
+                    if (rounding) { res = fp_equals_round(a_val, b_val, precision); }
+                    else          { res = fp_equals(a_val, b_val);                  }
+
+                    if (!res)     { break; }
+                }
             }
         }
     }
 
-    starpu_data_release(a->handle);
-    starpu_data_release(b->handle);
+    tensor_release(a);
+    tensor_release(b);
 
     return res;
 }
@@ -322,7 +346,7 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
 	const size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
 	const size_t ldt = starpu_tensor_get_local_ldt(tensor->handle);
 
-	starpu_data_acquire(tensor->handle, STARPU_R);
+	tensor_acquire(tensor);
 
     fprintf(fp, "tensor=%p nx=%zu ny=%zu nz=%zu nt=%zu ldy=%zu ldz=%zu ldt=%zu\n{\n", tensor->data, shape.x, shape.y, shape.z, shape.t, ldy, ldz, ldt);
 	for(size_t t = 0; t < shape.t; t++)
@@ -336,7 +360,7 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
                 fprintf(fp, "\t\t\t{ ");
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    fprintf(fp, "%+.15f, ", tensor->data[(t*ldt)+(z*ldz)+(y*ldy)+x]);
+                    fprintf(fp, "%+.15f, ", tensor_get_value(tensor, x, y, z, t));
                 }
                 fprintf(fp, "},\n");
             }
@@ -346,7 +370,7 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
     }
 	fprintf(fp, "}\n");
 
-	starpu_data_release(tensor->handle);
+	tensor_release(tensor);
 }
 
 void tensor_print(dahl_tensor const* tensor)

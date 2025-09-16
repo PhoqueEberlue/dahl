@@ -48,10 +48,10 @@ extern dahl_traits dahl_traits_scalar;
 // - shape: dahl_shape4d object describing the dimensions of the tensor
 dahl_tensor* tensor_init(dahl_arena*, dahl_shape4d shape);
 
-// Initialize a dahl_tensor with random values.
+// Initialize a dahl_tensor with random values between `min` and `max`.
 // parameters:
 // - shape: dahl_shape4d object describing the dimensions of the tensor
-dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape);
+dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape, dahl_fp min, dahl_fp max);
 
 // Initialize a dahl_tensor by cloning an existing array.
 // Cloned memory will be freed upon calling `tensor_finalize`, however do not forget to free the original array.
@@ -62,6 +62,12 @@ dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* da
 // Set values of the `tensor` from an array `data` that should be of the same size.
 // This is a blocking function.
 void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data);
+
+// Get the value at index x,y,z,t. Requires to have acquired the tensor, either with `tensor_acquire()` or `tensor_acquire_mut()`.
+dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z, size_t t);
+
+// Set `value` at index x,y,z,t. Requires to have mutably acquired the tensor with `tensor_acquire_mut()`.
+void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t t, dahl_fp value);
 
 // Flatten a tensor along the t dimension, producing a new matrix object of the shape (x*y*z, t).
 // No data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the parent tensor.
@@ -75,14 +81,14 @@ dahl_shape4d tensor_get_shape(dahl_tensor const*);
 bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, u_int8_t precision);
 
 // Acquire the tensor data, will wait any associated tasks to finish.
-dahl_fp const* tensor_data_acquire(dahl_tensor const*);
+void tensor_acquire(dahl_tensor const*);
 
 // Acquire the tensor data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* tensor_data_acquire_mut(dahl_tensor*);
+void tensor_acquire_mut(dahl_tensor*);
 
 // Release the tensor data, tasks will be able to use the tensor again.
-void tensor_data_release(dahl_tensor const*);
+void tensor_release(dahl_tensor const*);
 
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
@@ -113,10 +119,10 @@ void tensor_print(dahl_tensor const*);
 // - shape: dahl_shape3d object describing the dimensions of the block
 dahl_block* block_init(dahl_arena*, dahl_shape3d shape);
 
-// Initialize a dahl_block with random values.
+// Initialize a dahl_block with random values between `min` and `max`.
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
-dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape);
+dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape, dahl_fp min, dahl_fp max);
 
 // Initialize a dahl_block by cloning an existing array.
 // Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
@@ -128,6 +134,12 @@ dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data
 // This is a blocking function.
 void block_set_from(dahl_block* block, dahl_fp const* data);
 
+// Get the value at index x,y,z. Requires to have acquired the block, either with `block_acquire()` or `block_acquire_mut()`.
+dahl_fp block_get_value(dahl_block const* block, size_t x, size_t y, size_t z);
+
+// Set `value` at index x,y,z. Requires to have mutably acquired the block with `block_acquire_mut()`.
+void block_set_value(dahl_block* block, size_t x, size_t y, size_t z, dahl_fp value);
+
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const*);
 
@@ -135,14 +147,14 @@ dahl_shape3d block_get_shape(dahl_block const*);
 bool block_equals(dahl_block const* a, dahl_block const* b, bool rounding, u_int8_t precision);
 
 // Acquire the block data, will wait any associated tasks to finish.
-dahl_fp const* block_data_acquire(dahl_block const*);
+void block_acquire(dahl_block const*);
 
 // Acquire the block data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* block_data_acquire_mut(dahl_block*);
+void block_acquire_mut(dahl_block*);
 
 // Release the block data, tasks will be able to use the block again.
-void block_data_release(dahl_block const*);
+void block_release(dahl_block const*);
 
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
@@ -175,6 +187,8 @@ void block_unpartition(dahl_block const*);
 // Print a block
 void block_print(dahl_block const*);
 
+void block_image_display(dahl_block const* block, size_t const scale_factor);
+
 // Helper to create a block on the fly by providing the values directly at the end of the macro. 
 // Careful! Here we fill values by writing on Z, Y then X dimension, this way values on X are contiguous in the memory.
 #define BLOCK(ARENA, NZ, NY, NX, ...) block_init_from(     \
@@ -189,16 +203,22 @@ void block_print(dahl_block const*);
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 dahl_matrix* matrix_init(dahl_arena*, dahl_shape2d shape);
 
-// Initialize a dahl_matrix with random values.
+// Initialize a dahl_matrix with random values between `min` and `max`.
 // parameters:
 // - shape: dahl_shape2d object describing the dimensions of the matrix
-dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape);
+dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape, dahl_fp min, dahl_fp max);
 
 // Initialize a dahl_matrix by cloning an existing array.
 // Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
+
+// Get the value at index x,y. Requires to have acquired the matrix, either with `matrix_acquire()` or `matrix_acquire_mut()`.
+dahl_fp matrix_get_value(dahl_matrix const* matrix, size_t x, size_t y);
+
+// Set `value` at index x,y. Requires to have mutably acquired the matrix with `matrix_acquire_mut()`.
+void matrix_set_value(dahl_matrix* matrix, size_t x, size_t y, dahl_fp value);
 
 // Set values of the `matrix` from an array `data` that should be of the same size.
 // This is a blocking function.
@@ -213,14 +233,14 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d ne
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
 
 // Acquire the matrix data, will wait any associated tasks to finish.
-dahl_fp const* matrix_data_acquire(dahl_matrix const*);
+void matrix_acquire(dahl_matrix const*);
 
 // Acquire the matrix data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* matrix_data_acquire_mut(dahl_matrix*);
+void matrix_acquire_mut(dahl_matrix*);
 
-// Release the matrix data, tasks will be able to use the block again.
-void matrix_data_release(dahl_matrix const*);
+// Release the matrix data, tasks will be able to use the matrix again.
+void matrix_release(dahl_matrix const*);
 
 // Compares two matrices value by value and returns wether or not they're equal.
 bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_int8_t precision);
@@ -251,6 +271,8 @@ void matrix_print(dahl_matrix const*);
 // Print a matrix with ascii format, useful to print images in the terminal
 void matrix_print_ascii(dahl_matrix const*, dahl_fp threshold);
 
+void matrix_image_display(dahl_matrix const* matrix, size_t scale_factor);
+
 // Helper to create a matrix on the fly by providing the values directly at the end of the macro.
 // Careful! Here we fill values by writing on Y then X dimension, this way values on X are contiguous in the memory.
 #define MATRIX(ARENA, NY, NX, ...) matrix_init_from( \
@@ -265,10 +287,10 @@ void matrix_print_ascii(dahl_matrix const*, dahl_fp threshold);
 // - len: size_t lenght of the vector
 dahl_vector* vector_init(dahl_arena*, size_t len);
 
-// Initialize a dahl_vector with random values.
+// Initialize a dahl_vector with random values between `min` and `max`.
 // parameters:
 // - shape: dahl_shape2d object describing the dimensions of the vector
-dahl_vector* vector_init_random(dahl_arena*, size_t len);
+dahl_vector* vector_init_random(dahl_arena*, size_t len, dahl_fp min, dahl_fp max);
 
 // Initialize a dahl_vector by cloning an existing array.
 // Cloned memory will be freed upon calling `block_finalize`, however do not forget to free the original array.
@@ -279,10 +301,10 @@ dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
 // Returns the vector len
 size_t vector_get_len(dahl_vector const*);
 
-// Returns the value at `index`. This is a blocking function.
+// Get the value at `index`. Requires to have acquired the vector, either with `vector_acquire()` or `vector_acquire_mut()`.
 dahl_fp vector_get_value(dahl_vector const* vector, size_t index);
 
-// Set `value` at `index`. This is a blocking function.
+// Set `value` at `index`. Requires to have mutably acquired the vector with `vector_acquire_mut()`.
 void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value);
 
 // Set values of the `vector` from an array `data` that should be of the same size.
@@ -290,14 +312,14 @@ void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value);
 void vector_set_from(dahl_vector* vector, dahl_fp const* data);
 
 // Acquire the vector data, will wait any associated tasks to finish.
-dahl_fp const* vector_data_acquire(dahl_vector const*);
+void vector_acquire(dahl_vector const*);
 
 // Acquire the vector data as mut, will wait any associated tasks to finish.
 // Caution: will cause dead lock if the data is already partitionned.
-dahl_fp* vector_data_acquire_mut(dahl_vector*);
+void vector_acquire_mut(dahl_vector*);
 
 // Release the vector data, tasks will be able to use the block again.
-void vector_data_release(dahl_vector const*);
+void vector_release(dahl_vector const*);
 
 // Copy the vector into a new categorical matrix
 // E.g. [1,2,0,1,1] gives:
@@ -321,7 +343,10 @@ void vector_print(dahl_vector const*);
 // ---------------------------------------- SCALAR ----------------------------------------
 dahl_scalar* scalar_init(dahl_arena* arena);
 dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp value);
+// Get `value` of the scalar. No need to acquire the scalars.
 dahl_fp scalar_get_value(dahl_scalar const* scalar);
+// Set `value` to the scalar. No need to acquire the scalars.
+void scalar_set_value(dahl_scalar* scalar, dahl_fp value);
 bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, u_int8_t const precision);
 void scalar_print(dahl_scalar const* scalar);
 // ---------------------------------------- PARTITION ----------------------------------------

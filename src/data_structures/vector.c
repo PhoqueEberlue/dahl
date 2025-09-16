@@ -20,8 +20,7 @@ dahl_vector* vector_init(dahl_arena* arena, size_t const len)
 {
     dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
 
-    for (size_t i = 0; i < len; i++)
-        data[i] = 0.0F;
+    for (size_t i = 0; i < len; i++) { data[i] = 0.0F; }
 
     starpu_data_handle_t handle = nullptr;
     starpu_vector_data_register(
@@ -40,23 +39,22 @@ dahl_vector* vector_init(dahl_arena* arena, size_t const len)
 dahl_vector* vector_init_from(dahl_arena* arena, size_t const len, dahl_fp const* data)
 {
     dahl_vector* vector = vector_init(arena, len);
-    
-    for (int i = 0; i < len; i++)
-    {
-        vector->data[i] = data[i];
-    }
-
+    vector_set_from(vector, data);
     return vector;
 }
 
-dahl_vector* vector_init_random(dahl_arena* arena, size_t const len)
+dahl_vector* vector_init_random(dahl_arena* arena, size_t const len, dahl_fp min, dahl_fp max)
 {
     dahl_vector* vector = vector_init(arena, len);
 
-    for (int i = 0; i < len; i += 1)
+    vector_acquire(vector);
+
+    for (size_t x = 0; x < len; x++)
     {
-        vector->data[i] = ( rand() % 2 ? 1 : -1 ) * ( (dahl_fp)rand() / (dahl_fp)(RAND_MAX) / 10);
+        vector_set_value(vector, x, fp_rand(min, max));
     }
+
+    vector_release(vector);
 
     return vector;
 }
@@ -78,48 +76,41 @@ size_t _vector_get_nb_elem(void const* vector)
 
 dahl_fp vector_get_value(dahl_vector const* vector, size_t index)
 {
-    assert(index < starpu_vector_get_nx(vector->handle));
-    vector_data_acquire(vector);
-    dahl_fp res = vector->data[index];
-    vector_data_release(vector);
-    return res;
+    return vector->data[index];
 }
 
 void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value)
 {
-    assert(index < starpu_vector_get_nx(vector->handle));
-    vector_data_acquire(vector);
     vector->data[index] = value;
-    vector_data_release(vector);
 }
 
 void vector_set_from(dahl_vector* vector, dahl_fp const* data)
 {
     size_t len = starpu_vector_get_nx(vector->handle);
 
-    vector_data_acquire(vector);
+    vector_acquire(vector);
 
-    for (int i = 0; i < len; i += 1)
+    size_t i = 0;
+    for (size_t x = 0; x < len; x++)
     {
-        vector->data[i] = data[i];
+        vector_set_value(vector, x, data[i]);
+        i++;
     }
 
-    vector_data_release(vector);
+    vector_release(vector);
 }
 
-dahl_fp const* vector_data_acquire(dahl_vector const* vector)
+void vector_acquire(dahl_vector const* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_R);
-    return vector->data;
 }
 
-dahl_fp* vector_data_acquire_mut(dahl_vector* vector)
+void vector_acquire_mut(dahl_vector* vector)
 {
     starpu_data_acquire(vector->handle, STARPU_RW);
-    return vector->data;
 }
 
-void vector_data_release(dahl_vector const* vector)
+void vector_release(dahl_vector const* vector)
 {
     starpu_data_release(vector->handle);
 }
@@ -131,33 +122,24 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
 
     assert(len_a == len_b);
 
-    starpu_data_acquire(a->handle, STARPU_R);
-    starpu_data_acquire(b->handle, STARPU_R);
+    vector_acquire(a);
+    vector_acquire(b);
 
     bool res = true;
 
-    for (int i = 0; i < len_a; i++)
+    for (size_t x = 0; x < len_a; x++)
     {
-        if (rounding)
-        {
-            if (fp_round(a->data[i], precision) != fp_round(b->data[i], precision))
-            {
-                res = false;
-                break;
-            }
-        }
-        else 
-        {
-            if (a->data[i] != b->data[i])
-            {
-                res = false;
-                break;
-            }
-        }
+        dahl_fp a_val = vector_get_value(a, x);
+        dahl_fp b_val = vector_get_value(b, x);
+
+        if (rounding) { res = fp_equals_round(a_val, b_val, precision); }
+        else          { res = fp_equals(a_val, b_val);                  }
+
+        if (!res)     { break; }
     }
 
-    starpu_data_release(a->handle);
-    starpu_data_release(b->handle);
+    vector_release(a);
+    vector_release(b);
 
     return res;
 }
@@ -167,20 +149,16 @@ void _vector_print_file(void const* vvector, FILE* fp)
     auto vector = (dahl_vector const*)vvector;
     const size_t len = vector_get_len(vector);
 
-	starpu_data_acquire(vector->handle, STARPU_R);
+	vector_acquire(vector);
 
     fprintf(fp, "vector=%p nx=%zu\n{ ", vector->data, len);
     for(size_t x = 0; x < len; x++)
     {
-        fprintf(fp, "%+.15f", vector->data[x]);
-
-        // Omit last comma
-        if (x != len - 1)
-            fprintf(fp, ", ");
+        fprintf(fp, "%+.15f", vector_get_value(vector, x));
     }
     fprintf(fp, " }\n");
 
-	starpu_data_release(vector->handle);
+	vector_release(vector);
 }
 
 void vector_print(dahl_vector const* vector)
@@ -191,22 +169,20 @@ void vector_print(dahl_vector const* vector)
 dahl_matrix* vector_to_categorical(dahl_arena* arena, dahl_vector const* vector, size_t const num_classes)
 {
     size_t len = vector_get_len(vector);
-
-    starpu_data_acquire(vector->handle, STARPU_R);
-
     dahl_shape2d shape = { .x = num_classes, .y = len };
     dahl_matrix* matrix = matrix_init(arena, shape);
 
-    starpu_data_acquire(matrix->handle, STARPU_W);
+    vector_acquire(vector);
+    matrix_acquire_mut(matrix);
 
-    for (size_t i = 0; i < len; i++)
+    for (size_t y = 0; y < len; y++)
     {
-        size_t class = (size_t)vector->data[i];
-        matrix->data[(i * num_classes) + class] = 1;
+        size_t class_index = (size_t)vector_get_value(vector, y);
+        // Activate value at position `class_index`
+        matrix_set_value(matrix, class_index, y, 1);
     }
 
-    starpu_data_release(vector->handle);
-    starpu_data_release(matrix->handle);
-
+    vector_release(vector);
+    matrix_release(matrix);
     return matrix;
 }

@@ -35,6 +35,13 @@ dahl_fp scalar_get_value(dahl_scalar const* scalar)
     return res;
 }
 
+void scalar_set_value(dahl_scalar* scalar, dahl_fp value)
+{
+    starpu_data_acquire(scalar->handle, STARPU_R);
+    scalar->data = value;
+    starpu_data_release(scalar->handle);
+}
+
 starpu_data_handle_t _scalar_get_handle(void const* scalar)
 {
     return ((dahl_scalar*)scalar)->handle;
@@ -47,17 +54,11 @@ inline size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar)
 
 bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, u_int8_t const precision)
 {
-    dahl_fp a_value = scalar_get_value(a);
-    dahl_fp b_value = scalar_get_value(b);
+    dahl_fp a_val = scalar_get_value(a);
+    dahl_fp b_val = scalar_get_value(b);
 
-    if (rounding)
-    {
-        return (bool)(fp_round(a_value, precision) != fp_round(b_value, precision));
-    }
-    else 
-    {
-        return (bool)(a_value != b_value);
-    }
+    if (rounding) { return fp_equals_round(a_val, b_val, precision); }
+    else          { return fp_equals(a_val, b_val);                  }
 }
 
 void _scalar_print_file(void const* vscalar, FILE* fp)
