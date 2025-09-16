@@ -845,6 +845,42 @@ void copy(void* buffers[2], void* cl_arg)
     }
 }
 
+void min(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[1]);
+
+    dahl_fp min = in[0];
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        if (min > in[i]) { min = in[i]; }
+    }
+
+    *out = min;
+}
+
+void max(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[1]);
+
+    dahl_fp max = in[0];
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        if (max < in[i]) { max = in[i]; }
+    }
+
+    *out = max;
+}
+
 // ---------------------------------------- ML Related ----------------------------------------
 void check_predictions_batch(void* buffers[3], void* cl_arg)
 {

@@ -151,6 +151,10 @@ dahl_scalar* task_mean_init(dahl_arena*, void const* object, dahl_traits* traits
 void task_fill(void* object, dahl_fp value, dahl_traits* traits);
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits);
 void task_copy(void const* in, void* out, dahl_traits* traits);
+void task_min(void const* in, dahl_scalar* out, dahl_traits* traits);
+dahl_scalar* task_min_init(dahl_arena*, void const* object, dahl_traits* traits);
+void task_max(void const* in, dahl_scalar* out, dahl_traits* traits);
+dahl_scalar* task_max_init(dahl_arena*, void const* object, dahl_traits* traits);
 
 // Apply a relu function to every value of `in` and store the result in `out`.
 #define TASK_RELU(IN, OUT)                                     \
@@ -294,6 +298,18 @@ void task_copy(void const* in, void* out, dahl_traits* traits);
                    "A and B must be of the same type"); \
         task_copy(IN, OUT, GET_TRAITS(OUT));            \
     } while (0)
+
+// Find the minimum value of `in` and write the result into a scalar `out`.
+#define TASK_MIN(IN, OUT) task_min(IN, OUT, GET_TRAITS(OBJECT))
+
+// Find the minimum value of `in` and allocate/return the result into the `arena`.
+#define TASK_MIN_INIT(ARENA, OBJECT) task_min_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
+
+// Find the maximum value of `in` and write the result into a scalar `out`.
+#define TASK_MAX(IN, OUT) task_max(IN, OUT, GET_TRAITS(OBJECT))
+
+// Find the maximum value of `in` and allocate/return the result into the `arena`.
+#define TASK_MAX_INIT(ARENA, OBJECT) task_max_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
 
 // ---------------------------- VARIOUS TASKS RELATED TO ML ----------------------------
 // Count the number of good predictions from the `prediction_batch` and `target_batch`.

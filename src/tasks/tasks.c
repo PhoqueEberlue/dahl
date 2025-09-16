@@ -568,6 +568,40 @@ void task_copy(void const* in, void* out, dahl_traits* traits)
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
+void task_min(void const* in, dahl_scalar* out, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(in);
+    int ret = starpu_task_insert(&cl_min,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_scalar* task_min_init(dahl_arena* arena, void const* object, dahl_traits* traits)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_min(object, res, traits);
+    return res;
+}
+
+void task_max(void const* in, dahl_scalar* out, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(in);
+    int ret = starpu_task_insert(&cl_max,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_R, traits->get_handle(in),
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_scalar* task_max_init(dahl_arena* arena, void const* object, dahl_traits* traits)
+{
+    dahl_scalar* res = scalar_init(arena);
+    task_max(object, res, traits);
+    return res;
+}
+
 // ---------------------------------------- ML Related ----------------------------------------
 void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_scalar* good_predictions)
 {

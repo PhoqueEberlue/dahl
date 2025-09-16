@@ -77,6 +77,8 @@ DEFINE_STARPU_CODELET(mean, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(wait, 1, STARPU_W);
 DEFINE_STARPU_CODELET(copy, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(min, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(max, 2, STARPU_R, STARPU_W);
 
 // ---------------------------------------- ML Related ----------------------------------------
 DEFINE_STARPU_CODELET(check_predictions_batch, 3, STARPU_R, STARPU_R, STARPU_W);

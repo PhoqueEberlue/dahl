@@ -1135,6 +1135,20 @@ void test_vector_shuffle()
     ASSERT_VECTOR_EQUALS(expect, vec);
 }
 
+void test_min_max()
+{
+    dahl_matrix* m1 = MATRIX(testing_arena, 3, 4, {
+        { 4, -5, 2000000000, 3 },
+        { 2, -192830, 0, 29 },
+        { -2909078, -5, 2000000001, 138 },
+    });
+
+    dahl_scalar* min = TASK_MIN_INIT(testing_arena, m1);
+    ASSERT_FP_EQUALS(-2909078, scalar_get_value(min));
+    dahl_scalar* max = TASK_MAX_INIT(testing_arena, m1);
+    ASSERT_FP_EQUALS(2000000001, scalar_get_value(max));
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1170,4 +1184,5 @@ void test_tasks()
     test_matrix_rotate_180();
     test_vector_outer_product();
     // test_vector_shuffle();
+    test_min_max();
 }
