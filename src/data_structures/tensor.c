@@ -338,7 +338,7 @@ void tensor_unpartition(dahl_tensor const* tensor)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void _tensor_print_file(void const* vtensor, FILE* fp)
+void _tensor_print_file(void const* vtensor, FILE* fp, u_int8_t const precision)
 {
     dahl_tensor const* tensor = (dahl_tensor const*)vtensor;
     const dahl_shape4d shape = tensor_get_shape(tensor);
@@ -360,7 +360,7 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
                 fprintf(fp, "\t\t\t{ ");
                 for(size_t x = 0; x < shape.x; x++)
                 {
-                    fprintf(fp, "%+.15f, ", tensor_get_value(tensor, x, y, z, t));
+                    fprintf(fp, "%+.*f, ", precision, tensor_get_value(tensor, x, y, z, t));
                 }
                 fprintf(fp, "},\n");
             }
@@ -375,5 +375,5 @@ void _tensor_print_file(void const* vtensor, FILE* fp)
 
 void tensor_print(dahl_tensor const* tensor)
 {
-    _tensor_print_file(tensor, stdout);
+    _tensor_print_file(tensor, stdout, DAHL_DEFAULT_PRINT_PRECISION);
 }

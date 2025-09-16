@@ -4,6 +4,8 @@
 #include "dahl_types.h"
 #include "dahl_arena.h"
 
+#define DAHL_DEFAULT_PRINT_PRECISION 10
+
 typedef struct _dahl_tensor dahl_tensor;
 typedef struct _dahl_block dahl_block;
 typedef struct _dahl_matrix dahl_matrix;

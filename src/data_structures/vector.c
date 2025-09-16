@@ -144,7 +144,7 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
     return res;
 }
 
-void _vector_print_file(void const* vvector, FILE* fp)
+void _vector_print_file(void const* vvector, FILE* fp, u_int8_t const precision)
 {
     auto vector = (dahl_vector const*)vvector;
     const size_t len = vector_get_len(vector);
@@ -154,16 +154,16 @@ void _vector_print_file(void const* vvector, FILE* fp)
     fprintf(fp, "vector=%p nx=%zu\n{ ", vector->data, len);
     for(size_t x = 0; x < len; x++)
     {
-        fprintf(fp, "%+.15f", vector_get_value(vector, x));
+        fprintf(fp, "%+.*f, ", precision, vector_get_value(vector, x));
     }
-    fprintf(fp, " }\n");
+    fprintf(fp, "}\n");
 
 	vector_release(vector);
 }
 
 void vector_print(dahl_vector const* vector)
 {
-    _vector_print_file(vector, stdout);
+    _vector_print_file(vector, stdout, DAHL_DEFAULT_PRINT_PRECISION);
 }
 
 dahl_matrix* vector_to_categorical(dahl_arena* arena, dahl_vector const* vector, size_t const num_classes)

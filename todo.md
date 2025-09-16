@@ -2,16 +2,13 @@
 
 ## Important
 
-- propagate precision passed in the asserts to the block/matirx/vector prints
-  - Optionnaly create a global parameter to manage floating point display
-  - in the asserts fix the precision displaying, for example if I ask a precision of 15 and actually
-    display 15 digit after comma, the last digit could be round up to the same number, meaning
-    that the difference won't be noticable in the diff display.
 - refactor partitionning functions with an Axis argument?
 - separate cleanly private functions in dahl data structure files
 - standardize error messages? -> At least be able to print values, the line where it crashed, etc
 
+
 - benchmark with different task granularity?
+- implement a clean and reproducible environment
 - benchmark with different batch sizes?
 - Implementing the 3 other parallelizable dimensions
 - Implement PipeDream algorithm

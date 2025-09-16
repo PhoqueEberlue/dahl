@@ -61,13 +61,13 @@ bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const roundi
     else          { return fp_equals(a_val, b_val);                  }
 }
 
-void _scalar_print_file(void const* vscalar, FILE* fp)
+void _scalar_print_file(void const* vscalar, FILE* fp, u_int8_t const precision)
 {
     dahl_fp value = scalar_get_value((dahl_scalar const*)vscalar);
-    fprintf(fp, "scalar=%f\n", value);
+    fprintf(fp, "scalar=%+.*f\n", precision, value);
 }
 
 void scalar_print(dahl_scalar const* scalar)
 {
-    _scalar_print_file(scalar, stdout);
+    _scalar_print_file(scalar, stdout, DAHL_DEFAULT_PRINT_PRECISION);
 }

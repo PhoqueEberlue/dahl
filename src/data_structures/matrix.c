@@ -310,7 +310,7 @@ void matrix_unpartition(dahl_matrix const* matrix)
     // This means that when submitting a new identical partition, the same handles will be reused.
 }
 
-void _matrix_print_file(void const* vmatrix, FILE* fp)
+void _matrix_print_file(void const* vmatrix, FILE* fp, u_int8_t const precision)
 {
     auto matrix = (dahl_matrix const*)vmatrix;
     const dahl_shape2d shape = matrix_get_shape(matrix);
@@ -325,7 +325,7 @@ void _matrix_print_file(void const* vmatrix, FILE* fp)
         fprintf(fp, "\n\t{ ");
         for(size_t x = 0; x < shape.x; x++)
         {
-            fprintf(fp, "%+.15f, ", matrix_get_value(matrix, x, y));
+            fprintf(fp, "%+.*f, ", precision, matrix_get_value(matrix, x, y));
         }
         fprintf(fp, "},");
     }
@@ -336,7 +336,7 @@ void _matrix_print_file(void const* vmatrix, FILE* fp)
 
 void matrix_print(dahl_matrix const* matrix)
 {
-    _matrix_print_file(matrix, stdout);
+    _matrix_print_file(matrix, stdout, DAHL_DEFAULT_PRINT_PRECISION);
 }
 
 void matrix_print_ascii(dahl_matrix const* matrix, dahl_fp const threshold)

@@ -397,7 +397,7 @@ void block_unpartition(dahl_block const* block)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void _block_print_file(void const* vblock, FILE* fp)
+void _block_print_file(void const* vblock, FILE* fp, u_int8_t const precision)
 {
     auto block = (dahl_block const*)vblock;
     const dahl_shape3d shape = block_get_shape(block);
@@ -416,7 +416,7 @@ void _block_print_file(void const* vblock, FILE* fp)
 
 			for(size_t x = 0; x < shape.x; x++)
 			{
-				fprintf(fp, "%+.15f, ", block_get_value(block, x, y, z));
+				fprintf(fp, "%+.*f, ", precision, block_get_value(block, x, y, z));
 			}
 			fprintf(fp, "},\n");
 		}
@@ -429,7 +429,7 @@ void _block_print_file(void const* vblock, FILE* fp)
 
 void block_print(dahl_block const* block)
 {
-    _block_print_file(block, stdout);
+    _block_print_file(block, stdout, DAHL_DEFAULT_PRINT_PRECISION);
 }
 
 void block_image_display(dahl_block const* block, size_t const scale_factor)
