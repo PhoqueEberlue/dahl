@@ -4,6 +4,8 @@
 #include "../misc.h"
 #include "unistd.h"
 
+char const* FASHION_MNIST_CLASS_NAMES[10] = {"T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"};
+
 // Function to load MNIST images
 dahl_tensor* load_mnist_images(dahl_arena* arena, char const* filename)
 {
@@ -33,7 +35,7 @@ dahl_tensor* load_mnist_images(dahl_arena* arena, char const* filename)
     dahl_shape4d shape_image_tensor = { .x = nx, .y = ny, .z = channels, .t = samples };
     dahl_tensor* image_tensor = tensor_init(arena, shape_image_tensor);
 
-    dahl_fp* images = tensor_data_acquire_mut(image_tensor);
+    tensor_acquire_mut(image_tensor);
 
     for (size_t t = 0; t < samples; t++)
     {
@@ -44,12 +46,12 @@ dahl_tensor* load_mnist_images(dahl_arena* arena, char const* filename)
             {
                 unsigned char buffer;
                 fread(&buffer, sizeof(unsigned char), 1, file);
-                images[(t * nx * ny) + (y * nx) + x] = (dahl_fp)buffer / 255.0F;
+                tensor_set_value(image_tensor, x, y, 0, t, (dahl_fp)buffer / 255.0F);
             }
         }
     }
 
-    tensor_data_release(image_tensor);
+    tensor_release(image_tensor);
     fclose(file);
 
     printf("Loaded %lu images of size %lux%lu from %s\n", samples, nx, ny, filename);
@@ -78,18 +80,18 @@ dahl_matrix* load_mnist_labels(dahl_arena* arena, char const* filename)
     };
 
     dahl_matrix* label_vec = matrix_init(arena, shape_label);
-    dahl_fp* labels = matrix_data_acquire_mut(label_vec);
+    matrix_acquire_mut(label_vec);
 
-    for (size_t i = 0; i < samples; i++)
+    for (size_t y = 0; y < samples; y++)
     {
-        unsigned char buffer;
-        fread(&buffer, sizeof(unsigned char), 1, file);
+        unsigned char class_index;
+        fread(&class_index, sizeof(unsigned char), 1, file);
         // Store the labels with a categorical format
-        labels[(i * n_classes) + buffer] = 1;
+        matrix_set_value(label_vec, class_index, y, 1);
     }
 
     fclose(file);
-    matrix_data_release(label_vec);
+    matrix_release(label_vec);
 
     printf("Loaded %lu labels from %s\n", samples, filename);
     return label_vec;
@@ -101,6 +103,8 @@ dahl_dataset* dataset_load_fashion_mnist(dahl_arena* arena, char const* image_fi
     // Load training images & labels
     res->train_images = load_mnist_images(arena, image_file);
     res->train_labels = load_mnist_labels(arena, label_file); 
+    res->class_names = FASHION_MNIST_CLASS_NAMES;
+    res->num_classes = 10;
 
     return res;
 }

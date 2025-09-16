@@ -8,6 +8,8 @@ typedef struct
 {
     dahl_tensor* train_images;
     dahl_matrix* train_labels;
+    char const** class_names;
+    size_t num_classes;
 } dahl_dataset;
 
 dahl_dataset* dataset_load_fashion_mnist(dahl_arena*, char const* image_file, char const* label_file);

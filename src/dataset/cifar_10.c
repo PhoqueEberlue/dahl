@@ -4,6 +4,8 @@
 #include <assert.h>
 #include "../misc.h"
 
+char const* CIFAR10_CLASS_NAMES[10] = { "Airplane", "Automobile", "Bird", "Cat", "Deer", "Dog", "Frog", "Horse", "Ship", "Truck" };
+
 dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_file)
 {
     FILE *file = fopen(data_batch_file, "rb");
@@ -30,7 +32,7 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
     };
 
     dahl_tensor* image_set = tensor_init(arena, shape_images);
-    dahl_fp* images = tensor_data_acquire_mut(image_set);
+    tensor_acquire_mut(image_set);
 
     dahl_shape2d shape_label = { 
         .x = n_classes,
@@ -38,7 +40,7 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
     };
 
     dahl_matrix* label_set = matrix_init(arena, shape_label);
-    dahl_fp* labels = matrix_data_acquire_mut(label_set);
+    matrix_acquire_mut(label_set);
 
     unsigned char buffer;
     unsigned int n_bytes_read = 0;
@@ -48,8 +50,8 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
         // Read the label
         fread(&buffer, sizeof(unsigned char), 1, file);
         n_bytes_read++;
-        // Store labels categorical format
-        labels[(t * n_classes) + buffer] = 1;
+        // Write the label in categorical format
+        matrix_set_value(label_set, buffer, t, 1);
 
         for (size_t z = 0; z < channels; z++)
         {
@@ -59,20 +61,22 @@ dahl_dataset* dataset_load_cifar_10(dahl_arena* arena, char const* data_batch_fi
                 {
                     fread(&buffer, sizeof(unsigned char), 1, file);
                     n_bytes_read++;
-                    images[(t * nx * ny * channels) + (z * nx * ny ) + (y * nx) + x] = (dahl_fp)buffer / 255.0F;
+                    tensor_set_value(image_set, x, y, z, t, (dahl_fp)buffer / 255.0F);
                 }
             }
         }
     }
 
-    tensor_data_release(image_set);
-    matrix_data_release(label_set);
+    tensor_release(image_set);
+    matrix_release(label_set);
 
     // "Each file contains 10000 such 3073-byte "rows" of images, although there is nothing delimiting the rows. 
     // Therefore each file should be exactly 30730000 bytes long."
     assert(n_bytes_read == 30730000);
     res->train_images = image_set;
     res->train_labels = label_set;
+    res->class_names = CIFAR10_CLASS_NAMES;
+    res->num_classes = n_classes;
 
     printf("Loaded %lu images and labels from %s\n", samples, data_batch_file);
     return res;
