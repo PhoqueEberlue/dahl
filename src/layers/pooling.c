@@ -2,8 +2,6 @@
 #include "../../include/dahl_tasks.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "../arena/arena.h"
-#include "starpu_task.h"
 
 // Not much to init because most of the other fields need to be computed depending on input data.
 dahl_pooling* pooling_init(dahl_arena* arena, size_t const pool_size, dahl_shape4d const input_shape)

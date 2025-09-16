@@ -1,6 +1,4 @@
 #include "../../include/dahl_convolution.h"
-#include "../arena/arena.h"
-#include "starpu_task.h"
 #include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
@@ -26,8 +24,8 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
     conv->filter_size = filter_size;
     conv->filter_shape = filter_shape;
     conv->output_shape = output_shape;
-    conv->filters = tensor_init_random(arena, filter_shape);
-    conv->biases = vector_init_random(arena, num_filters); // One bias per feature map
+    conv->filters = tensor_init_random(arena, filter_shape, -0.1, 0.1);
+    conv->biases = vector_init_random(arena, num_filters, -0.1, 0.1); // One bias per feature map
     conv->scratch_arena = scratch_arena;
 
     return conv;

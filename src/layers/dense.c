@@ -1,9 +1,7 @@
 #include "../../include/dahl_dense.h"
-#include "starpu_task.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../arena/arena.h"
 
 dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape2d const input_shape, size_t const out_features)
 {
@@ -22,8 +20,8 @@ dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape2
         .y = out_features,
     };
 
-    dense->weights = matrix_init_random(arena, weights_shape);
-    dense->biases = vector_init_random(arena, out_features);
+    dense->weights = matrix_init_random(arena, weights_shape, -0.1, 0.1);
+    dense->biases = vector_init_random(arena, out_features, -0.1, 0.1);
     dense->scratch_arena = scratch_arena;
 
     return dense;
