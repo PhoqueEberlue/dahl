@@ -10,9 +10,11 @@
       url = "github:numtide/nix-gl-host/main";
       flake = false;
     };
+
+    alumet.url = "path:./nix/alumet/";
   };
 
-  outputs = { self, nixpkgs, nixglhost-src }: 
+  outputs = { self, nixpkgs, nixglhost-src, alumet }: 
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
@@ -60,6 +62,7 @@
             {
               packages = with pkgs; [
                 starpu 
+                alumet.packages.${system}.default
                 clang
                 valgrind
                 scc

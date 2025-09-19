@@ -1,20 +1,5 @@
 {
   "nodes": {
-    "alumet": {
-      "inputs": {
-        "flake-parts": "flake-parts",
-        "nixpkgs": "nixpkgs"
-      },
-      "locked": {
-        "path": "./nix/alumet/",
-        "type": "path"
-      },
-      "original": {
-        "path": "./nix/alumet/",
-        "type": "path"
-      },
-      "parent": []
-    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -30,23 +15,6 @@
       "original": {
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "type": "github"
-      }
-    },
-    "nixglhost-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1732211616,
-        "narHash": "sha256-QZCKJoypcwgS3tDNSWMjlxEBZtOYPW3eXV24rMzKsac=",
-        "owner": "numtide",
-        "repo": "nix-gl-host",
-        "rev": "5269b233f83880a0b433eafe026f0bc0d8f1a4a9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "ref": "main",
-        "repo": "nix-gl-host",
         "type": "github"
       }
     },
@@ -81,27 +49,10 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1750646418,
-        "narHash": "sha256-4UAN+W0Lp4xnUiHYXUXAPX18t+bn6c4Btry2RqM9JHY=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "1f426f65ac4e6bf808923eb6f8b8c2bfba3d18c5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-24.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
-        "alumet": "alumet",
-        "nixglhost-src": "nixglhost-src",
-        "nixpkgs": "nixpkgs_2"
+        "flake-parts": "flake-parts",
+        "nixpkgs": "nixpkgs"
       }
     }
   },
