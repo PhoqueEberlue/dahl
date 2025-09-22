@@ -85,5 +85,6 @@ DEFINE_STARPU_CODELET(check_predictions_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, STARPU_R, STARPU_R, STARPU_W);
 
 #endif //!DAHL_CODELETS_H

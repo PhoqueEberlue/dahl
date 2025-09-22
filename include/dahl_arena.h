@@ -5,7 +5,7 @@
 
 // The `dahl_arena` enables managing memory by groups of objects.
 // Alloc everything in one arena, and reset or delete everything at the same time. 
-// Reset doesn't not deallocate anything, neither it sets memory to 0, it just tell
+// Reset doesn't deallocate anything, neither it sets memory to 0, it just tell
 // the allocator that the memory buffer can be reused, thus previous data will be 
 // overwritten.
 // Delete actually free everything and deletes the arena.

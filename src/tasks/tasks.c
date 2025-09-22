@@ -660,3 +660,12 @@ void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_ma
                                  STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
+
+void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out)
+{
+    int ret = starpu_task_insert(&cl_convolution_2d_backward_filters,
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}

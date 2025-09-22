@@ -1149,6 +1149,56 @@ void test_min_max()
     ASSERT_FP_EQUALS(2000000001, scalar_get_value(max));
 }
 
+void test_convolution_2d_backward_filters()
+{
+    dahl_shape3d a_shape = { .x = 5, .y = 5, .z = 2 };
+    dahl_shape3d b_shape = { .x = 3, .y = 3, .z = 2 };
+    dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
+
+    dahl_block* a = BLOCK(testing_arena, 2, 5, 5, {
+        {
+            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+        },
+        {
+            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+        }
+    });
+
+    dahl_matrix* b = MATRIX(testing_arena, 3, 3, {
+        { 1.0F, 0.0F, 1.0F },
+        { 0.0F, 1.0F, 0.0F },
+        { 1.0F, 0.0F, 1.0F },
+    }); 
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 25.0F, 20.0F, 15.0F },
+            { 25.0F, 20.0F, 15.0F },
+            { 25.0F, 20.0F, 15.0F },
+        },
+        {
+            { 15.0F, 20.0F, 25.0F },
+            { 15.0F, 20.0F, 25.0F },
+            { 15.0F, 20.0F, 25.0F },
+        },
+    });
+
+    dahl_shape3d shape = { .x = 3, .y = 3, .z = 2 };
+    dahl_block* out = block_init(testing_arena, shape);
+
+    task_convolution_2d_backward_filters(a, b, out);
+
+    ASSERT_BLOCK_EQUALS(expect, out);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1185,4 +1235,5 @@ void test_tasks()
     test_vector_outer_product();
     // test_vector_shuffle();
     test_min_max();
+    test_convolution_2d_backward_filters();
 }

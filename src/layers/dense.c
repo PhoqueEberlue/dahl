@@ -61,16 +61,13 @@ dahl_matrix* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix con
     return output_batch;
 }
 
-void _dense_backward_sample(dahl_arena* arena,
-                            dahl_vector const* dl_dout,
+void _dense_backward_sample(dahl_vector const* dl_dout,
                             dahl_vector const* input,
                             dahl_matrix* dl_dw,
                             dahl_vector* dl_dinput,
-                            dahl_matrix const* weights)
+                            dahl_matrix const* weights_t)
 {
     task_vector_outer_product(input, dl_dout, dl_dw);
-
-    dahl_matrix const* weights_t = task_matrix_transpose_init(arena, weights);
     task_matrix_vector_product(weights_t, dl_dout, dl_dinput);  
 }
 
@@ -87,6 +84,7 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     };
 
     dahl_block* dl_dw_batch = block_init(dense->scratch_arena, dl_dw_shape);
+    dahl_matrix const* weights_t = task_matrix_transpose_init(dense->scratch_arena, dense->weights);
 
     // Partition by batch
     matrix_partition_along_y(dl_dout_batch);
@@ -100,12 +98,11 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     for (size_t i = 0; i < batch_size; i++)
     {
         _dense_backward_sample(
-            dense->scratch_arena,
             GET_SUB_VECTOR(dl_dout_batch, i),
             GET_SUB_VECTOR(input_batch, i),
             GET_SUB_MATRIX_MUT(dl_dw_batch, i),
             GET_SUB_VECTOR_MUT(dl_dinput_batch, i),
-            dense->weights
+            weights_t
         );
     }
 

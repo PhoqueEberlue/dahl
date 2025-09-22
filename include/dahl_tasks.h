@@ -335,4 +335,8 @@ dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl
 // - the shape of `out` must respect: out_nx = in_nx - kernel_nx + 1 and out_ny = in_ny - kernel_ny + 1. No restriction on Z axis because its the channel dimension and the results gets accumulated into `out` which is a matrix.
 // - the shape of the `kernel` should be smaller than the shape of `in` 
 void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out);
+
+//TODO DOC
+void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out);
+
 #endif //!DAHL_TASKS_H

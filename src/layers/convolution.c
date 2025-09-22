@@ -37,7 +37,6 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
 {
     // Partition by the filter dimension, each iteration will tackle a feature map
     block_partition_along_z_mut(output);
-    tensor_partition_along_t(filters);
 
     size_t const n_filters = GET_NB_CHILDREN(filters);
 
@@ -55,7 +54,6 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
         TASK_ADD_VALUE_SELF(feature_map, vector_get_value(biases, c));
     }
 
-    tensor_unpartition(filters);
     block_unpartition(output);
 }
 
@@ -67,19 +65,24 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     // Partition by batch dimension
     tensor_partition_along_t_mut(output_batch);
     tensor_partition_along_t(input_batch);
+
+    // Partition the filters already here to prevent synchronization in the sample functions
+    tensor_partition_along_t(conv->filters);
+
     size_t const batch_size = GET_NB_CHILDREN(input_batch);
 
     // Apply forward pass to each sample of the batch. TODO: Note that this pattern could be vectorized in the future.
     for (size_t i = 0; i < batch_size; i++)
     {
-       _convolution_forward_sample(
-           GET_SUB_BLOCK_MUT(output_batch, i), 
-           GET_SUB_BLOCK(input_batch, i), 
-           conv->filters, conv->biases); 
+        _convolution_forward_sample(
+            GET_SUB_BLOCK_MUT(output_batch, i), 
+            GET_SUB_BLOCK(input_batch, i), 
+            conv->filters, conv->biases); 
     }
     
     tensor_unpartition(output_batch);
     tensor_unpartition(input_batch);
+    tensor_unpartition(conv->filters);
 
     return output_batch;
 }
@@ -116,28 +119,27 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
     {
         dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
         dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters, f);
-        block_partition_along_z_mut(dl_df);
 
         dahl_matrix const* dl_dout_padded_filter = GET_SUB_MATRIX(dl_dout_padded, f);
         dahl_block const* filter = GET_SUB_BLOCK(filters, f);
-        block_partition_along_z(filter);
 
-        for (int c = 0; c < num_channel; c++)
-        {
-            dahl_matrix const* input_chann = GET_SUB_MATRIX(input, c);
-            dahl_matrix* dl_df_chann = GET_SUB_MATRIX_MUT(dl_df, c);
+        task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df);
+        // for (int c = 0; c < num_channel; c++)
+        // {
+        //     dahl_matrix const* input_chann = GET_SUB_MATRIX(input, c);
+        //     dahl_matrix* dl_df_chann = GET_SUB_MATRIX_MUT(dl_df, c);
 
-            task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
+        //     task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
 
-            dahl_matrix const* filter_chann = GET_SUB_MATRIX(filter, c);
-            dahl_matrix const* filter_chann_rot = task_matrix_rotate_180_init(arena, filter_chann);
-            dahl_matrix* dl_dinput_chann = GET_SUB_MATRIX_MUT(dl_dinput, c);
+        //     dahl_matrix const* filter_chann = GET_SUB_MATRIX(filter, c);
+        //     dahl_matrix const* filter_chann_rot = task_matrix_rotate_180_init(arena, filter_chann);
+        //     dahl_matrix* dl_dinput_chann = GET_SUB_MATRIX_MUT(dl_dinput, c);
 
-            task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann_rot, dl_dinput_chann);
-        }
+        //     // FIXME: this makes no sense, dl_dinput constantly gets overriden, the result being only computed from the last filters
+        //     // It should be incremented instead (for each channel)
+        //     task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann_rot, dl_dinput_chann);
+        // }
 
-        block_unpartition(dl_df);
-        block_unpartition(filter);
     }
 
     // Sum the derivative values of each feature map into the vector `dl_dbiases`
