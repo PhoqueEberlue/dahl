@@ -76,8 +76,23 @@
                 riffdiff
                 icdiff
                 diff-so-fancy
+
                 python312
                 python312Packages.termcolor
+                python312Packages.pandas
+                python312Packages.matplotlib
+                python312Packages.seaborn
+                python312Packages.numpy
+                python312Packages.ipython
+
+                # tmp from nix-shell python version
+                python312Packages.scipy
+                python312Packages.torch
+                python312Packages.torchvision
+                python312Packages.scikit-learn
+                python312Packages.matplotlib
+                python312Packages.seaborn
+
               ] ++ (if enableCUDA then [
                   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc cudaPackages.cudatoolkit nixglhost] else []);
 
