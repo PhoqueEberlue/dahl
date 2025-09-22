@@ -247,6 +247,10 @@ void matrix_release(dahl_matrix const*);
 // Compares two matrices value by value and returns wether or not they're equal.
 bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_int8_t precision);
 
+// Write the content of the `matrix` to a csv at `file_path` with the provided `colnames`.
+// There should be as much column names as the length of the x dimension.
+void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const** colnames);
+
 // Partition data along y axis, the sub vectors can then be accesed with `GET_SUB_VECTOR`.
 // Exactly creates y sub vectors, so `GET_NB_CHILDREN` should be equal to y.
 // Note the the vector itself cannot be used as long as it is partitioned.

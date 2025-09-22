@@ -1,11 +1,12 @@
 #include "../include/dahl.h"
+#include "starpu_helper.h"
 #include "stdlib.h"
 #include <stdio.h>
 
-#define LEARNING_RATE 0.01F
+#define LEARNING_RATE 0.001F
 #define N_EPOCHS 20
 
-void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset, 
+void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_dataset* dataset, 
                    dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, 
                    size_t batch_size, size_t num_samples)
 {
@@ -15,29 +16,30 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
     tensor_partition_along_t_batch(dataset->train_images, batch_size);
     matrix_partition_along_y_batch(dataset->train_labels, batch_size);
 
-    char const* labels[10] = {"T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"};
-
     num_samples = 6000; // Only use first 6k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
+    // Store accuracy and loss here
+    dahl_shape2d results_shape = { .x = 2, .y = N_EPOCHS };
+    dahl_matrix* results = matrix_init(network_arena, results_shape);
+
     for (size_t epoch = 0; epoch < N_EPOCHS; epoch++)
     {
-        printf("Epoch %lu\n", epoch);
-
         dahl_scalar* total_loss = scalar_init(epoch_arena);
         dahl_scalar* correct_predictions = scalar_init(epoch_arena);
 
+
         size_t count = 0;
-        dahl_fp arr[n_batches_per_epoch];
+        // dahl_fp arr[n_batches_per_epoch];
 
-        for (size_t i = 0; i < n_batches_per_epoch; i++)
-        {
-            arr[i] = (dahl_fp)i;
-        }
+        // for (size_t i = 0; i < n_batches_per_epoch; i++)
+        // {
+        //     arr[i] = (dahl_fp)i;
+        // }
 
-        dahl_vector* indices = vector_init_from(epoch_arena, n_batches_per_epoch, arr);
-        task_vector_shuffle(indices);
-        dahl_fp const* ind_data = vector_data_acquire(indices);
+        // dahl_vector* indices = vector_init_from(epoch_arena, n_batches_per_epoch, arr);
+        // task_vector_shuffle(indices);
+        // vector_acquire(indices);
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
@@ -59,11 +61,11 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
             TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
 
-            if (epoch == 19 && count < 5)
-            {
-                print_predictions_batch(dense_out, target_batch, image_batch, labels);
-                count++;
-            }
+            // if (epoch == 1 && count < 5)
+            // {
+            //     print_predictions_batch(dense_out, target_batch, image_batch, dataset->class_names);
+            //     count++;
+            // }
 
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
@@ -79,16 +81,25 @@ void train_network(dahl_arena* scratch_arena, dahl_dataset* dataset,
             dahl_arena_reset(batch_arena);
         }
 
-        vector_data_release(indices);
+        // vector_release(indices);
+        
+        dahl_fp epoch_accuracy = scalar_get_value(correct_predictions) / (dahl_fp)num_samples;
+        dahl_fp epoch_loss = scalar_get_value(total_loss) / (dahl_fp)n_batches_per_epoch;
 
-        printf("Average loss: %f\nAccuracy: %f\%\nCorrect predictions: %i/%lu\n",
-            scalar_get_value(total_loss) / (dahl_fp)num_samples,
-            scalar_get_value(correct_predictions) / (dahl_fp)num_samples * 100,
-            (int)scalar_get_value(correct_predictions), num_samples
+        matrix_set_value(results, 0, epoch, epoch_accuracy);
+        matrix_set_value(results, 1, epoch, epoch_loss);
+
+        printf("Epoch: %lu, Loss: %f, Accuracy: %f\n",
+            epoch,
+            // the loss already gets divided by batch size so here we divide only by number of batches
+            epoch_loss, 
+            epoch_accuracy
         );
 
         dahl_arena_reset(epoch_arena);
     }
+
+    matrix_to_csv(results, "dahl-training-outputs.csv", (char const*[2]){"accuracy", "loss"});
 
     tensor_unpartition(dataset->train_images);
     matrix_unpartition(dataset->train_labels);
@@ -100,6 +111,7 @@ int main(int argc, char **argv)
     // because it still works when removing this line.
     srand(42);
     dahl_init();
+    printf("ncpu %s\n", starpu_getenv("STARPU_NCPU"));
 
     // Everything instanciated here will remain allocated till the training finishes.
     // So we put the dataset and the layers containing the trainable parameters (weights & biases).
@@ -135,7 +147,7 @@ int main(int argc, char **argv)
 
     dahl_dense* dense = dense_init(network_arena, scratch_arena, dense_input_shape, num_classes);
 
-    train_network(scratch_arena, dataset, conv, pool, dense, batch_size, num_samples);
+    train_network(scratch_arena, network_arena, dataset, conv, pool, dense, batch_size, num_samples);
 
     dahl_arena_delete(network_arena);
     dahl_arena_delete(scratch_arena);

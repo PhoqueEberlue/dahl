@@ -221,6 +221,34 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const roundi
     return res;
 }
 
+void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const** colnames)
+{
+    dahl_shape2d shape = matrix_get_shape(matrix);
+    matrix_acquire(matrix);
+    FILE* fp = fopen(file_path, "w");
+    // Write header
+    for (size_t x = 0; x < shape.x; x++)
+    {
+        fprintf(fp, ",%s", colnames[x]);
+    }
+
+    fprintf(fp, "\n");
+
+    for (size_t y = 0; y < shape.y; y++)
+    {
+        fprintf(fp, "%lu", y);
+        for (size_t x = 0; x < shape.x; x++)
+        {
+            dahl_fp value = matrix_get_value(matrix, x, y);
+            fprintf(fp, ",%f", value);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+    matrix_release(matrix);
+}
+
 void _matrix_partition_along_y(dahl_matrix const* matrix, bool is_mut)
 {
     assert(matrix->meta->current_partition == -1);
