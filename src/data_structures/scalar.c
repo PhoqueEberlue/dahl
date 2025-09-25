@@ -52,7 +52,7 @@ inline size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar)
     return 1;
 }
 
-bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, u_int8_t const precision)
+bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, int8_t const precision)
 {
     dahl_fp a_val = scalar_get_value(a);
     dahl_fp b_val = scalar_get_value(b);
@@ -61,7 +61,7 @@ bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const roundi
     else          { return fp_equals(a_val, b_val);                  }
 }
 
-void _scalar_print_file(void const* vscalar, FILE* fp, u_int8_t const precision)
+void _scalar_print_file(void const* vscalar, FILE* fp, int8_t const precision)
 {
     dahl_fp value = scalar_get_value((dahl_scalar const*)vscalar);
     fprintf(fp, "scalar=%+.*f\n", precision, value);

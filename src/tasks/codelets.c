@@ -2,6 +2,7 @@
 #include "starpu_data_interfaces.h"
 #include "starpu_task_util.h"
 #include "../../include/dahl_types.h"
+#include "sys/types.h"
 #include "unistd.h"
 #include <assert.h>
 #include <math.h>
@@ -632,7 +633,7 @@ void vector_shuffle(void* buffers[1], void* cl_arg)
 // This may be risky though, especially if the field order changes...
 #define STARPU_ANY_GET_PTR(interface) (((struct starpu_vector_interface *)(interface))->ptr)
 
-void relu(void* buffers[2], void* cl_arg)
+void any_relu(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -653,7 +654,7 @@ void relu(void* buffers[2], void* cl_arg)
     }
 }
 
-void relu_backward(void* buffers[3], void* cl_arg)
+void any_relu_backward(void* buffers[3], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -675,7 +676,7 @@ void relu_backward(void* buffers[3], void* cl_arg)
     }
 }
 
-void scal(void* buffers[2], void* cl_arg)
+void any_scal(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     dahl_fp factor;
@@ -690,7 +691,7 @@ void scal(void* buffers[2], void* cl_arg)
     }
 }
 
-void power(void* buffers[2], void* cl_arg)
+void any_power(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     dahl_fp power;
@@ -705,7 +706,7 @@ void power(void* buffers[2], void* cl_arg)
     }
 }
 
-void sub(void* buffers[3], void* cl_arg)
+void any_sub(void* buffers[3], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -720,7 +721,7 @@ void sub(void* buffers[3], void* cl_arg)
     }
 }
 
-void add(void* buffers[3], void* cl_arg)
+void any_add(void* buffers[3], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -735,7 +736,7 @@ void add(void* buffers[3], void* cl_arg)
     }
 }
 
-void add_value(void* buffers[2], void* cl_arg)
+void any_add_value(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     dahl_fp value;
@@ -750,7 +751,7 @@ void add_value(void* buffers[2], void* cl_arg)
     }
 }
 
-void clip(void* buffers[2], void* cl_arg)
+void any_clip(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     dahl_fp min;
@@ -777,7 +778,7 @@ void clip(void* buffers[2], void* cl_arg)
     }
 }
 
-void sum(void* buffers[2], void* cl_arg)
+void any_sum(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -791,7 +792,7 @@ void sum(void* buffers[2], void* cl_arg)
     }
 }
 
-void mean(void* buffers[2], void* cl_arg)
+void any_mean(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -809,7 +810,7 @@ void mean(void* buffers[2], void* cl_arg)
     *out = sum / (dahl_fp)nb_elem;
 }
 
-void fill(void* buffers[1], void* cl_arg)
+void any_fill(void* buffers[1], void* cl_arg)
 {
     size_t nb_elem;
     dahl_fp value;
@@ -824,14 +825,14 @@ void fill(void* buffers[1], void* cl_arg)
 }
 
 // For debug purposes
-void wait(void* buffers[1], void* cl_arg)
+void any_wait(void* buffers[1], void* cl_arg)
 {
     unsigned int duration;
     starpu_codelet_unpack_args(cl_arg, &duration);
     usleep(duration);
 }
 
-void copy(void* buffers[2], void* cl_arg)
+void any_copy(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -845,7 +846,7 @@ void copy(void* buffers[2], void* cl_arg)
     }
 }
 
-void min(void* buffers[2], void* cl_arg)
+void any_min(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -863,7 +864,7 @@ void min(void* buffers[2], void* cl_arg)
     *out = min;
 }
 
-void max(void* buffers[2], void* cl_arg)
+void any_max(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
@@ -879,6 +880,21 @@ void max(void* buffers[2], void* cl_arg)
     }
 
     *out = max;
+}
+
+void any_round(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    int8_t precision;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &precision);
+
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        out[i] = fp_round(in[i], precision);
+    }
 }
 
 // ---------------------------------------- ML Related ----------------------------------------
@@ -1145,9 +1161,10 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
     size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
     dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    assert(out_nx == in_nx - k_nx + 1);
-    assert(out_ny == in_ny - k_ny + 1);
-    assert(in_nz == out_nz);
+    // TODO
+    // assert(out_nx == in_nx - k_nx + 1);
+    // assert(out_ny == in_ny - k_ny + 1);
+    // assert(in_nz == out_nz);
 
     // loop through i,j,k on axes x,y,z of the output block
     for (size_t k = 0; k < out_nz; k++)
@@ -1169,6 +1186,71 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
                         // Then we add the offset of the slidding window (i,j) to (l,m)
                         // as they both correspond to (x,y).
                         dahl_fp in_value = in[(k * in_ldz) + ((m + j) * in_ldy) + l + i];
+
+                        cell_res += in_value * kernel_value;
+                    }
+                }
+
+                // Set the corresponding value for index i,j,k
+                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+            }
+        }
+    }
+}
+
+
+// TODO: rotate the kernel inside this function (pretend we rotate, instead just access the kernel wisely by modifying the indexes)
+// + mabye support input with smaller dimension than output so we don't need to add padding?
+// probably hard to do honestly, and probably loses a lot of performances
+void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
+{
+    // Input matrix, here the gradients output of the layer just after the convolution
+    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Kernel block, here the filters (weights) associated to the convolution
+    size_t const k_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const k_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const k_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+    size_t const k_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+    size_t const k_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+    dahl_fp const* kernel = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // Output block, here the loss derivative of the input
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
+    size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
+    size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+
+    // TODO
+    // assert(out_nx == in_nx - k_nx + 1);
+    // assert(out_ny == in_ny - k_ny + 1);
+    // assert(in_nz == out_nz);
+
+    // loop through i,j,k on axes x,y,z of the output block
+    for (size_t k = 0; k < out_nz; k++)
+    {
+        for (size_t j = 0; j < out_ny; j++)
+        {
+            for (size_t i = 0; i < out_nx; i++)
+            {
+                dahl_fp cell_res = 0.0F;
+
+                // loop through l,m on axes x,y of the input
+                for (size_t m = 0; m < in_ny; m++)
+                {
+                    for (size_t l = 0; l < in_nx; l++)
+                    {
+                        dahl_fp kernel_value = kernel[(k * k_ldz) + (l * k_ldy) + m];
+                        // Here we use k, the index on the z axis of the output, as input owns as many channels.
+                        // The kernel doesn't own a channel dimension in this function, so we ignore it.
+                        // Then we add the offset of the slidding window (i,j) to (l,m)
+                        // as they both correspond to (x,y).
+                        dahl_fp in_value = in[((m + j) * in_ld) + l + i];
 
                         cell_res += in_value * kernel_value;
                     }

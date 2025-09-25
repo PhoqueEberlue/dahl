@@ -16,7 +16,7 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
     tensor_partition_along_t_batch(dataset->train_images, batch_size);
     matrix_partition_along_y_batch(dataset->train_labels, batch_size);
 
-    num_samples = 6000; // Only use first 6k samples for now
+    num_samples = 1000; // Only use first 1k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     // Store accuracy and loss here
@@ -80,6 +80,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_arena_reset(scratch_arena);
             dahl_arena_reset(batch_arena);
         }
+        dahl_shutdown(); exit(0);
+
 
         // vector_release(indices);
         
@@ -111,14 +113,15 @@ int main(int argc, char **argv)
     // because it still works when removing this line.
     srand(42);
     dahl_init();
-    printf("ncpu %s\n", starpu_getenv("STARPU_NCPU"));
+    //printf("ncpu %s\n", starpu_getenv("STARPU_NCPU"));
 
     // Everything instanciated here will remain allocated till the training finishes.
     // So we put the dataset and the layers containing the trainable parameters (weights & biases).
     dahl_arena* network_arena = dahl_arena_new();
 
-    dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
+    // dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
     // dahl_dataset* dataset = dataset_load_cifar_10(network_arena, argv[1]);
+    dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 1000);
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
 
     // FIXME: support batch size that do not divide the dataset size

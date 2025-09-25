@@ -11,8 +11,8 @@
 #include "starpu_data.h"
 
 // TODO: make it dynamic?
-#define NMAX_HANDLES 50000
-#define NMAX_PARTITIONS 50000
+#define NMAX_HANDLES 500000
+#define NMAX_PARTITIONS 500000
 
 // Redifinition of dahl_partition with only the children handles and the parent data handle
 typedef struct

@@ -155,6 +155,7 @@ void task_min(void const* in, dahl_scalar* out, dahl_traits* traits);
 dahl_scalar* task_min_init(dahl_arena*, void const* object, dahl_traits* traits);
 void task_max(void const* in, dahl_scalar* out, dahl_traits* traits);
 dahl_scalar* task_max_init(dahl_arena*, void const* object, dahl_traits* traits);
+void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits);
 
 // Apply a relu function to every value of `in` and store the result in `out`.
 #define TASK_RELU(IN, OUT)                                     \
@@ -310,6 +311,17 @@ dahl_scalar* task_max_init(dahl_arena*, void const* object, dahl_traits* traits)
 
 // Find the maximum value of `in` and allocate/return the result into the `arena`.
 #define TASK_MAX_INIT(ARENA, OBJECT) task_max_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
+
+// Apply a round function to every value of `in` with `precision` and store the result in `out`.
+#define TASK_ROUND(IN, OUT, PRECISION)                         \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),               \
+                       "IN and OUT must be of the same type"); \
+        task_round(IN, OUT, PRECISION, GET_TRAITS(OUT));        \
+    } while (0)
+
+// Apply a round function to every value of `in` with `precision` and store the result in `out`.
+#define TASK_ROUND_SELF(SELF, PRECISION) TASK_ROUND(SELF, SELF, PRECISION)
 
 // ---------------------------- VARIOUS TASKS RELATED TO ML ----------------------------
 // Count the number of good predictions from the `prediction_batch` and `target_batch`.

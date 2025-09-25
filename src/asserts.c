@@ -19,7 +19,7 @@ void log_prefix(char const* file, int const line, char const* function)
     printf("[DAHL][FAIL][%s:%s:%d] ", file, function, line);
 }
 
-void print_diff(void const* a, void const* b, char const* a_expr, char const* b_expr, u_int8_t const precision, dahl_traits* traits)
+void print_diff(void const* a, void const* b, char const* a_expr, char const* b_expr, int8_t precision, dahl_traits* traits)
 {
     char fname1[256];
     char fname2[256];
@@ -29,6 +29,9 @@ void print_diff(void const* a, void const* b, char const* a_expr, char const* b_
 
     FILE *fp1 = temp_file_create(fname1);
     FILE *fp2 = temp_file_create(fname2);
+
+    // Set default precision when precision is equal to the special value -1
+    if (precision == -1) { precision = DAHL_DEFAULT_PRINT_PRECISION ; }
 
     traits->print_file(a, fp1, precision);
     traits->print_file(b, fp2, precision);
@@ -56,7 +59,7 @@ void print_diff(void const* a, void const* b, char const* a_expr, char const* b_
 }
 
 void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
@@ -70,7 +73,7 @@ void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
 }
 
 void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
@@ -84,7 +87,7 @@ void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
 }
 
 void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
@@ -98,7 +101,7 @@ void assert_matrix_equals(dahl_matrix const* a, dahl_matrix const* b,
 }
 
 void assert_block_equals(dahl_block const* a, dahl_block const* b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
@@ -112,7 +115,7 @@ void assert_block_equals(dahl_block const* a, dahl_block const* b,
 }
 
 void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {
@@ -126,7 +129,7 @@ void assert_tensor_equals(dahl_tensor const* a, dahl_tensor const* b,
 }
 
 void assert_fp_equals(dahl_fp const a, dahl_fp const b,
-                          bool const rounding, u_int8_t const precision,
+                          bool const rounding, int8_t const precision,
                           char const* file, int const line, char const* function,
                           char const* a_expr, char const* b_expr)
 {

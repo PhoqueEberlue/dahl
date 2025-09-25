@@ -67,11 +67,11 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape, dahl_
     dahl_block* block = block_init(arena, shape);
     block_acquire(block);
 
-    for (size_t z = 0; z < shape.z; z ++)
+    for (size_t z = 0; z < shape.z; z++)
     {
-        for (size_t y = 0; y < shape.y; y ++)
+        for (size_t y = 0; y < shape.y; y++)
         {
-            for (size_t x = 0; x < shape.x; x ++)
+            for (size_t x = 0; x < shape.x; x++)
             {
                 block_set_value(block, x, y, z, fp_rand(min, max));
             }
@@ -165,7 +165,7 @@ void block_release(dahl_block const* block)
     starpu_data_release(block->handle);
 }
 
-bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding, u_int8_t const precision)
+bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding, int8_t const precision)
 {
     dahl_shape3d shape_a = block_get_shape(a);
     dahl_shape3d shape_b = block_get_shape(b);
@@ -397,7 +397,7 @@ void block_unpartition(dahl_block const* block)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void _block_print_file(void const* vblock, FILE* fp, u_int8_t const precision)
+void _block_print_file(void const* vblock, FILE* fp, int8_t const precision)
 {
     auto block = (dahl_block const*)vblock;
     const dahl_shape3d shape = block_get_shape(block);

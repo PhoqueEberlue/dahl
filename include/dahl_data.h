@@ -80,7 +80,7 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor);
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
 
 // Compares two tensors value by value and returns wether or not they're equal.
-bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, u_int8_t precision);
+bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool rounding, int8_t precision);
 
 // Acquire the tensor data, will wait any associated tasks to finish.
 void tensor_acquire(dahl_tensor const*);
@@ -146,7 +146,7 @@ void block_set_value(dahl_block* block, size_t x, size_t y, size_t z, dahl_fp va
 dahl_shape3d block_get_shape(dahl_block const*);
 
 // Compares two blocks value by value and returns wether or not they're equal.
-bool block_equals(dahl_block const* a, dahl_block const* b, bool rounding, u_int8_t precision);
+bool block_equals(dahl_block const* a, dahl_block const* b, bool rounding, int8_t precision);
 
 // Acquire the block data, will wait any associated tasks to finish.
 void block_acquire(dahl_block const*);
@@ -245,7 +245,7 @@ void matrix_acquire_mut(dahl_matrix*);
 void matrix_release(dahl_matrix const*);
 
 // Compares two matrices value by value and returns wether or not they're equal.
-bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, u_int8_t precision);
+bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool rounding, int8_t precision);
 
 // Write the content of the `matrix` to a csv at `file_path` with the provided `colnames`.
 // There should be as much column names as the length of the x dimension.
@@ -338,7 +338,7 @@ dahl_matrix* vector_to_categorical(dahl_arena*, dahl_vector const*, size_t num_c
 
 // Compares the two matrices value by value and returns wether or not they're equal.
 // Rounding values can be enabled or disabled, and rounding precision can be specified.
-bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool rounding, u_int8_t precision);
+bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool rounding, int8_t precision);
 
 // Print a vector
 void vector_print(dahl_vector const*);
@@ -353,7 +353,7 @@ dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp value);
 dahl_fp scalar_get_value(dahl_scalar const* scalar);
 // Set `value` to the scalar. No need to acquire the scalars.
 void scalar_set_value(dahl_scalar* scalar, dahl_fp value);
-bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, u_int8_t const precision);
+bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, int8_t const precision);
 void scalar_print(dahl_scalar const* scalar);
 // ---------------------------------------- PARTITION ----------------------------------------
 

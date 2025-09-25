@@ -188,7 +188,7 @@ void matrix_release(dahl_matrix const* matrix)
     starpu_data_release(matrix->handle);
 }
 
-bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding, u_int8_t const precision)
+bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const rounding, int8_t const precision)
 {
     dahl_shape2d const shape_a = matrix_get_shape(a);
     dahl_shape2d const shape_b = matrix_get_shape(b);
@@ -338,7 +338,7 @@ void matrix_unpartition(dahl_matrix const* matrix)
     // This means that when submitting a new identical partition, the same handles will be reused.
 }
 
-void _matrix_print_file(void const* vmatrix, FILE* fp, u_int8_t const precision)
+void _matrix_print_file(void const* vmatrix, FILE* fp, int8_t const precision)
 {
     auto matrix = (dahl_matrix const*)vmatrix;
     const dahl_shape2d shape = matrix_get_shape(matrix);

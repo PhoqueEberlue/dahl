@@ -1,7 +1,7 @@
 #include "tests.h"
 #include <stdio.h>
 
-void test_miscellaneous()
+void test_concurrency()
 {
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
 
@@ -53,4 +53,51 @@ void test_miscellaneous()
     }
 
     dahl_arena_reset(testing_arena);
+}
+
+void test_what_acquire_and_what_dont_acquire()
+{
+    for (size_t b = 0; b < 20; b++)
+    {
+        dahl_shape3d constexpr shape = { .x = 28, .y = 28, .z = 3 };
+        dahl_block* img = block_init_random(testing_arena, shape, 0, 255);
+
+        dahl_block* kernel = BLOCK(testing_arena, 3, 3, 3, {
+            {
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+            },
+            {
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+            },
+            {
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+                { 0, 1, 2 },
+            },
+        });
+
+        dahl_shape2d out_shape = { .x = shape.x - 3 + 1, .y = shape.y - 3 + 1 };
+        dahl_matrix* out = matrix_init(testing_arena, out_shape);
+
+        for (size_t i = 0; i < 100; i++)
+        {
+            task_convolution_2d(img, kernel, out);
+
+            block_partition_along_z(img);
+            TASK_SUM_INIT(testing_arena, GET_SUB_MATRIX(img, 0));
+            block_unpartition(img);
+
+            task_convolution_2d(img, kernel, out);
+        }
+    }
+}
+
+void test_miscellaneous()
+{
+   // test_what_acquire_and_what_dont_acquire(); 
+   // test_concurrency();
 }

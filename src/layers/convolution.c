@@ -51,6 +51,7 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
 
         // Add bias to the feature map 
         // TODO: This should not be blocking too much, cause biases is readonly, but watch out
+        // FIXME: also vector_get_value is not blocking, WHICH IS VERY WEIRD
         TASK_ADD_VALUE_SELF(feature_map, vector_get_value(biases, c));
     }
 

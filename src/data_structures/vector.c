@@ -115,7 +115,7 @@ void vector_release(dahl_vector const* vector)
     starpu_data_release(vector->handle);
 }
 
-bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding, u_int8_t const precision)
+bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const rounding, int8_t const precision)
 {
     size_t const len_a = vector_get_len(a);
     size_t const len_b = vector_get_len(b);
@@ -144,7 +144,7 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
     return res;
 }
 
-void _vector_print_file(void const* vvector, FILE* fp, u_int8_t const precision)
+void _vector_print_file(void const* vvector, FILE* fp, int8_t const precision)
 {
     auto vector = (dahl_vector const*)vvector;
     const size_t len = vector_get_len(vector);

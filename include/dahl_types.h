@@ -37,7 +37,7 @@ typedef struct
 } dahl_shape4d;
 
 bool fp_equals(dahl_fp a, dahl_fp b);
-bool fp_equals_round(dahl_fp a, dahl_fp b, u_int8_t precision);
+bool fp_equals_round(dahl_fp a, dahl_fp b, int8_t precision);
 bool shape2d_equals(dahl_shape2d a, dahl_shape2d b);
 bool shape3d_equals(dahl_shape3d a, dahl_shape3d b);
 bool shape4d_equals(dahl_shape4d a, dahl_shape4d b);
@@ -45,7 +45,7 @@ void shape2d_print(dahl_shape2d shape);
 void shape3d_print(dahl_shape3d shape);
 void shape4d_print(dahl_shape4d shape);
 
-dahl_fp fp_round(dahl_fp value, u_int8_t precision);
+dahl_fp fp_round(dahl_fp value, int8_t precision);
 dahl_fp fp_rand(dahl_fp min, dahl_fp max);
 
 #endif //!DAHL_BASIC_TYPES_H

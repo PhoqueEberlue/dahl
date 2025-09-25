@@ -1199,6 +1199,25 @@ void test_convolution_2d_backward_filters()
     ASSERT_BLOCK_EQUALS(expect, out);
 }
 
+void test_round()
+{
+    dahl_matrix* mat = MATRIX(testing_arena, 3, 3, {
+        { 1.5F, 198.9087988F, 989.29831F },
+        { 0.3897F, 1.8F, 0.89F },
+        { 1.0F, 0.0F, -1.123947F },
+    });
+
+    TASK_ROUND_SELF(mat, 4);
+
+    dahl_matrix* expect = MATRIX(testing_arena, 3, 3, {
+        { 1.5F, 198.9087F, 989.2983F },
+        { 0.3897F, 1.8F, 0.89F },
+        { 1.0F, 0.0F, -1.1239F },
+    });
+
+    ASSERT_MATRIX_EQUALS_ROUND(expect, mat, 4);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1236,4 +1255,5 @@ void test_tasks()
     // test_vector_shuffle();
     test_min_max();
     test_convolution_2d_backward_filters();
+    test_round();
 }

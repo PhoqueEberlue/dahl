@@ -211,7 +211,7 @@ void tensor_release(dahl_tensor const* tensor)
     starpu_data_release(tensor->handle);
 }
 
-bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool const rounding, u_int8_t const precision)
+bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool const rounding, int8_t const precision)
 {
     dahl_shape4d shape_a = tensor_get_shape(a);
     dahl_shape4d shape_b = tensor_get_shape(b);
@@ -338,7 +338,7 @@ void tensor_unpartition(dahl_tensor const* tensor)
                                    p->handles, STARPU_MAIN_RAM);
 }
 
-void _tensor_print_file(void const* vtensor, FILE* fp, u_int8_t const precision)
+void _tensor_print_file(void const* vtensor, FILE* fp, int8_t const precision)
 {
     dahl_tensor const* tensor = (dahl_tensor const*)vtensor;
     const dahl_shape4d shape = tensor_get_shape(tensor);
