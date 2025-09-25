@@ -1,5 +1,0 @@
-CompileFlags:
-  Add: [-x, c, -nostdinc++]
-
-Clangd:
-  HeaderInsertion: Never

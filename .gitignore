@@ -38,11 +38,12 @@ build/
 # Clangd cache
 .cache/
 
-# Datasets
-datasets/mushroom-species/
-datasets/fashion-mnist/
-datasets/cifar-10/
-
 # ------ Draw.io ------
 *.drawio.bkp
 *.dtmp
+
+# DAHL folder
+dahl/datasets/mushroom-species/
+dahl/datasets/fashion-mnist/
+dahl/datasets/cifar-10/
+dahl/build/
