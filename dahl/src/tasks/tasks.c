@@ -86,9 +86,13 @@ dahl_matrix* task_block_sum_y_axis_init(dahl_arena* arena, dahl_block const* in)
 
 void task_block_sum_xy_axes(dahl_block const* in, dahl_vector* out)
 {
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_block_sum_xy_axes.modes[1] = mode;
+
     int ret = starpu_task_insert(&cl_block_sum_xy_axes,
                                  STARPU_R, in->handle,
-                                 STARPU_W, out->handle, 0);
+                                 mode, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -685,9 +689,13 @@ void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_ma
 
 void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out)
 {
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_convolution_2d_backward_filters.modes[2] = mode;
+
     int ret = starpu_task_insert(&cl_convolution_2d_backward_filters,
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
-                                 STARPU_W, out->handle, 0);
+                                 mode, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }

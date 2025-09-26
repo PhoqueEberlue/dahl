@@ -33,7 +33,7 @@ DEFINE_STARPU_CODELET(tensor_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R);
 // ---------------------------------------- BLOCK ----------------------------------------
 DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_y_axis, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(block_sum_xy_axes, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(block_sum_xy_axes, 2, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(block_add_padding, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
@@ -85,7 +85,7 @@ DEFINE_STARPU_CODELET(check_predictions_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d, 3, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(convolution_2d_backward_input, 3, STARPU_R, STARPU_R, STARPU_W);
 
 // ---------------------------------------- Special codelets ----------------------------------------

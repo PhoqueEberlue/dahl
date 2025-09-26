@@ -113,6 +113,7 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     matrix_unpartition(dl_dinput_batch);
     
     // Updating weights, here no need to divide by batch size because it is already done in dl_out_batch
+    // TODO: could be reduxed
     TASK_SCAL_SELF(dl_dw_redux, learning_rate);
     TASK_SUB_SELF(dense->weights, dl_dw_redux);
 
