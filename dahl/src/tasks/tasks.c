@@ -512,13 +512,14 @@ void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
     int ret = starpu_task_insert(&cl_any_sum,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
-                                 STARPU_W, out->handle, 0);
+                                 STARPU_REDUX, out->handle, 0);
+                                 // out->is_redux?STARPU_REDUX:STARPU_RW, out->handle, 0); // FIXME: investigate why this is not working
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* traits)
 {
-    dahl_scalar* res = scalar_init(arena);
+    dahl_scalar* res = scalar_init_redux(arena);
     task_sum(object, res, traits);
     return res;
 }

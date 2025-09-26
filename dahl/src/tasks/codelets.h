@@ -26,14 +26,6 @@
         .model = &perf_model_##func_name                      \
     };
 
-// Utility codelet to switch/refresh/synchronize buffers.
-// See manual partitioning: design-talk/topics/data-structure-wrappers.md#getting-the-right-types-with-manual-partitionning
-static struct starpu_codelet cl_switch =
-{
-	.where = STARPU_NOWHERE,
-	.nbuffers = STARPU_VARIABLE_NBUFFERS,
-};
-
 // ---------------------------------------- TENSOR ----------------------------------------
 DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
 
@@ -62,6 +54,9 @@ DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_outer_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_shuffle, 1, STARPU_RW);
 
+// ---------------------------------------- SCALAR ----------------------------------------
+DEFINE_STARPU_CODELET(scalar_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
+
 // ---------------------------------------- ANY ----------------------------------------
 // Codelets that can be used with any type
 DEFINE_STARPU_CODELET(any_relu, 2, STARPU_R, STARPU_W);
@@ -72,7 +67,7 @@ DEFINE_STARPU_CODELET(any_sub, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_add, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_clip, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_sum, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(any_sum, 2, STARPU_R, STARPU_REDUX);
 DEFINE_STARPU_CODELET(any_mean, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(any_wait, 1, STARPU_W);
@@ -88,5 +83,15 @@ DEFINE_STARPU_CODELET(cross_entropy_loss_gradient, 3, STARPU_R, STARPU_R, STARPU
 DEFINE_STARPU_CODELET(convolution_2d, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d_backward_input, 3, STARPU_R, STARPU_R, STARPU_W);
+
+// ---------------------------------------- Special codelets ----------------------------------------
+
+// Utility codelet to switch/refresh/synchronize buffers.
+// See manual partitioning: design-talk/topics/data-structure-wrappers.md#getting-the-right-types-with-manual-partitionning
+static struct starpu_codelet cl_switch =
+{
+	.where = STARPU_NOWHERE,
+	.nbuffers = STARPU_VARIABLE_NBUFFERS,
+};
 
 #endif //!DAHL_CODELETS_H

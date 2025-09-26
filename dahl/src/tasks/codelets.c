@@ -897,6 +897,15 @@ void any_round(void* buffers[2], void* cl_arg)
     }
 }
 
+// ---------------------------------------- SCALAR ----------------------------------------
+void scalar_accumulate(void *buffers[2], void *cl_arg)
+{
+	dahl_fp *v_dst = (dahl_fp *)STARPU_VARIABLE_GET_PTR(buffers[0]);
+	dahl_fp *v_src = (dahl_fp *)STARPU_VARIABLE_GET_PTR(buffers[1]);
+
+	*v_dst = *v_dst + *v_src;
+}
+
 // ---------------------------------------- ML Related ----------------------------------------
 void check_predictions_batch(void* buffers[3], void* cl_arg)
 {

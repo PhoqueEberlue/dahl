@@ -348,6 +348,9 @@ void vector_print(dahl_vector const*);
 
 // ---------------------------------------- SCALAR ----------------------------------------
 dahl_scalar* scalar_init(dahl_arena* arena);
+
+dahl_scalar* scalar_init_redux(dahl_arena* arena);
+
 dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp value);
 // Get `value` of the scalar. No need to acquire the scalars.
 dahl_fp scalar_get_value(dahl_scalar const* scalar);

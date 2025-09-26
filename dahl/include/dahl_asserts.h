@@ -24,6 +24,11 @@ void assert_fp_equals(dahl_fp a, dahl_fp b,
                       char const* file, int line, char const* function,
                       char const* a_expr, char const* b_expr);
 
+void assert_scalar_equals(dahl_scalar const* a, dahl_scalar const* b,
+                          bool const rounding, int8_t const precision,
+                          char const* file, int const line, char const* function,
+                          char const* a_expr, char const* b_expr);
+
 void assert_vector_equals(dahl_vector const* a, dahl_vector const* b,
                           bool rounding, int8_t precision,
                           char const* file, int line, char const* function,
@@ -60,6 +65,7 @@ void print_diff(void const* a, void const* b, char const* a_expr, char const* b_
 #define ASSERT_BLOCK_EQUALS(a, b) assert_block_equals((a), (b), false, -1, __FILE__, __LINE__, __func__,  #a, #b)
 #define ASSERT_TENSOR_EQUALS(a, b) assert_tensor_equals((a), (b), false, -1, __FILE__, __LINE__, __func__,  #a, #b)
 
+#define ASSERT_SCALAR_EQUALS_ROUND(a, b, precision) assert_scalar_equals((a), (b), true, (precision), __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_VECTOR_EQUALS_ROUND(a, b, precision) assert_vector_equals((a), (b), true, (precision), __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_MATRIX_EQUALS_ROUND(a, b, precision) assert_matrix_equals((a), (b), true, (precision), __FILE__, __LINE__, __func__, #a, #b)
 #define ASSERT_BLOCK_EQUALS_ROUND(a, b, precision) assert_block_equals((a), (b), true, (precision), __FILE__, __LINE__, __func__, #a, #b)

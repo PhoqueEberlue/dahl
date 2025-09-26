@@ -273,7 +273,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
 
 // Sum every elements of `in` and write the result into a scalar `out`.
-#define TASK_SUM(IN, OUT) task_sum(IN, OUT, GET_TRAITS(OBJECT))
+#define TASK_SUM(IN, OUT) task_sum(IN, OUT, GET_TRAITS(IN))
 
 // Sum every elements of `in` and allocate/return the result into the `arena`.
 #define TASK_SUM_INIT(ARENA, OBJECT) task_sum_init(ARENA, OBJECT, GET_TRAITS(OBJECT))
@@ -317,7 +317,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
     do {                                                       \
         _Static_assert(TYPES_MATCH((IN), (OUT)),               \
                        "IN and OUT must be of the same type"); \
-        task_round(IN, OUT, PRECISION, GET_TRAITS(OUT));        \
+        task_round(IN, OUT, PRECISION, GET_TRAITS(OUT));       \
     } while (0)
 
 // Apply a round function to every value of `in` with `precision` and store the result in `out`.

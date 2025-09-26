@@ -1100,6 +1100,8 @@ void test_matrix_rotate_180()
 
     dahl_matrix* out = task_matrix_rotate_180_init(testing_arena, matrix);
     ASSERT_MATRIX_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_vector_outer_product()
@@ -1116,6 +1118,8 @@ void test_vector_outer_product()
     dahl_matrix* out = task_vector_outer_product_init(testing_arena, a, b);
 
     ASSERT_MATRIX_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
 }
 
 // FIXME: if multiple tests use the random number generator, the rng order gets shifted
@@ -1133,6 +1137,8 @@ void test_vector_shuffle()
 
     task_vector_shuffle(vec);
     ASSERT_VECTOR_EQUALS(expect, vec);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_min_max()
@@ -1147,6 +1153,8 @@ void test_min_max()
     ASSERT_FP_EQUALS(-2909078, scalar_get_value(min));
     dahl_scalar* max = TASK_MAX_INIT(testing_arena, m1);
     ASSERT_FP_EQUALS(2000000001, scalar_get_value(max));
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_convolution_2d_backward_filters()
@@ -1197,6 +1205,8 @@ void test_convolution_2d_backward_filters()
     task_convolution_2d_backward_filters(a, b, out);
 
     ASSERT_BLOCK_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_round()
@@ -1209,13 +1219,57 @@ void test_round()
 
     TASK_ROUND_SELF(mat, 4);
 
-    dahl_matrix* expect = MATRIX(testing_arena, 3, 3, {
+    dahl_matrix* expect_mat = MATRIX(testing_arena, 3, 3, {
         { 1.5F, 198.9087F, 989.2983F },
         { 0.3897F, 1.8F, 0.89F },
         { 1.0F, 0.0F, -1.1239F },
     });
 
-    ASSERT_MATRIX_EQUALS_ROUND(expect, mat, 4);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_mat, mat, 4);
+
+    dahl_scalar* scal = scalar_init_from(testing_arena, 5.98273098);
+    TASK_ROUND_SELF(scal, 3);
+    dahl_scalar* expect_scal = scalar_init_from(testing_arena, 5.983);
+
+    ASSERT_SCALAR_EQUALS_ROUND(expect_scal, scal, 3);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_redux()
+{
+    size_t constexpr nx = 20;
+    size_t constexpr ny = 10;
+
+    dahl_matrix* mat = MATRIX(testing_arena, ny, nx, {
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+        { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
+        { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 },
+        { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 },
+        { 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 },
+        { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 },
+        { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 },
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    });
+
+    dahl_scalar* redux = scalar_init_redux(testing_arena);
+
+    matrix_partition_along_y(mat);
+
+    for (size_t y = 0; y < ny; y++)
+    {
+        TASK_SUM(GET_SUB_VECTOR(mat, y), redux);
+    }
+
+    matrix_unpartition(mat);
+
+    dahl_scalar* expect = scalar_init_from(testing_arena, 920);
+
+    ASSERT_SCALAR_EQUALS(expect, redux);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_tasks()
@@ -1256,4 +1310,5 @@ void test_tasks()
     test_min_max();
     test_convolution_2d_backward_filters();
     test_round();
+    test_redux();
 }
