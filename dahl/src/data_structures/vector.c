@@ -1,8 +1,9 @@
 #include "data_structures.h"
 #include "starpu_data.h"
 #include "starpu_data_interfaces.h"
+#include "../tasks/codelets.h"
 
-void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
+void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux)
 {
     // The vector cannot be partitioned so we don't allocate space for the partition list
     metadata* md = dahl_arena_alloc(arena, sizeof(metadata));
@@ -12,6 +13,7 @@ void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     dahl_vector* vector = dahl_arena_alloc(arena, sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
+    vector->is_redux = is_redux;
 
     return vector;
 }
@@ -33,7 +35,34 @@ dahl_vector* vector_init(dahl_arena* arena, size_t const len)
 
     dahl_arena_attach_handle(arena, handle);
 
-    return _vector_init_from_ptr(arena, handle, data);
+    return _vector_init_from_ptr(arena, handle, data, false);
+}
+
+dahl_vector* vector_init_redux(dahl_arena* arena, size_t const len)
+{
+    dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
+    for (size_t i = 0; i < len; i++) { data[i] = 0.0F; }
+
+    // Here no need to attach the handle to the arena, because StarPU manages the memory itself
+    // that's also why we pass -1, and NULL
+    starpu_data_handle_t handle = nullptr;
+    starpu_vector_data_register(&handle, STARPU_MAIN_RAM, (uintptr_t)data, len, sizeof(dahl_fp));
+
+    // TODO: big probably that this causes problems if we change object shape during their lifetime
+    // However it *shouldn't* be a problem for redux objects? Maybe enforce that?
+    size_t nb_elem = len;
+    dahl_fp value = 0;
+
+    char *fill_args;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
+                         STARPU_VALUE, &nb_elem, sizeof(size_t),
+                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
+
+    // Attach the reduction methods
+    starpu_data_set_reduction_methods_with_args(handle, &cl_vector_accumulate, nullptr, &cl_any_fill, fill_args);
+
+    return _vector_init_from_ptr(arena, handle, data, true);
 }
 
 dahl_vector* vector_init_from(dahl_arena* arena, size_t const len, dahl_fp const* data)

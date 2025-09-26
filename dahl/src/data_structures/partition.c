@@ -32,7 +32,8 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
         p->children[i] = trait->init_from_ptr(
             origin_arena,
             p->handles[i], 
-            (dahl_fp*)starpu_data_get_local_ptr(p->handles[i])
+            (dahl_fp*)starpu_data_get_local_ptr(p->handles[i]),
+            false
         );
     }
 

@@ -1266,7 +1266,19 @@ void test_redux()
     matrix_unpartition(mat);
 
     dahl_scalar* expect = scalar_init_from(testing_arena, 920);
+    ASSERT_SCALAR_EQUALS(expect, redux);
 
+    // Of course reusing the same redux variable still accumulates the results
+    matrix_partition_along_y(mat);
+
+    for (size_t y = 0; y < ny; y++)
+    {
+        TASK_SUM(GET_SUB_VECTOR(mat, y), redux);
+    }
+
+    matrix_unpartition(mat);
+
+    expect = scalar_init_from(testing_arena, 1840);
     ASSERT_SCALAR_EQUALS(expect, redux);
 
     dahl_arena_reset(testing_arena);

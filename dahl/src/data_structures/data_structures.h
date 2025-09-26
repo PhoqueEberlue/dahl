@@ -18,7 +18,7 @@
 
 typedef const struct _dahl_traits
 {
-    void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*);
+    void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*, bool);
     starpu_data_handle_t (*get_handle)(void const*);
     dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
@@ -77,6 +77,7 @@ typedef struct _dahl_scalar
 {
     starpu_data_handle_t handle;
     dahl_fp data;
+    bool is_redux;
 } dahl_scalar;
 
 typedef struct _dahl_vector
@@ -84,6 +85,7 @@ typedef struct _dahl_vector
     starpu_data_handle_t handle;
     dahl_fp* data;
     metadata* meta;
+    bool is_redux;
 } dahl_vector;
 
 typedef struct _dahl_matrix
@@ -91,6 +93,7 @@ typedef struct _dahl_matrix
     starpu_data_handle_t handle;
     dahl_fp* data;
     metadata* meta;
+    bool is_redux;
 } dahl_matrix;
 
 typedef struct _dahl_block
@@ -98,6 +101,7 @@ typedef struct _dahl_block
     starpu_data_handle_t handle;
     dahl_fp* data;
     metadata* meta;
+    bool is_redux;
 } dahl_block;
 
 typedef struct _dahl_tensor
@@ -105,6 +109,7 @@ typedef struct _dahl_tensor
     starpu_data_handle_t handle;
     dahl_fp* data;
     metadata* meta;
+    bool is_redux;
 } dahl_tensor;
 
 // Init a new partition object in the same arena as the parent
@@ -114,10 +119,10 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
 
 void _partition_submit_if_needed(metadata* meta, int8_t index, bool should_be_mut, starpu_data_handle_t main_handle);
 
-void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
-void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
-void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
-void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data);
+void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
+void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
+void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
+void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
 
 
 starpu_data_handle_t _scalar_get_handle(void const* scalar);

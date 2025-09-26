@@ -395,10 +395,14 @@ dahl_matrix* task_vector_to_row_matrix_init(dahl_arena* arena, dahl_vector const
 
 void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_matrix* c)
 {
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = c->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_vector_outer_product.modes[2] = mode;
+
     int ret = starpu_task_insert(&cl_vector_outer_product,
                                  STARPU_R, a->handle, 
                                  STARPU_R, b->handle, 
-                                 STARPU_W, c->handle, 0);
+                                 mode, c->handle, 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
 
@@ -509,17 +513,22 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(in);
+
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_any_sum.modes[1] = mode;
+
     int ret = starpu_task_insert(&cl_any_sum,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
-                                 STARPU_REDUX, out->handle, 0);
-                                 // out->is_redux?STARPU_REDUX:STARPU_RW, out->handle, 0); // FIXME: investigate why this is not working
+                                 mode, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* traits)
 {
-    dahl_scalar* res = scalar_init_redux(arena);
+    // Here we do not create a redux scalar as the output is returned by... returning
+    dahl_scalar* res = scalar_init(arena);
     task_sum(object, res, traits);
     return res;
 }

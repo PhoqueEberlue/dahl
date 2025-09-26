@@ -28,12 +28,14 @@
 
 // ---------------------------------------- TENSOR ----------------------------------------
 DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(tensor_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- BLOCK ----------------------------------------
 DEFINE_STARPU_CODELET(block_sum_z_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_y_axis, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_sum_xy_axes, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(block_add_padding, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(block_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- MATRIX ----------------------------------------
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, STARPU_R, STARPU_R, STARPU_W);
@@ -45,14 +47,16 @@ DEFINE_STARPU_CODELET(matrix_vector_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_transpose, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_resize, 1, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_rotate_180, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- VECTOR ----------------------------------------
 DEFINE_STARPU_CODELET(vector_softmax, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_dot_product, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_diag, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(vector_to_matrix, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(vector_outer_product, 3, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(vector_outer_product, 3, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(vector_shuffle, 1, STARPU_RW);
+DEFINE_STARPU_CODELET(vector_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- SCALAR ----------------------------------------
 DEFINE_STARPU_CODELET(scalar_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
@@ -67,7 +71,7 @@ DEFINE_STARPU_CODELET(any_sub, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_add, 3, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_add_value, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_clip, 2, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_sum, 2, STARPU_R, STARPU_REDUX);
+DEFINE_STARPU_CODELET(any_sum, 2, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(any_mean, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_fill, 1, STARPU_W);
 DEFINE_STARPU_CODELET(any_wait, 1, STARPU_W);

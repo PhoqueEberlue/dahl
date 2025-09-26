@@ -6,6 +6,7 @@ dahl_scalar* scalar_init(dahl_arena* arena)
 {
     dahl_scalar* scalar = dahl_arena_alloc(arena, sizeof(dahl_scalar));
     scalar->data = 0.0F;
+    scalar->is_redux = false;
 
     starpu_data_handle_t handle = nullptr;
     starpu_variable_data_register(
@@ -26,6 +27,7 @@ dahl_scalar* scalar_init_redux(dahl_arena* arena)
 {
     dahl_scalar* scalar = dahl_arena_alloc(arena, sizeof(dahl_scalar));
     scalar->data = 0.0F;
+    scalar->is_redux = true;
 
     // Here no need to attach the handle to the arena, because StarPU manages the memory itself
     // that's also why we pass -1, and NULL
@@ -52,6 +54,7 @@ dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp const value)
 {
     dahl_scalar* res = scalar_init(arena);
     res->data = value;
+    res->is_redux = false;
     return res;
 }
 

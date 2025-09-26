@@ -5,8 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "../tasks/codelets.h"
 
-void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
+void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux)
 {
     metadata* md = dahl_arena_alloc(
         arena,
@@ -26,6 +27,7 @@ void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_
     block->handle = handle;
     block->data = data;
     block->meta = md;
+    block->is_redux = is_redux;
 
     return block;
 }
@@ -52,7 +54,44 @@ dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 
     dahl_arena_attach_handle(arena, handle); 
 
-    return _block_init_from_ptr(arena, handle, data);
+    return _block_init_from_ptr(arena, handle, data, false);
+}
+
+dahl_block* block_init_redux(dahl_arena* arena, dahl_shape3d const shape)
+{
+    size_t n_elems = shape.x * shape.y * shape.z;
+    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
+    for (size_t i = 0; i < n_elems; i++) { data[i] = 0.0F; }
+
+    // Here no need to attach the handle to the arena, because StarPU manages the memory itself
+    // that's also why we pass -1, and NULL
+    starpu_data_handle_t handle = nullptr;
+    starpu_block_data_register(
+        &handle,
+        STARPU_MAIN_RAM,
+        (uintptr_t)data,
+        shape.x,
+        shape.x*shape.y,
+        shape.x,
+        shape.y,
+        shape.z,
+        sizeof(dahl_fp)
+    );
+
+    dahl_fp value = 0;
+
+    char *fill_args;
+    size_t arg_buffer_size;
+    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
+                        // TODO: big probably that this causes problems if we change object shape during their lifetime
+                        // However it *shouldn't* be a problem for redux objects? Maybe enforce that?
+                         STARPU_VALUE, &n_elems, sizeof(size_t),
+                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
+
+    // Attach the reduction methods
+    starpu_data_set_reduction_methods_with_args(handle, &cl_block_accumulate, nullptr, &cl_any_fill, fill_args);
+
+    return _block_init_from_ptr(arena, handle, data, true);
 }
 
 dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)

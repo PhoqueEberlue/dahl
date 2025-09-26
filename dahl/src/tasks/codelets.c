@@ -50,6 +50,52 @@ void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
     }
 }
 
+void tensor_accumulate(void *buffers[2], void *cl_arg)
+{
+	// dst tensor accumulator
+    size_t const dst_nx = STARPU_TENSOR_GET_NX(buffers[0]);
+    size_t const dst_ny = STARPU_TENSOR_GET_NY(buffers[0]);
+    size_t const dst_nz = STARPU_TENSOR_GET_NZ(buffers[0]);
+    size_t const dst_nt = STARPU_TENSOR_GET_NT(buffers[0]);
+    size_t const dst_ldy = STARPU_TENSOR_GET_LDY(buffers[0]);
+    size_t const dst_ldz = STARPU_TENSOR_GET_LDZ(buffers[0]);
+    size_t const dst_ldt = STARPU_TENSOR_GET_LDT(buffers[0]);
+    dahl_fp* dst = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[0]);
+
+    // source tensor
+    size_t const src_nx = STARPU_TENSOR_GET_NX(buffers[1]);
+    size_t const src_ny = STARPU_TENSOR_GET_NY(buffers[1]);
+    size_t const src_nz = STARPU_TENSOR_GET_NZ(buffers[1]);
+    size_t const src_nt = STARPU_TENSOR_GET_NT(buffers[1]);
+    size_t const src_ldy = STARPU_TENSOR_GET_LDY(buffers[1]);
+    size_t const src_ldz = STARPU_TENSOR_GET_LDZ(buffers[1]);
+    size_t const src_ldt = STARPU_TENSOR_GET_LDT(buffers[1]);
+    dahl_fp const* src = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[1]);
+
+    assert(dst_nx == src_nx);
+    assert(dst_ny == src_ny);
+    assert(dst_nz == src_nz);
+    assert(dst_nt == src_nt);
+    assert(dst_ldy == src_ldy);
+    assert(dst_ldz == src_ldz);
+    assert(dst_ldt == src_ldt);
+
+    for (int t = 0; t < dst_nt; t++)
+    {
+        for (int z = 0; z < dst_nz; z++)
+        {
+            for (int y = 0; y < dst_ny; y++)
+            {
+                for (int x = 0; x < dst_nx; x++)
+                {
+                    dst[(t * dst_ldt) + (z * dst_ldz) + (y * dst_ldy) + x] += 
+                        src[(t * src_ldt) + (z * src_ldz) + (y * src_ldy) + x];
+                }
+            }
+        }
+    }
+}
+
 // ---------------------------------------- BLOCK ----------------------------------------
 void block_sum_z_axis(void* buffers[2], void* cl_arg)
 {
@@ -168,6 +214,43 @@ void block_add_padding(void* buffers[2], void* cl_arg)
             }
         }
 
+    }
+}
+
+void block_accumulate(void *buffers[2], void *cl_arg)
+{
+	// dst block accumulator
+    size_t const dst_nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const dst_ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const dst_nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    size_t const dst_ldy = STARPU_BLOCK_GET_LDY(buffers[0]);
+    size_t const dst_ldz = STARPU_BLOCK_GET_LDZ(buffers[0]);
+    dahl_fp* dst = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    // source block
+    size_t const src_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const src_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const src_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+    size_t const src_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+    size_t const src_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+    dahl_fp const* src = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    assert(dst_nx == src_nx);
+    assert(dst_ny == src_ny);
+    assert(dst_nz == src_nz);
+    assert(dst_ldy == src_ldy);
+    assert(dst_ldz == src_ldz);
+
+    for (int z = 0; z < dst_nz; z++)
+    {
+        for (int y = 0; y < dst_ny; y++)
+        {
+            for (int x = 0; x < dst_nx; x++)
+            {
+                dst[(z * dst_ldz) + (y * dst_ldy) + x] += 
+                    src[(z * src_ldz) + (y * src_ldy) + x];
+            }
+        }
     }
 }
 
@@ -490,6 +573,33 @@ void matrix_rotate_180(void* buffers[2], void* cl_arg)
     }
 }
 
+void matrix_accumulate(void *buffers[2], void *cl_arg)
+{
+	// dst matrix accumulator
+    size_t const dst_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const dst_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const dst_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp* dst = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // source matrix
+    size_t const src_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const src_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const src_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp const* src = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    assert(dst_nx == src_nx);
+    assert(dst_ny == src_ny);
+    assert(dst_ld == src_ld);
+
+    for (size_t y = 0; y < dst_ny; y++)
+    {
+        for (size_t x = 0; x < dst_nx; x++)
+        {
+            dst[(y * dst_ld) + x] += src[(y * src_ld) + x];
+        }
+    }
+}
+
 // ---------------------------------------- VECTOR ----------------------------------------
 void vector_softmax(void* buffers[2], void* cl_arg)
 {
@@ -623,6 +733,24 @@ void vector_shuffle(void* buffers[1], void* cl_arg)
         dahl_fp tmp = vec[i];
         vec[i] = vec[j];
         vec[j] = tmp;
+    }
+}
+
+void vector_accumulate(void *buffers[2], void *cl_arg)
+{
+    // dst vector accumulator
+	size_t const dst_len = STARPU_VECTOR_GET_NX(buffers[0]);
+	dahl_fp* dst = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    // src vector
+	size_t const src_len = STARPU_VECTOR_GET_NX(buffers[1]);
+	dahl_fp* const src = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+
+    assert(dst_len == src_len);
+
+    for (size_t x = 0; x < dst_len; x++)
+    {
+        dst[x] += src[x];
     }
 }
 
@@ -900,10 +1028,10 @@ void any_round(void* buffers[2], void* cl_arg)
 // ---------------------------------------- SCALAR ----------------------------------------
 void scalar_accumulate(void *buffers[2], void *cl_arg)
 {
-	dahl_fp *v_dst = (dahl_fp *)STARPU_VARIABLE_GET_PTR(buffers[0]);
-	dahl_fp *v_src = (dahl_fp *)STARPU_VARIABLE_GET_PTR(buffers[1]);
+	dahl_fp* dst = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[0]);
+	dahl_fp const* src = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[1]);
 
-	*v_dst = *v_dst + *v_src;
+	*dst += *src;
 }
 
 // ---------------------------------------- ML Related ----------------------------------------

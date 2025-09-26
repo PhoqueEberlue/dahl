@@ -50,6 +50,8 @@ extern dahl_traits dahl_traits_scalar;
 // - shape: dahl_shape4d object describing the dimensions of the tensor
 dahl_tensor* tensor_init(dahl_arena*, dahl_shape4d shape);
 
+dahl_tensor* tensor_init_redux(dahl_arena* arena, dahl_shape4d const shape);
+
 // Initialize a dahl_tensor with random values between `min` and `max`.
 // parameters:
 // - shape: dahl_shape4d object describing the dimensions of the tensor
@@ -120,6 +122,8 @@ void tensor_print(dahl_tensor const*);
 // parameters:
 // - shape: dahl_shape3d object describing the dimensions of the block
 dahl_block* block_init(dahl_arena*, dahl_shape3d shape);
+
+dahl_block* block_init_redux(dahl_arena* arena, dahl_shape3d const shape);
 
 // Initialize a dahl_block with random values between `min` and `max`.
 // parameters:
@@ -204,6 +208,8 @@ void block_image_display(dahl_block const* block, size_t const scale_factor);
 // parameters:
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 dahl_matrix* matrix_init(dahl_arena*, dahl_shape2d shape);
+
+dahl_matrix* matrix_init_redux(dahl_arena* arena, dahl_shape2d const shape);
 
 // Initialize a dahl_matrix with random values between `min` and `max`.
 // parameters:
@@ -292,6 +298,8 @@ void matrix_image_display(dahl_matrix const* matrix, size_t scale_factor);
 // parameters:
 // - len: size_t lenght of the vector
 dahl_vector* vector_init(dahl_arena*, size_t len);
+
+dahl_vector* vector_init_redux(dahl_arena* arena, size_t const len);
 
 // Initialize a dahl_vector with random values between `min` and `max`.
 // parameters:
