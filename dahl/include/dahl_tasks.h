@@ -20,6 +20,9 @@
 void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out);
 dahl_block* task_tensor_sum_t_axis_init(dahl_arena*, dahl_tensor const* in);
 
+void task_tensor_sum_xyt_axes(dahl_tensor const* in, dahl_vector* out);
+dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena*, dahl_tensor const* in);
+
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
@@ -350,5 +353,7 @@ void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_ma
 
 //TODO DOC
 void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out);
+
+void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 
 #endif //!DAHL_TASKS_H

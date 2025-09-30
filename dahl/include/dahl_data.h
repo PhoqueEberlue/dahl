@@ -65,13 +65,13 @@ dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* da
 
 // Set values of the `tensor` from an array `data` that should be of the same size.
 // This is a blocking function.
-void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data);
+void tensor_set_from(dahl_tensor*, dahl_fp const* data);
 
 // Get the value at index x,y,z,t. Requires to have acquired the tensor, either with `tensor_acquire()` or `tensor_acquire_mut()`.
-dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z, size_t t);
+dahl_fp tensor_get_value(dahl_tensor const*, size_t x, size_t y, size_t z, size_t t);
 
 // Set `value` at index x,y,z,t. Requires to have mutably acquired the tensor with `tensor_acquire_mut()`.
-void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t t, dahl_fp value);
+void tensor_set_value(dahl_tensor*, size_t x, size_t y, size_t z, size_t t, dahl_fp value);
 
 // Flatten a tensor along the t dimension, producing a new matrix object of the shape (x*y*z, t).
 // No data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the parent tensor.
@@ -100,8 +100,8 @@ void tensor_release(dahl_tensor const*);
 void tensor_partition_along_t(dahl_tensor const*);
 void tensor_partition_along_t_mut(dahl_tensor*);
 
-void tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size);
-void tensor_partition_along_t_batch_mut(dahl_tensor* tensor, size_t batch_size);
+void tensor_partition_along_t_batch(dahl_tensor const*, size_t batch_size);
+void tensor_partition_along_t_batch_mut(dahl_tensor*, size_t batch_size);
 
 // Unpartition a tensor
 void tensor_unpartition(dahl_tensor const*);
@@ -138,13 +138,13 @@ dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data
 
 // Set values of the `block` from an array `data` that should be of the same size.
 // This is a blocking function.
-void block_set_from(dahl_block* block, dahl_fp const* data);
+void block_set_from(dahl_block*, dahl_fp const* data);
 
 // Get the value at index x,y,z. Requires to have acquired the block, either with `block_acquire()` or `block_acquire_mut()`.
-dahl_fp block_get_value(dahl_block const* block, size_t x, size_t y, size_t z);
+dahl_fp block_get_value(dahl_block const*, size_t x, size_t y, size_t z);
 
 // Set `value` at index x,y,z. Requires to have mutably acquired the block with `block_acquire_mut()`.
-void block_set_value(dahl_block* block, size_t x, size_t y, size_t z, dahl_fp value);
+void block_set_value(dahl_block*, size_t x, size_t y, size_t z, dahl_fp value);
 
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const*);
@@ -223,19 +223,19 @@ dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape, dahl_fp min, da
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
 
 // Get the value at index x,y. Requires to have acquired the matrix, either with `matrix_acquire()` or `matrix_acquire_mut()`.
-dahl_fp matrix_get_value(dahl_matrix const* matrix, size_t x, size_t y);
+dahl_fp matrix_get_value(dahl_matrix const*, size_t x, size_t y);
 
 // Set `value` at index x,y. Requires to have mutably acquired the matrix with `matrix_acquire_mut()`.
-void matrix_set_value(dahl_matrix* matrix, size_t x, size_t y, dahl_fp value);
+void matrix_set_value(dahl_matrix*, size_t x, size_t y, dahl_fp value);
 
 // Set values of the `matrix` from an array `data` that should be of the same size.
 // This is a blocking function.
-void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data);
+void matrix_set_from(dahl_matrix*, dahl_fp const* data);
 
 // Reshape the `matrix` into a tensor, as long as the `new_shape` is exactly equal to the current number of elements in the `matrix`.
 // No data is getting copied under the hood, and every new memory allocated (for the tensor object) will be in the same arena as the parent matrix.
 // You should stop using the matrix after calling this function because no coherency/synchronization is guaranteed.
-dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d new_shape);
+dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const*, dahl_shape4d new_shape);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
@@ -316,14 +316,14 @@ dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
 size_t vector_get_len(dahl_vector const*);
 
 // Get the value at `index`. Requires to have acquired the vector, either with `vector_acquire()` or `vector_acquire_mut()`.
-dahl_fp vector_get_value(dahl_vector const* vector, size_t index);
+dahl_fp vector_get_value(dahl_vector const*, size_t index);
 
 // Set `value` at `index`. Requires to have mutably acquired the vector with `vector_acquire_mut()`.
-void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value);
+void vector_set_value(dahl_vector*, size_t index, dahl_fp value);
 
 // Set values of the `vector` from an array `data` that should be of the same size.
 // This is a blocking function.
-void vector_set_from(dahl_vector* vector, dahl_fp const* data);
+void vector_set_from(dahl_vector*, dahl_fp const* data);
 
 // Acquire the vector data, will wait any associated tasks to finish.
 void vector_acquire(dahl_vector const*);

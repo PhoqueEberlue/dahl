@@ -63,11 +63,11 @@ dahl_matrix* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix con
 
 void _dense_backward_sample(dahl_vector const* dl_dout,
                             dahl_vector const* input,
-                            dahl_matrix* dl_dw,
+                            dahl_matrix* dl_dw_redux,
                             dahl_vector* dl_dinput,
                             dahl_matrix const* weights_t)
 {
-    task_vector_outer_product(input, dl_dout, dl_dw);
+    task_vector_outer_product(input, dl_dout, dl_dw_redux);
     task_matrix_vector_product(weights_t, dl_dout, dl_dinput);  
 }
 
@@ -76,6 +76,8 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
 {
     // Already start summing dl_dout_batch result
     dahl_vector* summed_dl_dout = task_matrix_sum_y_axis_init(dense->scratch_arena, dl_dout_batch);
+    // Then apply learning rate
+    TASK_SCAL_SELF(summed_dl_dout, learning_rate);
 
     // Initializing the result buffer, representing the derivative of the forward input
     dahl_matrix* dl_dinput_batch = matrix_init(arena, dense->input_shape);
@@ -113,12 +115,10 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     matrix_unpartition(dl_dinput_batch);
     
     // Updating weights, here no need to divide by batch size because it is already done in dl_out_batch
-    // TODO: could be reduxed
     TASK_SCAL_SELF(dl_dw_redux, learning_rate);
     TASK_SUB_SELF(dense->weights, dl_dw_redux);
 
     // Updating biases
-    TASK_SCAL_SELF(summed_dl_dout, learning_rate);
     TASK_SUB_SELF(dense->biases, summed_dl_dout);
 
     return dl_dinput_batch;

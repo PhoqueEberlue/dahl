@@ -34,6 +34,22 @@ dahl_block* task_tensor_sum_t_axis_init(dahl_arena* arena, dahl_tensor const* in
 
     return out;
 }
+
+void task_tensor_sum_xyt_axes(dahl_tensor const* in, dahl_vector* out)
+{
+    int ret = starpu_task_insert(&cl_tensor_sum_xyt_axes,
+                                 STARPU_R, in->handle,
+                                 STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena* arena, dahl_tensor const* in)
+{
+    dahl_vector* out = vector_init(arena, tensor_get_shape(in).z);
+    task_tensor_sum_xyt_axes(in, out);
+    return out;
+}
+
 // ---------------------------------------- BLOCK ----------------------------------------
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
 {
@@ -694,6 +710,19 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
     cl_convolution_2d_backward_filters.modes[2] = mode;
 
     int ret = starpu_task_insert(&cl_convolution_2d_backward_filters,
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 mode, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
+{
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_convolution_2d_backward_input.modes[2] = mode;
+
+    int ret = starpu_task_insert(&cl_convolution_2d_backward_input,
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
                                  mode, out->handle, 0);

@@ -15,7 +15,7 @@
     void func_name(void* buffers[num_buffers], void* cl_arg); \
                                                               \
     static struct starpu_perfmodel perf_model_##func_name = { \
-        .type = STARPU_HISTORY_BASED,                         \
+        .type = STARPU_REGRESSION_BASED,                         \
         .symbol = #func_name                                  \
     };                                                        \
                                                               \
@@ -28,6 +28,7 @@
 
 // ---------------------------------------- TENSOR ----------------------------------------
 DEFINE_STARPU_CODELET(tensor_sum_t_axis, 2, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(tensor_sum_xyt_axes, 2, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(tensor_accumulate, 2, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- BLOCK ----------------------------------------

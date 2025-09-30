@@ -51,7 +51,8 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
 
         // Add bias to the feature map 
         // TODO: This should not be blocking too much, cause biases is readonly, but watch out
-        // FIXME: also vector_get_value is not blocking, WHICH IS VERY WEIRD
+        // FIXME: why do we get value without acquiring biases? very dangerous
+        // -> either call acquire/release of we create a partition for vectors? honestly feels useless
         TASK_ADD_VALUE_SELF(feature_map, vector_get_value(biases, c));
     }
 
@@ -90,8 +91,8 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
 
 dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
                                   dahl_block const* dl_dout, dahl_block const* input, 
-                                  dahl_block* dl_dinput, dahl_tensor* dl_dfilters,
-                                  dahl_vector* dl_dbiases,
+                                  dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters_redux,
+                                  dahl_vector* dl_dbiases_redux,
                                   size_t filter_size, dahl_tensor const* filters)
 {
     // Here we need padding on dl_dout
@@ -108,55 +109,39 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
     block_partition_along_z(input);
     block_partition_along_z(dl_dout_padded);
     block_partition_along_z(dl_dout);
-    block_partition_along_z_mut(dl_dinput);
 
     size_t const num_filters = filters_shape.t; // Output channels
-    size_t const num_channel = filters_shape.z; // Input channels
 
     for (int f = 0; f < num_filters; f++)
     {
         dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
-        dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters, f);
+        dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters_redux, f);
+        task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df);
 
+        // This computation is only required when the conv layer is not the first one in the network
         dahl_matrix const* dl_dout_padded_filter = GET_SUB_MATRIX(dl_dout_padded, f);
         dahl_block const* filter = GET_SUB_BLOCK(filters, f);
-
-        task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df);
-        // for (int c = 0; c < num_channel; c++)
-        // {
-        //     dahl_matrix const* input_chann = GET_SUB_MATRIX(input, c);
-        //     dahl_matrix* dl_df_chann = GET_SUB_MATRIX_MUT(dl_df, c);
-
-        //     task_matrix_cross_correlation(input_chann, dl_dout_filter, dl_df_chann);
-
-        //     dahl_matrix const* filter_chann = GET_SUB_MATRIX(filter, c);
-        //     dahl_matrix const* filter_chann_rot = task_matrix_rotate_180_init(arena, filter_chann);
-        //     dahl_matrix* dl_dinput_chann = GET_SUB_MATRIX_MUT(dl_dinput, c);
-
-        //     // FIXME: this makes no sense, dl_dinput constantly gets overriden, the result being only computed from the last filters
-        //     // It should be incremented instead (for each channel)
-        //     task_matrix_cross_correlation(dl_dout_padded_filter, filter_chann_rot, dl_dinput_chann);
-        // }
-
+        task_convolution_2d_backward_input(dl_dout_padded_filter, filter, dl_dinput_redux);
     }
-
-    // Sum the derivative values of each feature map into the vector `dl_dbiases`
-    task_block_sum_xy_axes(dl_dout, dl_dbiases);
 
     block_unpartition(input);
     block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
-    block_unpartition(dl_dinput);
 
-    return dl_dfilters;
+    return dl_dfilters_redux;
 }
 
 dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
                                  dahl_tensor const* dl_dout_batch, double const learning_rate,
                                  dahl_tensor const* input_batch)
 {
+    // Can already compute dl_dbiases by summing over axes (x,y,t) to update the biases.
+    dahl_vector* dl_dbiases = task_tensor_sum_xyt_axes_init(conv->scratch_arena, dl_dout_batch);
+    TASK_SCAL_SELF(dl_dbiases, learning_rate);
+    TASK_SUB_SELF(conv->biases, dl_dbiases);
+
     // Initialize the result buffer, which is the derivative of the input we got from the forward pass
-    dahl_tensor* dl_dinput_batch = tensor_init(arena, conv->input_shape);
+    dahl_tensor* dl_dinput_batch_redux = tensor_init_redux(arena, conv->input_shape);
 
     dahl_tensor* dl_dfilters_redux = tensor_init_redux(conv->scratch_arena, conv->filter_shape);
     dahl_vector* dl_dbiases_redux = vector_init_redux(conv->scratch_arena, conv->filter_shape.t);
@@ -164,7 +149,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     // Partition by batch dimension
     tensor_partition_along_t(dl_dout_batch);
     tensor_partition_along_t(input_batch);
-    tensor_partition_along_t_mut(dl_dinput_batch);
+    tensor_partition_along_t_mut(dl_dinput_batch_redux);
 
     // Already partition the filters (over feature maps: num_filters) because they will be accessed in every batches
     tensor_partition_along_t(conv->filters);
@@ -179,7 +164,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
             conv->scratch_arena,
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
-            GET_SUB_BLOCK_MUT(dl_dinput_batch, i),
+            GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
             dl_dfilters_redux,
             dl_dbiases_redux,
             conv->filter_size, 
@@ -188,15 +173,12 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
 
     tensor_unpartition(dl_dout_batch);
     tensor_unpartition(input_batch);
-    tensor_unpartition(dl_dinput_batch);
+    tensor_unpartition(dl_dinput_batch_redux);
     tensor_unpartition(conv->filters);
     tensor_unpartition(dl_dfilters_redux);
 
     TASK_SCAL_SELF(dl_dfilters_redux, learning_rate);
     TASK_SUB_SELF(conv->filters, dl_dfilters_redux);
 
-    TASK_SCAL_SELF(dl_dbiases_redux, learning_rate);
-    TASK_SUB_SELF(conv->biases, dl_dbiases_redux);
-
-    return dl_dinput_batch;
+    return dl_dinput_batch_redux;
 }

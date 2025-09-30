@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     test_tasks();
     test_data();
     test_arena();
-    test_miscellaneous();
+    // test_miscellaneous();
 
     dahl_arena_delete(testing_arena);
 

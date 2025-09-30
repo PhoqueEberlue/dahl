@@ -96,8 +96,55 @@ void test_what_acquire_and_what_dont_acquire()
     }
 }
 
+void test_redux_no_redux()
+{
+    dahl_shape4d shape = { .x = 10, .y = 100, .z = 100, .t = 100 };
+    dahl_tensor* t1 = tensor_init_random(testing_arena, shape, 0, 1);
+    dahl_tensor* t2 = tensor_init_random(testing_arena, shape, 0, 1);
+    dahl_tensor* t3 = tensor_init_random(testing_arena, shape, 0, 1);
+    dahl_tensor* t4 = tensor_init_random(testing_arena, shape, 0, 1);
+
+    // Will be in parallel
+    dahl_scalar* res_redux = scalar_init_redux(testing_arena);
+    TASK_SUM(t1, res_redux);
+    TASK_SUM(t2, res_redux);
+    TASK_SUM(t3, res_redux);
+    TASK_SUM(t4, res_redux);
+
+    dahl_scalar* expect = scalar_init_from(testing_arena, 19997115.693495);
+    ASSERT_SCALAR_EQUALS_ROUND(expect, res_redux, 5);
+
+    // Will be sequential
+    dahl_scalar* res_no_redux = scalar_init(testing_arena);
+    TASK_SUM(t1, res_no_redux);
+    TASK_SUM(t2, res_no_redux);
+    TASK_SUM(t3, res_no_redux);
+    TASK_SUM(t4, res_no_redux);
+
+    ASSERT_SCALAR_EQUALS_ROUND(expect, res_no_redux, 5);
+}
+
+void test_backward_pooling_par()
+{
+    dahl_shape4d shape = { .x = 2550, .y = 2550, .z = 3, .t = 10 };
+    dahl_shape4d back_shape = { .x = 2550/2, .y = 2550/2, .z = 3, .t = 10 };
+    dahl_pooling* pool = pooling_init(testing_arena, 2, shape);
+
+    dahl_tensor* input_batch = tensor_init_random(testing_arena, shape, 0, 1);
+    // simulate dl_dout
+    dahl_tensor* dl_dout_batch = tensor_init_random(testing_arena, back_shape, 0, 1);
+
+    pooling_forward(testing_arena, pool, input_batch);
+
+
+    pooling_backward(testing_arena, pool, dl_dout_batch);
+
+}
+
 void test_miscellaneous()
 {
    // test_what_acquire_and_what_dont_acquire(); 
    // test_concurrency();
+   // test_redux_no_redux();
+   // test_backward_pooling_par();
 }

@@ -50,6 +50,37 @@ void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
     }
 }
 
+void tensor_sum_xyt_axes(void* buffers[2], void* cl_arg)
+{
+    size_t const in_nx = STARPU_TENSOR_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_TENSOR_GET_NY(buffers[0]);
+    size_t const in_nz = STARPU_TENSOR_GET_NZ(buffers[0]);
+    size_t const in_nt = STARPU_TENSOR_GET_NT(buffers[0]);
+    size_t const in_ldy = STARPU_TENSOR_GET_LDY(buffers[0]);
+    size_t const in_ldz = STARPU_TENSOR_GET_LDZ(buffers[0]);
+    size_t const in_ldt = STARPU_TENSOR_GET_LDT(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[0]);
+
+    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+
+    assert(in_nz == out_len);
+
+    for (int t = 0; t < in_nt; t++)
+    {
+        for (int z = 0; z < in_nz; z++)
+        {
+            for (int y = 0; y < in_ny; y++)
+            {
+                for (int x = 0; x < in_nx; x++)
+                {
+                    out[z] += in[(t * in_ldt) + (z * in_ldz) + (y * in_ldy) + x];
+                }
+            }
+        }
+    }
+}
+
 void tensor_accumulate(void *buffers[2], void *cl_arg)
 {
 	// dst tensor accumulator
@@ -1363,11 +1394,11 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
     size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
     dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    // TODO
-    // assert(out_nx == in_nx - k_nx + 1);
-    // assert(out_ny == in_ny - k_ny + 1);
-    // assert(in_nz == out_nz);
+    assert(out_nx == in_nx - k_nx + 1);
+    assert(out_ny == in_ny - k_ny + 1);
+    assert(out_nz == k_nz);
 
+    // FIXME: I think the bug might be on axis Z with index k
     // loop through i,j,k on axes x,y,z of the output block
     for (size_t k = 0; k < out_nz; k++)
     {
@@ -1377,12 +1408,14 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
             {
                 dahl_fp cell_res = 0.0F;
 
-                // loop through l,m on axes x,y of the input
-                for (size_t m = 0; m < in_ny; m++)
+                // loop through l,m on axes x,y of the kernel
+                for (size_t m = 0; m < k_ny; m++)
                 {
-                    for (size_t l = 0; l < in_nx; l++)
+                    for (size_t l = 0; l < k_nx; l++)
                     {
-                        dahl_fp kernel_value = kernel[(k * k_ldz) + (l * k_ldy) + m];
+                        // Reverse indexes l and m so we don't actually have to rotate(180) the kernel matrix.
+                        // However we still use k for axis z because we write each result for the current channel into an output channel.
+                        dahl_fp kernel_value = kernel[(k * k_ldz) + ((k_ny - 1 - m) * k_ldy) + (k_nx - 1 - l)];
                         // Here we use k, the index on the z axis of the output, as input owns as many channels.
                         // The kernel doesn't own a channel dimension in this function, so we ignore it.
                         // Then we add the offset of the slidding window (i,j) to (l,m)

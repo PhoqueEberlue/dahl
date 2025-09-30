@@ -1209,6 +1209,59 @@ void test_convolution_2d_backward_filters()
     dahl_arena_reset(testing_arena);
 }
 
+void test_convolution_2d_backward_input()
+{
+    // Here we have a padding of 1
+    dahl_matrix* a = MATRIX(testing_arena, 4, 4, {
+            { 0, 0, 0, 0 },
+            { 0, 3, 4, 0 },
+            { 0, 3, 4, 0 },
+            { 0, 0, 0, 0 },
+    });
+
+    dahl_block* b = BLOCK(testing_arena, 3, 2, 2, {
+        {
+            { 1, 0 },
+            { 1, 0 },
+        },
+        {
+            { 0, 1 },
+            { 0, 0 },
+        },
+        {
+            { 1, 2 },
+            { 0, 1 },
+        }
+    }); 
+
+    dahl_block* expect = BLOCK(testing_arena, 3, 3, 3, {
+        {
+            { 3, 4, 0 },
+            { 6, 8, 0 },
+            { 3, 4, 0 },
+        },
+        {
+            { 0, 3, 4 },
+            { 0, 3, 4 },
+            { 0, 0, 0 },
+        },
+        {
+            { 3, 10, 8 },
+            { 3, 13, 12 },
+            { 0, 3, 4 },
+        }
+    });
+
+    dahl_shape3d expect_shape = { .x = 3, .y = 3, .z = 3 };
+    dahl_block* out = block_init(testing_arena, expect_shape);
+
+    task_convolution_2d_backward_input(a, b, out);
+
+    ASSERT_BLOCK_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_round()
 {
     dahl_matrix* mat = MATRIX(testing_arena, 3, 3, {
@@ -1321,6 +1374,7 @@ void test_tasks()
     // test_vector_shuffle();
     test_min_max();
     test_convolution_2d_backward_filters();
+    test_convolution_2d_backward_input();
     test_round();
     test_redux();
 }
