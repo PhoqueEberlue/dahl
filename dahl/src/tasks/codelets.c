@@ -1329,10 +1329,9 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
     size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
     dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
 
-    // TODO
-    // assert(out_nx == in_nx - k_nx + 1);
-    // assert(out_ny == in_ny - k_ny + 1);
-    // assert(in_nz == out_nz);
+    assert(out_nx == in_nx - k_nx + 1);
+    assert(out_ny == in_ny - k_ny + 1);
+    assert(out_nz == in_nz);
 
     // loop through i,j,k on axes x,y,z of the output block
     for (size_t k = 0; k < out_nz; k++)
@@ -1366,10 +1365,6 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
     }
 }
 
-
-// TODO: rotate the kernel inside this function (pretend we rotate, instead just access the kernel wisely by modifying the indexes)
-// + mabye support input with smaller dimension than output so we don't need to add padding?
-// probably hard to do honestly, and probably loses a lot of performances
 void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
 {
     // Input matrix, here the gradients output of the layer just after the convolution
@@ -1398,7 +1393,6 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
     assert(out_ny == in_ny - k_ny + 1);
     assert(out_nz == k_nz);
 
-    // FIXME: I think the bug might be on axis Z with index k
     // loop through i,j,k on axes x,y,z of the output block
     for (size_t k = 0; k < out_nz; k++)
     {

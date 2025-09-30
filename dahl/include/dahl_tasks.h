@@ -33,6 +33,7 @@ void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out);
 dahl_matrix* task_block_sum_y_axis_init(dahl_arena*, dahl_block const* in);
 
 // Sum the block values over the x and y axes and store the result in the vector `out` of len z.
+// `out` is compatible with redux objects.
 void task_block_sum_xy_axes(dahl_block const* in, dahl_vector* out);
 
 // Sum the block values over the x and y axes and return a new vector `out` of len z.
@@ -130,6 +131,7 @@ dahl_matrix* task_vector_to_column_matrix_init(dahl_arena*, dahl_vector const*);
 dahl_matrix* task_vector_to_row_matrix_init(dahl_arena*, dahl_vector const*);
 
 // Compute the outer product of vectors `a` and `b`, storing the result into the matrix `c` with dimensions len(a) x len(b)
+// `c` is compatible with redux objects.
 void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_matrix* c);
 
 // Compute the outer product of vectors `a` and `b`, returning the result into a new matrix with dimensions len(a) x len(b)
@@ -275,7 +277,8 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 // Clip and modify every elements of `self` between `min` and `max`.
 #define TASK_CLIP_SELF(SELF, MIN, MAX) TASK_CLIP(SELF, SELF, MIN, MAX)
 
-// Sum every elements of `in` and write the result into a scalar `out`.
+// Sum every elements of `in` and write the result into a scalar `out`. 
+// `out` is compatible with redux objects.
 #define TASK_SUM(IN, OUT) task_sum(IN, OUT, GET_TRAITS(IN))
 
 // Sum every elements of `in` and allocate/return the result into the `arena`.
@@ -343,7 +346,6 @@ void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl
 
 dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
                                                                 dahl_matrix const* target_batch);
-
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator over multiple channels
 // - `in`, `kernel` and `out` are dahl_block objects
@@ -351,9 +353,20 @@ dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl
 // - the shape of the `kernel` should be smaller than the shape of `in` 
 void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out);
 
-//TODO DOC
+// Specialized convolution 2d function to compute dl_dfilters. 
+// It accepts the orginal forward input for argument `in` which can be a block (image with multiple channels).
+// `kernel` is here the filters gradients represented as a matrix.
+// `out` is derivative of the filters with respect to the input.
+// Results are computed on each `in` channels and stored on their respective `out` channel.
+// `out` is compatible with redux objects.
 void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out);
 
+// Specialized convolution 2d function to compute dl_dinput. 
+// It accepts the gradients with a matrix shape for `in`.
+// `kernel` is here the filters associated to the convolution represented as a block.
+// `out` is derivative of the input.
+// Results are computed on each `kernel` channels and stored on their respective `out` channel.
+// `out` is compatible with redux objects.
 void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 
 #endif //!DAHL_TASKS_H
