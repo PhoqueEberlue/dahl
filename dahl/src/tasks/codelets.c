@@ -1359,7 +1359,7 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
                 }
 
                 // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+                out[(k * out_ldz) + (j * out_ldy) + i] += cell_res;
             }
         }
     }
@@ -1421,7 +1421,7 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
                 }
 
                 // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+                out[(k * out_ldz) + (j * out_ldy) + i] += cell_res;
             }
         }
     }

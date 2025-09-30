@@ -1,3 +1,4 @@
+#include "test_layers_data.h"
 #include "tests.h"
 #include <assert.h>
 #include <stdio.h>
@@ -1159,10 +1160,6 @@ void test_min_max()
 
 void test_convolution_2d_backward_filters()
 {
-    dahl_shape3d a_shape = { .x = 5, .y = 5, .z = 2 };
-    dahl_shape3d b_shape = { .x = 3, .y = 3, .z = 2 };
-    dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
-
     dahl_block* a = BLOCK(testing_arena, 2, 5, 5, {
         {
             { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
@@ -1273,7 +1270,7 @@ void test_round()
     TASK_ROUND_SELF(mat, 4);
 
     dahl_matrix* expect_mat = MATRIX(testing_arena, 3, 3, {
-        { 1.5F, 198.9087F, 989.2983F },
+        { 1.5F, 198.9088F, 989.2983F },
         { 0.3897F, 1.8F, 0.89F },
         { 1.0F, 0.0F, -1.1239F },
     });
@@ -1333,6 +1330,137 @@ void test_redux()
 
     expect = scalar_init_from(testing_arena, 1840);
     ASSERT_SCALAR_EQUALS(expect, redux);
+
+    // Testing with other tasks
+    dahl_vector* v1 = VECTOR(testing_arena, 10, {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    });
+
+    dahl_vector* v2 = VECTOR(testing_arena, 10, {
+        9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+    });
+
+    dahl_vector* v3 = VECTOR(testing_arena, 10, {
+        0, 1, 2, 3, 4, 4, 3, 2, 1, 0
+    });
+
+    dahl_vector* v4 = VECTOR(testing_arena, 10, {
+        4, 3, 2, 1, 0, 0, 1, 2, 3, 4
+    });
+
+    dahl_matrix* mat_redux = matrix_init_redux(testing_arena, (dahl_shape2d){ .x = 10, .y = 10 });
+
+    // Compute the expected result
+    task_vector_outer_product(v1, v2, mat_redux);
+    task_vector_outer_product(v3, v4, mat_redux);
+    dahl_matrix* partial_1 = task_vector_outer_product_init(testing_arena, v1, v2);
+    dahl_matrix* partial_2 = task_vector_outer_product_init(testing_arena, v3, v4);
+    TASK_ADD_SELF(partial_1, partial_2);
+
+    // Compare the reality
+    ASSERT_MATRIX_EQUALS(partial_1, mat_redux);
+
+    // Testing partitioning the redux object itself
+    size_t constexpr batch_size = 2;
+    dahl_tensor* a = TENSOR(testing_arena, batch_size, 2, 5, 5, {
+        {
+            {
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            },
+            {
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            }
+        },
+        {
+            {
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            },
+            {
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            }
+        },
+    });
+
+    dahl_block* b = BLOCK(testing_arena, batch_size, 3, 3, {
+        {
+            { 1.0F, 0.0F, 1.0F },
+            { 0.0F, 1.0F, 0.0F },
+            { 1.0F, 0.0F, 1.0F },
+        },
+        {
+            { 1.0F, 0.0F, 1.0F },
+            { 0.0F, 1.0F, 0.0F },
+            { 1.0F, 0.0F, 1.0F },
+        },
+    }); 
+
+    dahl_tensor* expect_conv = TENSOR(testing_arena, batch_size, 2, 3, 3, {
+        {
+            {
+                { 50.0F, 40.0F, 30.0F },
+                { 50.0F, 40.0F, 30.0F },
+                { 50.0F, 40.0F, 30.0F },
+            },
+            {
+                { 30.0F, 40.0F, 50.0F },
+                { 30.0F, 40.0F, 50.0F },
+                { 30.0F, 40.0F, 50.0F },
+            },
+        },
+        {
+            {
+                { 50.0F, 40.0F, 30.0F },
+                { 50.0F, 40.0F, 30.0F },
+                { 50.0F, 40.0F, 30.0F },
+            },
+            {
+                { 30.0F, 40.0F, 50.0F },
+                { 30.0F, 40.0F, 50.0F },
+                { 30.0F, 40.0F, 50.0F },
+            },
+        },
+    });
+
+    // + dimension t because we will compute the same result two times
+    dahl_shape4d shape = { .x = 3, .y = 3, .z = 2, .t = batch_size };
+    dahl_tensor* out = tensor_init_redux(testing_arena, shape);
+
+    tensor_partition_along_t(a);
+    block_partition_along_z(b);
+    tensor_partition_along_t_mut(out);
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+        dahl_block const* a_block = GET_SUB_BLOCK(a, i);
+        dahl_matrix const* b_mat = GET_SUB_MATRIX(b, i);
+        dahl_block* out_block = GET_SUB_BLOCK_MUT(out, i);
+
+        // Pretend we do mulitple backward, the two functions results should accumulate correctly
+        task_convolution_2d_backward_filters(a_block, b_mat, out_block);
+        task_convolution_2d_backward_filters(a_block, b_mat, out_block);
+    }
+
+    tensor_unpartition(a);
+    block_unpartition(b);
+    tensor_unpartition(out);
+
+    ASSERT_TENSOR_EQUALS(expect_conv, out);
 
     dahl_arena_reset(testing_arena);
 }

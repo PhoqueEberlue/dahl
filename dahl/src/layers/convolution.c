@@ -89,10 +89,9 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     return output_batch;
 }
 
-dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
+void _convolution_backward_sample(dahl_arena* arena,
                                   dahl_block const* dl_dout, dahl_block const* input, 
                                   dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters_redux,
-                                  dahl_vector* dl_dbiases_redux,
                                   size_t filter_size, dahl_tensor const* filters)
 {
     // Here we need padding on dl_dout
@@ -127,8 +126,6 @@ dahl_tensor* _convolution_backward_sample(dahl_arena* arena,
     block_unpartition(input);
     block_unpartition(dl_dout_padded);
     block_unpartition(dl_dout);
-
-    return dl_dfilters_redux;
 }
 
 dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
@@ -144,7 +141,6 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     dahl_tensor* dl_dinput_batch_redux = tensor_init_redux(arena, conv->input_shape);
 
     dahl_tensor* dl_dfilters_redux = tensor_init_redux(conv->scratch_arena, conv->filter_shape);
-    dahl_vector* dl_dbiases_redux = vector_init_redux(conv->scratch_arena, conv->filter_shape.t);
 
     // Partition by batch dimension
     tensor_partition_along_t(dl_dout_batch);
@@ -166,7 +162,6 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
             GET_SUB_BLOCK(input_batch, i),
             GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
             dl_dfilters_redux,
-            dl_dbiases_redux,
             conv->filter_size, 
             conv->filters);
     }
