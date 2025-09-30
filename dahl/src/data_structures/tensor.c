@@ -280,12 +280,13 @@ bool tensor_equals(dahl_tensor const* a, dahl_tensor const* b, bool const roundi
                     if (rounding) { res = fp_equals_round(a_val, b_val, precision); }
                     else          { res = fp_equals(a_val, b_val);                  }
 
-                    if (!res)     { break; }
+                    if (!res)     { goto RELEASE; }
                 }
             }
         }
     }
 
+RELEASE:
     tensor_release(a);
     tensor_release(b);
 

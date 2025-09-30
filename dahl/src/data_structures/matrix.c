@@ -247,10 +247,11 @@ bool matrix_equals(dahl_matrix const* a, dahl_matrix const* b, bool const roundi
             if (rounding) { res = fp_equals_round(a_val, b_val, precision); }
             else          { res = fp_equals(a_val, b_val);                  }
 
-            if (!res)     { break; }
+            if (!res)     { goto RELEASE; }
         }
     }
 
+RELEASE:
     matrix_release(a);
     matrix_release(b);
 

@@ -230,11 +230,12 @@ bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding,
                 if (rounding) { res = fp_equals_round(a_val, b_val, precision); }
                 else          { res = fp_equals(a_val, b_val);                  }
 
-                if (!res)     { break; }
+                if (!res)     { goto RELEASE; }
             }
         }
     }
 
+RELEASE:
     block_release(a);
     block_release(b);
 
