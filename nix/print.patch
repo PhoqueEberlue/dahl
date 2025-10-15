@@ -1,0 +1,12 @@
+diff --git a/src/datawizard/interfaces/tensor_filters.c b/src/datawizard/interfaces/tensor_filters.c
+index 5d9a18c799..4102986ab0 100644
+--- a/src/datawizard/interfaces/tensor_filters.c
++++ b/src/datawizard/interfaces/tensor_filters.c
+@@ -229,6 +229,7 @@ static void _starpu_tensor_filter_pick_block(int dim, void *parent_interface, vo
+ 	size_t chunk_pos = (size_t)f->filter_arg_ptr;
+ 
+ 	STARPU_ASSERT_MSG(nparts <= nn, "cannot get %u blocks", nparts);
++	printf("%lu %i %lu\n", chunk_pos, id, nn);
+ 	STARPU_ASSERT_MSG((chunk_pos + id) < nn, "the chosen block should be in the tensor");
+ 
+ 	size_t offset = (chunk_pos + id) * blocksize * elemsize;
