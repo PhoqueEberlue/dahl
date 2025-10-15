@@ -1,3 +1,4 @@
+```md
 ## Forward convolution
 
 ### Single sample
@@ -935,4 +936,5 @@ Finally we scale dl_df by the learning rate and substract the result to the filt
 
 ### Updating weights
 
+```
 
