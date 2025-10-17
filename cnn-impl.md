@@ -866,16 +866,18 @@ So let's take the actual image input that were used as the example on our forwar
 
 And the gradient for sample 0 for filter 0:
 
-  This one ┌ ─ ┬ ─ ┐ ┌───┬───┐
-  └───────►  5   0   │ 7 │ 0 │
-           ├ ─ ┼ ─ ┤ ├───┼───┤
-             0   1   │ 0 │ 0 │
-           └ ─ ┴ ─ ┘ └───┴───┘
-           ┌───┬───┐ ┌───┬───┐
-           │ 1 │ 0 │ │ 0 │ 1 │
-           ├───┼───┤ ├───┼───┤
-           │ 8 │ 0 │ │ 0 │ 6 │
-           └───┴───┘ └───┴───┘
+  This one ┌ ─ ┬ ─ ┐ ┌───┬───┐ ▲
+  └───────►  5   0   │ 7 │ 0 │ │
+           ├ ─ ┼ ─ ┤ ├───┼───┤ │
+             0   1   │ 0 │ 0 │ │
+           └ ─ ┴ ─ ┘ └───┴───┘ │ t: Batch size
+           ┌───┬───┐ ┌───┬───┐ │
+           │ 1 │ 0 │ │ 0 │ 1 │ │
+           ├───┼───┤ ├───┼───┤ │
+           │ 8 │ 0 │ │ 0 │ 6 │ │
+           └───┴───┘ └───┴───┘ ▼
+           ◄─────────────────►
+             z: num filters
 
                          Input
  ┌ ─ ┬ ─ ┬───┬───┐ ┌ ─ ┬ ─ ┬───┬───┐ ┌ ─ ┬ ─ ┬───┬───┐                    dl_df
@@ -934,7 +936,64 @@ etc.
 We repeat this step for each filter, accumulating the results in dl_df buffer.
 Finally we scale dl_df by the learning rate and substract the result to the filters.
 
-### Updating weights
+### Updating biases
 
+As a reminder, biases are stored in a vector with size num_filters.
+
+Here we simply have:
+
+  biases
+ ┌───┬───┐
+ │-1 │ 1 │
+ └───┴───┘
+
+And to compute dl_db we have to sum our gradients over x, y, and t, which means that we sum
+everything but the dimension z:
+
+                     x: forward_output.x
+                     ◄───────►
+         ▲ ┌───┬───┐ ┌───┬───┐ ▲
+         │ │ 5 │ 0 │ │ 7 │ 0 │ │
+         │ ├───┼───┤ ├───┼───┤ │ y: forward_output.y
+         │ │ 0 │ 1 │ │ 0 │ 0 │ │
+t: Batch │ └───┴───┘ └───┴───┘ ▼
+   size  │ ┌───┬───┐ ┌───┬───┐ 
+         │ │ 1 │ 0 │ │ 0 │ 1 │ 
+         │ ├───┼───┤ ├───┼───┤ 
+         │ │ 8 │ 0 │ │ 0 │ 6 │ 
+         ▼ └───┴───┘ └───┴───┘ 
+           ◄─────────────────►                 
+             z: num filters                    
+
+
+         ▲ ┌───┐ ┌───┐ ▲
+         │ │ 5 │ │ 7 │ │
+         │ ├───┤ ├───┤ │ y: forward_output.y
+         │ │ 1 │ │ 0 │ │
+t: Batch │ └───┘ └───┘ ▼
+   size  │ ┌───┐ ┌───┐ 
+         │ │ 1 │ │ 1 │ 
+         │ ├───┤ ├───┤ 
+         │ │ 8 │ │ 6 │ 
+         ▼ └───┘ └───┘ 
+           ◄─────────►                 
+           z: num filters                          
+
+         ▲ ┌───┐ ┌───┐
+         │ │ 6 │ │ 7 │  
+t: Batch │ └───┘ └───┘  
+   size  │ ┌───┐ ┌───┐
+         │ │ 9 │ │ 7 │ 
+         ▼ └───┘ └───┘ 
+           ◄─────────►                 
+           z: num filters                          
+ 
+            ┌───┬───┐
+      dl_db │15 │14 │
+            └───┴───┘
+            ◄───────►
+            z: num filters
+
+
+Then we scale dl_db by the learning rate, and substract it to biases.
 ```
-
