@@ -42,16 +42,9 @@ void print_diff(void const* a, void const* b, char const* a_expr, char const* b_
     rewind(fp2);
 
     char cmd[256];
-    // with custom python script
+    // TODO: we could clearly implement that in C and directly integrate it into the code.
+    // Compare outputs with a custom python script
     snprintf(cmd, sizeof(cmd), "python3 ../diff.py '%s' '%s'", fname1, fname2);
-    // with icdiff
-    // snprintf(cmd, sizeof(cmd), "icdiff --highlight -L '%s' -L '%s' '%s' '%s'", a_expr, b_expr, fname1, fname2);
-    // with diff + diff-so-fancy
-    // snprintf(cmd, sizeof(cmd), "diff -u '%s' '%s' | diff-so-fancy", fname1, fname2);
-    // with git
-    // snprintf(cmd, sizeof(cmd), "git diff --word-diff=color --word-diff-regex=. '%s' '%s'", fname1, fname2);
-    // Launch riff in no-pager mode to print everything in the terminal
-    // snprintf(cmd, sizeof(cmd), "riff '%s' '%s' --no-pager", fname1, fname2);
     system(cmd);
 
     temp_file_delete(fname1, fp1);

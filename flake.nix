@@ -96,9 +96,6 @@
               # StarPU itself with runtime dependencies
               starpu-local
               hwloc
-              # (lib.optionals enableCUDA [
-              #   cudaPackages.cuda_cudart cudaPackages.cuda_nvcc 
-              #   cudaPackages.cudatoolkit nixglhost ])
 
               # DAHL misc
               clang
@@ -106,10 +103,6 @@
               gzip
               gnuplot
               alumet-0_9_0
-
-              # riffdiff
-              # icdiff
-              # diff-so-fancy
 
               python312
               python312Packages.termcolor
