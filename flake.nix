@@ -42,10 +42,10 @@
         #############################################
         ### Packages produced by the StarPU flake ###
         # Local version of StarPU using sources in `nix/starpu/src`
-        starpu-local = starpu.packages.${system}.starpu-local.override {
+        starpu-local = (starpu.packages.${system}.starpu-local.override {
           enableCUDA = enableCUDA;
           enableDebug = true;
-        };
+        }).overrideAttrs { doCheck = false; }; # Disable make check for the local version
 
         # Gitlab version of StarPU using master branch
         starpu-master = starpu.packages.${system}.starpu-master.override {
@@ -94,7 +94,7 @@
               fxt
 
               # StarPU itself with runtime dependencies
-              starpu-local
+              starpu-master
               hwloc
 
               # DAHL misc

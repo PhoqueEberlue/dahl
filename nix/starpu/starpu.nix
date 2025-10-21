@@ -41,8 +41,8 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchgit {
     url = "https://gitlab.inria.fr/starpu/starpu.git";
-    rev = "43dbab63bec68869440f76456ee174093c6b886c";
-    hash = "sha256-EIHzPbKipf0wiTFV+1Iny3wBcwlOWOUjgfWsvWRvPDE=";
+    rev = "c8c9c9c473c09e2654642d1ce8da76fb59ac9871";
+    hash = "sha256-joH3uWqe22aW0kO28KodhhZgfKI41+Y93zxU8I+Bg/4=";
   };
 
   # Runtime build dependencies
