@@ -39,15 +39,10 @@ stdenv.mkDerivation (finalAttrs: {
   inherit enableCUDA;
   inherit enableDebug;
 
-  # src = fetchzip {
-  #   url = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/starpu-${finalAttrs.version}.tar.gz";
-  #   hash = "sha256-6AjQr+2nSJ/uYjJ6II4vJgxj5nHuvlsLvPGZZv/cU8M=";
-  # };
-
   src = fetchgit {
     url = "https://gitlab.inria.fr/starpu/starpu.git";
-    rev = "d1efb17ae6d5fbc77e88e01ad7d7abe8fe68cfb8";
-    hash = "sha256-Ld5zL3xWamtJGZQftgqzohKVzT619DombNpDqtNYrD4=";
+    rev = "43dbab63bec68869440f76456ee174093c6b886c";
+    hash = "sha256-EIHzPbKipf0wiTFV+1Iny3wBcwlOWOUjgfWsvWRvPDE=";
   };
 
   # Runtime build dependencies

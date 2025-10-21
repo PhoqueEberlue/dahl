@@ -20,6 +20,7 @@ rustPlatform.buildRustPackage rec {
   nativeBuildInputs = [ openssl pkg-config ];
 
   cargoHash = "sha256-hQTGTlv3TuMi36bJKh6vO5eE27a6+hjat9EYWRi2rbc=";
+  # TODO: Disabled for now because one check fails, don't know why
   doCheck = false;
   enableParallelBuilding = true;
 
