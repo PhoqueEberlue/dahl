@@ -6,6 +6,10 @@
 - pourquoi avec 32 de batch size starpu n'arrive pas bien a répartir les taches ? essayer avec 64 ?
   128 ?
  
+- Should we keep `+=` in the functions implement redux, so that when we're not using redux mode it
+  still works?????
+- tests for vector matrix product
+
 - Remove diff.py and simply implement that in C so we have the exact digit by digit comparison, because right now it's more a char to char comparison,
   which doesn't work anymore when one value is shifted, e.g.: 12.001 vs 1.001
 
