@@ -4,23 +4,57 @@ Distributed, Arbitrary and Heterogeneous Learning
 
 ## Goals
 
-Providing a Distributed Learning runtime, that can run on heterogenous platforms (a myriad of different machines with multiples CPU and/or GPU), and with arbitrary execution order of the operations.
+DAHL is a machine learning framework, developed as part of my thesis, which aims for the reduction
+of AI training electricity consumption.
 
-This will let us room to develop energy-aware load balancing algorithms.
+The current tendency in deep learning (or big models in general), seems to be based
+on massive investments on enormous clusters with homogeneous machines, because it makes 
+parallelizing, indeed very efficient, easy to implement, but has a critical ecological impact.
 
+On the other hand, supporting heterogeneous environments takes a lot more effort in parallelizing
+and scheduling, but we think it could provide non-negligible improvements in terms of ecological
+impact and economical costs.
+In fact, if we break the algorithmic homogeneous constraint, the options to train deep learning
+models won't be limited to "buying the same machine with the latest Nvidia GPU in hundred of copies"
+anymore but could open the door to "maybe I will only buy fifty of those and combine their power
+with existing machines available in my lab/company".
+
+That's why we believe that leveraging the heterogeneity of machines and clusters is the key for more
+sustainable AI.
+
+The first step is to implement a machine learning framework that is able to handle heterogeneity
+at the machine level. We also want to support arbitrary execution of operations in order to develop
+energy-aware load balancing algorithms.
+
+In a second time, we would like to expand our framework to multiple machines.
 
 ## Architecture
 
-Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to support heterogenous computing at a single machine level.
+Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to support heterogeneous computing at a single machine level.
 
 ## Project structure
 
-- `examples/` contains ML training examples
-- `include/` expose public headers of DAHL
-- `kernels/` CUDA kernels
-- `tests/` unit testing for DAHL
-- `design-talk/` here I discuss about the problems faced during the implementation
-- `flake.nix` Nix flake with every needed dependency for developping DAHL
+```
+├── dahl/
+│   ├── datasets/    Datasets directory with download scripts
+│   ├── examples/    Examples of machine leraning models
+│   ├── include/     DAHL public headers
+│   ├── kernels/     CUDA kernels
+│   ├── src/         DAHL sources
+│   └── tests/       Unit testing
+├── nix/
+│   ├── alumet/      Alumet power measuring software
+│   └── starpu/      StarPU flake and dependencies
+├── notes/
+│   ├── archives/
+│   ├── design/      Discussions concrening problems faced during implementation
+│   ├── flamegraphs/
+│   └── lab/         My laboratory notebook
+├── python-version/  Pytorch equivalent of CNN implemented with DAHL
+├── scripts/
+├── flake.lock
+└── flake.nix        Nix flake that provide a reproducible development environment
+```
 
 ## Building
 
@@ -35,6 +69,7 @@ nix develop
 
 Compiling
 ```bash
+cd dahl
 mkdir build
 cd build
 cmake ..
@@ -47,7 +82,7 @@ Try the tests to see if it works with `./tests/`
 
 The first available example is a CNN trained with the fashion mnist dataset
 
-Download the dataset, see `./datasets/`
+Download the dataset, see `./dahl/datasets/`
 
 ```bash
 cd ./datasets
