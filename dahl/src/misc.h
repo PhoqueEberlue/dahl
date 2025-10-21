@@ -11,6 +11,6 @@ char* space_offset(const size_t offset);
 int read_int(FILE *file);
 
 FILE* temp_file_create(char* filename);
-FILE* temp_file_delete(char* filename, FILE* fp);
+void temp_file_delete(char* filename, FILE* fp);
 
 #endif //!DAHL_MISC_H

@@ -38,7 +38,7 @@ FILE* temp_file_create(char* filename)
     return fp;
 }
 
-FILE* temp_file_delete(char* filename, FILE* fp)
+void temp_file_delete(char* filename, FILE* fp)
 {
     fclose(fp);
     unlink(filename);
