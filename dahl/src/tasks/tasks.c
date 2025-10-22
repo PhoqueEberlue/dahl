@@ -441,6 +441,29 @@ void task_vector_shuffle(dahl_vector* vec)
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
 
+void task_vector_matrix_product(dahl_vector const* vec, dahl_matrix const* mat, dahl_vector* out)
+{
+    int ret = starpu_task_insert(&cl_vector_matrix_product,
+                             STARPU_R, vec->handle,
+                             STARPU_R, mat->handle,
+                             STARPU_W, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+dahl_vector* task_vector_matrix_product_init(dahl_arena* arena, dahl_vector const* vec, dahl_matrix const* mat)
+{
+    dahl_shape2d mat_shape = matrix_get_shape(mat);
+    size_t vec_len = vector_get_len(vec);
+    
+    assert(mat_shape.y == vec_len);
+
+    dahl_vector* out = vector_init(arena, mat_shape.x);
+
+    task_vector_matrix_product(vec, mat, out);
+
+    return out;
+}
+
 // ---------------------------------------- TRAITS ----------------------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
@@ -499,11 +522,16 @@ void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(c);
+
+    // Check and update mode if `c` is using redux mode.
+    enum starpu_data_access_mode mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    cl_any_add.modes[2] = mode;
+
     int ret = starpu_task_insert(&cl_any_add,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
-                                 STARPU_W, traits->get_handle(c), 0);
+                                 mode, traits->get_handle(c), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 

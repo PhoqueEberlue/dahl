@@ -2,6 +2,7 @@
 #include "tests.h"
 #include <assert.h>
 #include <stdio.h>
+#include "../src/data_structures/data_structures.h"
 
 // Asserts that "a cross correlation b = expect"
 void assert_matrix_cross_correlation(dahl_fp* a, dahl_shape2d a_shape,
@@ -1286,7 +1287,7 @@ void test_round()
     dahl_arena_reset(testing_arena);
 }
 
-void test_redux()
+void test_redux_sum()
 {
     size_t constexpr nx = 20;
     size_t constexpr ny = 10;
@@ -1331,7 +1332,11 @@ void test_redux()
     expect = scalar_init_from(testing_arena, 1840);
     ASSERT_SCALAR_EQUALS(expect, redux);
 
-    // Testing with other tasks
+    dahl_arena_reset(testing_arena);
+}
+
+void test_redux_vector_outer_product()
+{
     dahl_vector* v1 = VECTOR(testing_arena, 10, {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     });
@@ -1350,9 +1355,10 @@ void test_redux()
 
     dahl_matrix* mat_redux = matrix_init_redux(testing_arena, (dahl_shape2d){ .x = 10, .y = 10 });
 
-    // Compute the expected result
     task_vector_outer_product(v1, v2, mat_redux);
     task_vector_outer_product(v3, v4, mat_redux);
+
+    // Compute the expected result
     dahl_matrix* partial_1 = task_vector_outer_product_init(testing_arena, v1, v2);
     dahl_matrix* partial_2 = task_vector_outer_product_init(testing_arena, v3, v4);
     TASK_ADD_SELF(partial_1, partial_2);
@@ -1360,9 +1366,14 @@ void test_redux()
     // Compare the reality
     ASSERT_MATRIX_EQUALS(partial_1, mat_redux);
 
+    dahl_arena_reset(testing_arena);
+}
+
+void test_redux_convolution_2d_backward_filters()
+{
     // Testing partitioning the redux object itself
-    size_t constexpr batch_size = 2;
-    dahl_tensor* a = TENSOR(testing_arena, batch_size, 2, 5, 5, {
+    size_t constexpr n_samples = 2;
+    dahl_tensor* a = TENSOR(testing_arena, n_samples, 2, 5, 5, {
         {
             {
                 { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
@@ -1397,7 +1408,7 @@ void test_redux()
         },
     });
 
-    dahl_block* b = BLOCK(testing_arena, batch_size, 3, 3, {
+    dahl_block* b = BLOCK(testing_arena, n_samples, 3, 3, {
         {
             { 1.0F, 0.0F, 1.0F },
             { 0.0F, 1.0F, 0.0F },
@@ -1408,9 +1419,9 @@ void test_redux()
             { 0.0F, 1.0F, 0.0F },
             { 1.0F, 0.0F, 1.0F },
         },
-    }); 
+    });
 
-    dahl_tensor* expect_conv = TENSOR(testing_arena, batch_size, 2, 3, 3, {
+    dahl_tensor* expect_conv = TENSOR(testing_arena, n_samples, 2, 3, 3, {
         {
             {
                 { 50.0F, 40.0F, 30.0F },
@@ -1438,22 +1449,23 @@ void test_redux()
     });
 
     // + dimension t because we will compute the same result two times
-    dahl_shape4d shape = { .x = 3, .y = 3, .z = 2, .t = batch_size };
-    dahl_tensor* out = tensor_init_redux(testing_arena, shape);
+    dahl_shape4d shape = { .x = 3, .y = 3, .z = 2, .t = n_samples };
+    dahl_tensor* out = tensor_init(testing_arena, shape);
 
     tensor_partition_along_t(a);
     block_partition_along_z(b);
     tensor_partition_along_t_mut(out);
 
-    for (size_t i = 0; i < batch_size; i++)
+    for (size_t i = 0; i < n_samples; i++)
     {
         dahl_block const* a_block = GET_SUB_BLOCK(a, i);
         dahl_matrix const* b_mat = GET_SUB_MATRIX(b, i);
-        dahl_block* out_block = GET_SUB_BLOCK_MUT(out, i);
+        dahl_block* out_block_redux = GET_SUB_BLOCK_MUT(out, i);
+        block_enable_redux(out_block_redux);
 
         // Pretend we do mulitple backward, the two functions results should accumulate correctly
-        task_convolution_2d_backward_filters(a_block, b_mat, out_block);
-        task_convolution_2d_backward_filters(a_block, b_mat, out_block);
+        task_convolution_2d_backward_filters(a_block, b_mat, out_block_redux);
+        task_convolution_2d_backward_filters(a_block, b_mat, out_block_redux);
     }
 
     tensor_unpartition(a);
@@ -1461,6 +1473,73 @@ void test_redux()
     tensor_unpartition(out);
 
     ASSERT_TENSOR_EQUALS(expect_conv, out);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_redux_add()
+{
+    dahl_block* a = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 2, 9 },
+            { 2, 7 },
+        },
+        {
+            { 4, 5 },
+            { 3, 5 },
+        },
+    });
+
+    dahl_block* b = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 0, 7 },
+            { 9, 6 },
+        },
+        {
+            { -7, 3 },
+            { 2, -1 },
+        },
+    });
+
+    dahl_block* c = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 8, 2 },
+            { 3, 3 },
+        },
+        {
+            { -9, 4 },
+            { 7, -2 },
+        },
+    });
+
+    dahl_block* d = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 2, 1 },
+            { 0, -1 },
+        },
+        {
+            { 0, 4 },
+            { 3, -2 },
+        },
+    });
+
+    dahl_block* out = block_init_redux(testing_arena, (dahl_shape3d){ .x = 3, .y = 3, .z = 2 });
+
+    TASK_ADD(a, b, out);
+    TASK_ADD(c, d, out);
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 3, 3, {
+        {
+            { 12, 19 },
+            { 14, 15 },
+        },
+        {
+            { -12, 16 },
+            { 15, 0 },
+        },
+    });
+
+    ASSERT_BLOCK_EQUALS(expect, out);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1504,5 +1583,8 @@ void test_tasks()
     test_convolution_2d_backward_filters();
     test_convolution_2d_backward_input();
     test_round();
-    test_redux();
+    test_redux_sum();
+    test_redux_vector_outer_product();
+    test_redux_convolution_2d_backward_filters();
+    test_redux_add();
 }

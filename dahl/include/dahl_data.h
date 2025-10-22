@@ -63,6 +63,8 @@ dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape, dahl_fp min, da
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* data);
 
+void tensor_enable_redux(dahl_tensor*);
+
 // Set values of the `tensor` from an array `data` that should be of the same size.
 // This is a blocking function.
 void tensor_set_from(dahl_tensor*, dahl_fp const* data);
@@ -135,6 +137,8 @@ dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape, dahl_fp min, dahl
 // - shape: dahl_shape3d object describing the dimensions of the block
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data);
+
+void block_enable_redux(dahl_block*);
 
 // Set values of the `block` from an array `data` that should be of the same size.
 // This is a blocking function.
@@ -221,6 +225,8 @@ dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape, dahl_fp min, da
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
+
+void matrix_enable_redux(dahl_matrix*);
 
 // Get the value at index x,y. Requires to have acquired the matrix, either with `matrix_acquire()` or `matrix_acquire_mut()`.
 dahl_fp matrix_get_value(dahl_matrix const*, size_t x, size_t y);
@@ -311,6 +317,8 @@ dahl_vector* vector_init_random(dahl_arena*, size_t len, dahl_fp min, dahl_fp ma
 // - shape: dahl_shape2d object describing the dimensions of the vector
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
+
+void vector_enable_redux(dahl_vector*);
 
 // Returns the vector len
 size_t vector_get_len(dahl_vector const*);

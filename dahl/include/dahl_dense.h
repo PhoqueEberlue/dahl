@@ -7,6 +7,7 @@ typedef struct
 {
     dahl_shape2d input_shape;
     dahl_shape2d output_shape;
+    dahl_shape2d weights_shape;
 
     dahl_matrix* weights;
     dahl_vector* biases;

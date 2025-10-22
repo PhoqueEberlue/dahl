@@ -140,6 +140,12 @@ dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const
 // Shuffles directly `vec`.
 void task_vector_shuffle(dahl_vector* vec);
 
+// Performs vector matrix product. This is different than matrix vector product because it places
+// the vector as the first argument of the operation, giving different dimension as result:
+// The length of `vec` should be equal to dimension `mat_y`, and the output will be of len mat_x
+void task_vector_matrix_product(dahl_vector const* vec, dahl_matrix const* mat, dahl_vector* out);
+dahl_vector* task_vector_matrix_product_init(dahl_arena*, dahl_vector const* vec, dahl_matrix const* mat);
+
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);
 void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits);
@@ -234,6 +240,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 // Performs `c` = `a` + `b`, where:
 // - `+` is the value by value addition
 // - `a`, `b` and `c` are dahl_any objects of the same shape
+// `c` is compatible with redux objects.
 #define TASK_ADD(A, B, C)                               \
     do {                                                \
         _Static_assert(TYPES_MATCH((A), (B)),           \
@@ -247,6 +254,8 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 // - `+` is the value by value addition
 // - `a_self` and `b` are dahl_any objects of the same shape
 // - `a_self` is modified by the function with the addition result
+// /!\ Care: `c` is NOT compatible with redux objects on the self version.
+// TODO Find a way to make it work
 #define TASK_ADD_SELF(A_SELF, B) TASK_ADD(A_SELF, B, A_SELF)
 
 // Add `value` to every elements of `in` and put the result in `out`

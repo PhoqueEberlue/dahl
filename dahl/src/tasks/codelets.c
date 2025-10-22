@@ -81,6 +81,33 @@ void tensor_sum_xyt_axes(void* buffers[2], void* cl_arg)
     }
 }
 
+void tensor_zero(void *buffers[1], void *cl_arg)
+{
+	// Tensor
+    size_t const nx = STARPU_TENSOR_GET_NX(buffers[0]);
+    size_t const ny = STARPU_TENSOR_GET_NY(buffers[0]);
+    size_t const nz = STARPU_TENSOR_GET_NZ(buffers[0]);
+    size_t const nt = STARPU_TENSOR_GET_NT(buffers[0]);
+    size_t const ldy = STARPU_TENSOR_GET_LDY(buffers[0]);
+    size_t const ldz = STARPU_TENSOR_GET_LDZ(buffers[0]);
+    size_t const ldt = STARPU_TENSOR_GET_LDT(buffers[0]);
+    dahl_fp* data = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[0]);
+
+    for (int t = 0; t < nt; t++)
+    {
+        for (int z = 0; z < nz; z++)
+        {
+            for (int y = 0; y < ny; y++)
+            {
+                for (int x = 0; x < nx; x++)
+                {
+                    data[(t * ldt) + (z * ldz) + (y * ldy) + x] = 0;
+                }
+            }
+        }
+    }
+}
+
 void tensor_accumulate(void *buffers[2], void *cl_arg)
 {
 	// dst tensor accumulator
@@ -245,6 +272,28 @@ void block_add_padding(void* buffers[2], void* cl_arg)
             }
         }
 
+    }
+}
+
+void block_zero(void *buffers[1], void *cl_arg)
+{
+	// Block
+    size_t const nx = STARPU_BLOCK_GET_NX(buffers[0]);
+    size_t const ny = STARPU_BLOCK_GET_NY(buffers[0]);
+    size_t const nz = STARPU_BLOCK_GET_NZ(buffers[0]);
+    size_t const ldy = STARPU_BLOCK_GET_LDY(buffers[0]);
+    size_t const ldz = STARPU_BLOCK_GET_LDZ(buffers[0]);
+    dahl_fp* data = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[0]);
+
+    for (int z = 0; z < nz; z++)
+    {
+        for (int y = 0; y < ny; y++)
+        {
+            for (int x = 0; x < nx; x++)
+            {
+                data[(z * ldz) + (y * ldy) + x] = 0;
+            }
+        }
     }
 }
 
@@ -604,6 +653,23 @@ void matrix_rotate_180(void* buffers[2], void* cl_arg)
     }
 }
 
+void matrix_zero(void *buffers[1], void *cl_arg)
+{
+	// Matrix
+    size_t const nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp* data = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    for (int y = 0; y < ny; y++)
+    {
+        for (int x = 0; x < nx; x++)
+        {
+            data[(y * ld) + x] = 0;
+        }
+    }
+}
+
 void matrix_accumulate(void *buffers[2], void *cl_arg)
 {
 	// dst matrix accumulator
@@ -764,6 +830,47 @@ void vector_shuffle(void* buffers[1], void* cl_arg)
         dahl_fp tmp = vec[i];
         vec[i] = vec[j];
         vec[j] = tmp;
+    }
+}
+
+void vector_matrix_product(void* buffers[3], void* cl_arg)
+{
+    // Input vector
+    size_t const vec_len = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp const* vec = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    // Input matrix
+    size_t const mat_nx = STARPU_MATRIX_GET_NX(buffers[1]);
+    size_t const mat_ny = STARPU_MATRIX_GET_NY(buffers[1]);
+    size_t const mat_ld = STARPU_MATRIX_GET_LD(buffers[1]);
+    dahl_fp const* mat = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+
+    // Output vector
+    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[2]);
+
+    assert(vec_len == mat_ny);
+    assert(out_len == mat_nx);
+
+    // Loop through x,y of the matrix
+    for (size_t y = 0; y < mat_ny; y++)
+    {
+        for (size_t x = 0; x < mat_nx; x++)
+        {
+            out[x] += vec[y] * mat[(y * mat_ld) + x];
+        }
+    }
+}
+
+void vector_zero(void *buffers[1], void *cl_arg)
+{
+	// Vector
+    size_t const nx = STARPU_VECTOR_GET_NX(buffers[0]);
+    dahl_fp* data = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
+
+    for (int x = 0; x < nx; x++)
+    {
+        data[x] = 0;
     }
 }
 
@@ -1359,7 +1466,7 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
                 }
 
                 // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] += cell_res;
+                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
             }
         }
     }
@@ -1421,7 +1528,7 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
                 }
 
                 // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] += cell_res;
+                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
             }
         }
     }
