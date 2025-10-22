@@ -368,7 +368,6 @@ void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_ma
 // `out` is derivative of the filters with respect to the input.
 // Results are computed on each `in` channels and stored on their respective `out` channel.
 // `out` is compatible with redux objects.
-// Care, because of redux, the function does increment `out` values, if `out` isn't empty it could produce unexpected results.
 void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out);
 
 // Specialized convolution 2d function to compute dl_dinput. 
@@ -377,7 +376,6 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
 // `out` is derivative of the input.
 // Results are computed on each `kernel` channels and stored on their respective `out` channel.
 // `out` is compatible with redux objects.
-// Care, because of redux, the function does increment `out` values, if `out` isn't empty it could produce unexpected results.
 void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 
 #endif //!DAHL_TASKS_H

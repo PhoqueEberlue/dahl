@@ -1544,6 +1544,21 @@ void test_redux_add()
     dahl_arena_reset(testing_arena);
 }
 
+void test_vector_matrix_product()
+{
+    dahl_vector* vector = VECTOR(testing_arena, 3, { 1, 2, 3 });
+
+    dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
+        { 3.0F, 1.0F,-8.0F,-3.0F },
+        {-7.0F,-3.0F, 3.0F, 2.0F },
+        { 1.0F, 1.0F, 9.0F, 1.0F },
+    });
+
+    dahl_vector* expect = VECTOR(testing_arena, 4, { -8, -2, 25, 4 });
+    dahl_vector* out = task_vector_matrix_product_init(testing_arena, vector, matrix);
+    ASSERT_VECTOR_EQUALS(expect, out);
+}
+
 void test_tasks()
 {
     test_matrix_cross_correlation_1();
@@ -1587,4 +1602,5 @@ void test_tasks()
     test_redux_vector_outer_product();
     test_redux_convolution_2d_backward_filters();
     test_redux_add();
+    test_vector_matrix_product();
 }
