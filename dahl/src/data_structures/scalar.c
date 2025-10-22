@@ -58,6 +58,11 @@ dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp const value)
     return res;
 }
 
+bool _scalar_get_is_redux(void const* scalar)
+{
+    return ((dahl_scalar const*)scalar)->is_redux;
+}
+
 dahl_fp scalar_get_value(dahl_scalar const* scalar)
 {
     starpu_data_acquire(scalar->handle, STARPU_R);

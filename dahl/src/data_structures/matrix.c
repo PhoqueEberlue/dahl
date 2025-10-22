@@ -28,10 +28,12 @@ void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     matrix->meta = md;
     matrix->is_redux = is_redux;
 
+    if (is_redux) { matrix_enable_redux(matrix); }
+
     return matrix;
 }
 
-dahl_matrix* matrix_init(dahl_arena* arena, dahl_shape2d const shape)
+dahl_matrix* _matrix_init_data(dahl_arena* arena, dahl_shape2d const shape, bool is_redux)
 {
     size_t n_elems = shape.x * shape.y;
     dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
@@ -51,42 +53,17 @@ dahl_matrix* matrix_init(dahl_arena* arena, dahl_shape2d const shape)
 
     dahl_arena_attach_handle(arena, handle);
 
-    return _matrix_init_from_ptr(arena, handle, data, false);
+    return _matrix_init_from_ptr(arena, handle, data, is_redux);
+}
+
+dahl_matrix* matrix_init(dahl_arena* arena, dahl_shape2d const shape)
+{
+    return _matrix_init_data(arena, shape, false);
 }
 
 dahl_matrix* matrix_init_redux(dahl_arena* arena, dahl_shape2d const shape)
 {
-    size_t n_elems = shape.x * shape.y;
-    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
-    for (size_t i = 0; i < n_elems; i++) { data[i] = 0.0F; }
-
-    // Here no need to attach the handle to the arena, because StarPU manages the memory itself
-    // that's also why we pass -1, and NULL
-    starpu_data_handle_t handle = nullptr;
-    starpu_matrix_data_register(
-        &handle,
-        STARPU_MAIN_RAM,
-        (uintptr_t)data,
-        shape.x,
-        shape.x,
-        shape.y,
-        sizeof(dahl_fp)
-    );
-
-    dahl_fp value = 0;
-
-    char *fill_args;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
-                        // TODO: big probably that this causes problems if we change object shape during their lifetime
-                        // However it *shouldn't* be a problem for redux objects? Maybe enforce that?
-                         STARPU_VALUE, &n_elems, sizeof(size_t),
-                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
-
-    // Attach the reduction methods
-    starpu_data_set_reduction_methods_with_args(handle, &cl_matrix_accumulate, nullptr, &cl_any_fill, fill_args);
-
-    return _matrix_init_from_ptr(arena, handle, data, true);
+    return _matrix_init_data(arena, shape, true);
 }
 
 dahl_matrix* matrix_init_from(dahl_arena* arena, dahl_shape2d const shape, dahl_fp const* data)
@@ -146,6 +123,17 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d co
     starpu_data_invalidate_submit(matrix->handle);
 
     return res;
+}
+
+void matrix_enable_redux(dahl_matrix* matrix)
+{
+    matrix->is_redux = true;
+    starpu_data_set_reduction_methods(matrix->handle, &cl_matrix_accumulate, &cl_matrix_zero);
+}
+
+bool _matrix_get_is_redux(void const* matrix)
+{
+    return ((dahl_matrix const*)matrix)->is_redux;
 }
 
 void matrix_set_from(dahl_matrix* matrix, dahl_fp const* data)

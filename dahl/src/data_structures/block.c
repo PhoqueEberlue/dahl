@@ -29,10 +29,12 @@ void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_
     block->meta = md;
     block->is_redux = is_redux;
 
+    if (is_redux) { block_enable_redux(block); }
+
     return block;
 }
 
-dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
+dahl_block* _block_init_data(dahl_arena* arena, dahl_shape3d const shape, bool is_redux)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
     dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
@@ -54,44 +56,17 @@ dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 
     dahl_arena_attach_handle(arena, handle); 
 
-    return _block_init_from_ptr(arena, handle, data, false);
+    return _block_init_from_ptr(arena, handle, data, is_redux);
+}
+
+dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
+{
+    return _block_init_data(arena, shape, false);
 }
 
 dahl_block* block_init_redux(dahl_arena* arena, dahl_shape3d const shape)
 {
-    size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
-    for (size_t i = 0; i < n_elems; i++) { data[i] = 0.0F; }
-
-    // Here no need to attach the handle to the arena, because StarPU manages the memory itself
-    // that's also why we pass -1, and NULL
-    starpu_data_handle_t handle = nullptr;
-    starpu_block_data_register(
-        &handle,
-        STARPU_MAIN_RAM,
-        (uintptr_t)data,
-        shape.x,
-        shape.x*shape.y,
-        shape.x,
-        shape.y,
-        shape.z,
-        sizeof(dahl_fp)
-    );
-
-    dahl_fp value = 0;
-
-    char *fill_args;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
-                        // TODO: big probably that this causes problems if we change object shape during their lifetime
-                        // However it *shouldn't* be a problem for redux objects? Maybe enforce that?
-                         STARPU_VALUE, &n_elems, sizeof(size_t),
-                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
-
-    // Attach the reduction methods
-    starpu_data_set_reduction_methods_with_args(handle, &cl_block_accumulate, nullptr, &cl_any_fill, fill_args);
-
-    return _block_init_from_ptr(arena, handle, data, true);
+    return _block_init_data(arena, shape, true);
 }
 
 dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
@@ -120,6 +95,17 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape, dahl_
     block_release(block);
 
     return block;
+}
+
+void block_enable_redux(dahl_block* block)
+{
+    block->is_redux = true;
+    starpu_data_set_reduction_methods(block->handle, &cl_block_accumulate, &cl_block_zero);
+}
+
+bool _block_get_is_redux(void const* block)
+{
+    return ((dahl_block const*)block)->is_redux;
 }
 
 void block_set_from(dahl_block* block, dahl_fp const* data)
@@ -464,7 +450,7 @@ void _block_print_file(void const* vblock, FILE* fp, int8_t const precision)
 	}
 	fprintf(fp, "}\n");
 
-	block_acquire(block);
+	block_release(block);
 }
 
 void block_print(dahl_block const* block)
@@ -490,7 +476,7 @@ void block_image_display(dahl_block const* block, size_t const scale_factor)
 
     FILE *fp = popen(cmd, "w");
     // Use PPM format with P6 for RGB
-    fprintf(fp, "P6\n%d %d\n255\n", shape.x, shape.y);
+    fprintf(fp, "P6\n%d %d\n255\n", (int)shape.x, (int)shape.y);
 
     // normalize to 0..255
     dahl_fp min = block_get_value(block, 0, 0, 0);

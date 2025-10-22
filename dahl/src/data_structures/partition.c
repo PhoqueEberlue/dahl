@@ -33,7 +33,7 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
             origin_arena,
             p->handles[i], 
             (dahl_fp*)starpu_data_get_local_ptr(p->handles[i]),
-            false
+            false // redux mode disabled by default
         );
     }
 

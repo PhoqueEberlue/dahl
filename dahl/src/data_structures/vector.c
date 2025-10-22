@@ -15,10 +15,12 @@ void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     vector->data = data;
     vector->is_redux = is_redux;
 
+    if (is_redux) { vector_enable_redux(vector); }
+
     return vector;
 }
 
-dahl_vector* vector_init(dahl_arena* arena, size_t const len)
+dahl_vector* _vector_init_data(dahl_arena* arena, size_t const len, bool is_redux)
 {
     dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
 
@@ -38,31 +40,14 @@ dahl_vector* vector_init(dahl_arena* arena, size_t const len)
     return _vector_init_from_ptr(arena, handle, data, false);
 }
 
+dahl_vector* vector_init(dahl_arena* arena, size_t const len)
+{
+    return _vector_init_data(arena, len, false);
+}
+
 dahl_vector* vector_init_redux(dahl_arena* arena, size_t const len)
 {
-    dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
-    for (size_t i = 0; i < len; i++) { data[i] = 0.0F; }
-
-    // Here no need to attach the handle to the arena, because StarPU manages the memory itself
-    // that's also why we pass -1, and NULL
-    starpu_data_handle_t handle = nullptr;
-    starpu_vector_data_register(&handle, STARPU_MAIN_RAM, (uintptr_t)data, len, sizeof(dahl_fp));
-
-    // TODO: big probably that this causes problems if we change object shape during their lifetime
-    // However it *shouldn't* be a problem for redux objects? Maybe enforce that?
-    size_t nb_elem = len;
-    dahl_fp value = 0;
-
-    char *fill_args;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
-                         STARPU_VALUE, &nb_elem, sizeof(size_t),
-                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
-
-    // Attach the reduction methods
-    starpu_data_set_reduction_methods_with_args(handle, &cl_vector_accumulate, nullptr, &cl_any_fill, fill_args);
-
-    return _vector_init_from_ptr(arena, handle, data, true);
+    return _vector_init_data(arena, len, true);
 }
 
 dahl_vector* vector_init_from(dahl_arena* arena, size_t const len, dahl_fp const* data)
@@ -96,6 +81,17 @@ size_t vector_get_len(dahl_vector const *const vector)
 starpu_data_handle_t _vector_get_handle(void const* vector)
 {
     return ((dahl_vector*)vector)->handle;
+}
+
+void vector_enable_redux(dahl_vector* vector)
+{
+    vector->is_redux = true;
+    starpu_data_set_reduction_methods(vector->handle, &cl_vector_accumulate, &cl_vector_zero);
+}
+
+bool _vector_get_is_redux(void const* vector)
+{
+    return ((dahl_vector const*)vector)->is_redux;
 }
 
 size_t _vector_get_nb_elem(void const* vector)

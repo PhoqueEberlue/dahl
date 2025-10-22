@@ -23,6 +23,7 @@ typedef const struct _dahl_traits
     dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
     void (*print_file)(void const*, FILE*, int8_t const);
+    bool (*get_is_redux)(void const*);
     dahl_type type;
 } dahl_traits;
 
@@ -140,6 +141,12 @@ size_t _block_get_nb_elem(void const* block);
 size_t _matrix_get_nb_elem(void const* matrix);
 size_t _vector_get_nb_elem(void const* vector);
 size_t _scalar_get_nb_elem(__attribute__((unused))void const* scalar); // Defined just for compatibility
+
+bool _tensor_get_is_redux(void const* tensor);
+bool _block_get_is_redux(void const* block);
+bool _matrix_get_is_redux(void const* matrix);
+bool _vector_get_is_redux(void const* vector);
+bool _scalar_get_is_redux(void const* scalar);
 
 void _tensor_print_file(void const*, FILE*, int8_t const precision);
 void _block_print_file(void const*, FILE*, int8_t const precision);

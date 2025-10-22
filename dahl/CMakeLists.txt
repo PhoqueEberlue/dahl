@@ -54,10 +54,10 @@ add_executable(tests
     ${dahl_tests}
 )
 
-add_executable(example-mnist
-    "./examples/fashion_mnist.c"
+add_executable(basic_cnn
+    "./examples/basic_cnn.c"
 )
 
-target_link_libraries(dahl PRIVATE czmq scal_obj -fsanitize=undefined)
+target_link_libraries(dahl PRIVATE scal_obj -fsanitize=undefined)
 target_link_libraries(tests PUBLIC dahl -fsanitize=undefined)
-target_link_libraries(example-mnist PUBLIC dahl -fsanitize=undefined)
+target_link_libraries(basic_cnn PUBLIC dahl -fsanitize=undefined)
