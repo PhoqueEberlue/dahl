@@ -91,7 +91,7 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
 
 void _convolution_backward_sample(dahl_arena* arena,
                                   dahl_block const* dl_dout, dahl_block const* input, 
-                                  dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters_redux,
+                                  dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters,
                                   size_t filter_size, dahl_tensor const* filters)
 {
     // Here we need padding on dl_dout
@@ -114,8 +114,12 @@ void _convolution_backward_sample(dahl_arena* arena,
     for (int f = 0; f < num_filters; f++)
     {
         dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
-        dahl_block* dl_df = GET_SUB_BLOCK_MUT(dl_dfilters_redux, f);
-        task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df);
+        dahl_block* dl_df_redux = GET_SUB_BLOCK_MUT(dl_dfilters, f);
+        // Enable redux for sub blocks of dl_dfilters so that results gets accumulated between each
+        // batch.
+        block_enable_redux(dl_df_redux);
+
+        task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df_redux);
 
         // This computation is only required when the conv layer is not the first one in the network
         dahl_matrix const* dl_dout_padded_filter = GET_SUB_MATRIX(dl_dout_padded, f);
@@ -128,6 +132,10 @@ void _convolution_backward_sample(dahl_arena* arena,
     block_unpartition(dl_dout);
 }
 
+// TODO: We should add a parameter that controls wether the output should be computed or not: if the
+// layer is the first one we don't need to, otherwise we do.
+// OR, simply implement another function that returns void?
+// because otherwise we have to return null? idk
 dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
                                  dahl_tensor const* dl_dout_batch, double const learning_rate,
                                  dahl_tensor const* input_batch)
@@ -140,7 +148,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     // Initialize the result buffer, which is the derivative of the input we got from the forward pass
     dahl_tensor* dl_dinput_batch_redux = tensor_init_redux(arena, conv->input_shape);
 
-    dahl_tensor* dl_dfilters_redux = tensor_init_redux(conv->scratch_arena, conv->filter_shape);
+    dahl_tensor* dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
 
     // Partition by batch dimension
     tensor_partition_along_t(dl_dout_batch);
@@ -149,7 +157,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
 
     // Already partition the filters (over feature maps: num_filters) because they will be accessed in every batches
     tensor_partition_along_t(conv->filters);
-    tensor_partition_along_t_mut(dl_dfilters_redux);
+    tensor_partition_along_t_mut(dl_dfilters);
 
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch); 
 
@@ -161,7 +169,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
             GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
-            dl_dfilters_redux,
+            dl_dfilters,
             conv->filter_size, 
             conv->filters);
     }
@@ -170,10 +178,10 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     tensor_unpartition(input_batch);
     tensor_unpartition(dl_dinput_batch_redux);
     tensor_unpartition(conv->filters);
-    tensor_unpartition(dl_dfilters_redux);
+    tensor_unpartition(dl_dfilters);
 
-    TASK_SCAL_SELF(dl_dfilters_redux, learning_rate);
-    TASK_SUB_SELF(conv->filters, dl_dfilters_redux);
+    TASK_SCAL_SELF(dl_dfilters, learning_rate);
+    TASK_SUB_SELF(conv->filters, dl_dfilters);
 
     return dl_dinput_batch_redux;
 }

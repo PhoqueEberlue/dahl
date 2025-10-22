@@ -20,6 +20,8 @@ dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape2
         .y = out_features,
     };
 
+    dense->weights_shape = weights_shape;
+
     dense->weights = matrix_init_random(arena, weights_shape, -0.1, 0.1);
     dense->biases = vector_init_random(arena, out_features, -0.1, 0.1);
     dense->scratch_arena = scratch_arena;
@@ -65,10 +67,10 @@ void _dense_backward_sample(dahl_vector const* dl_dout,
                             dahl_vector const* input,
                             dahl_matrix* dl_dw_redux,
                             dahl_vector* dl_dinput,
-                            dahl_matrix const* weights_t)
+                            dahl_matrix const* weights)
 {
     task_vector_outer_product(input, dl_dout, dl_dw_redux);
-    task_matrix_vector_product(weights_t, dl_dout, dl_dinput);  
+    task_vector_matrix_product(dl_dout, weights, dl_dinput);  
 }
 
 dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix const* dl_dout_batch, 
@@ -82,14 +84,8 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     // Initializing the result buffer, representing the derivative of the forward input
     dahl_matrix* dl_dinput_batch = matrix_init(arena, dense->input_shape);
 
-    dahl_shape2d dl_dw_shape = {
-        .x = dense->input_shape.x,  // Input features
-        .y = dense->output_shape.x, // Output features 
-    };
-
     // Init redux accumulator for the dl_dw partial results in the batch
-    dahl_matrix* dl_dw_redux = matrix_init_redux(dense->scratch_arena, dl_dw_shape);
-    dahl_matrix const* weights_t = task_matrix_transpose_init(dense->scratch_arena, dense->weights);
+    dahl_matrix* dl_dw_redux = matrix_init_redux(dense->scratch_arena, dense->weights_shape);
 
     // Partition by batch
     matrix_partition_along_y(dl_dout_batch);
@@ -106,7 +102,7 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
             GET_SUB_VECTOR(input_batch, i),
             dl_dw_redux,
             GET_SUB_VECTOR_MUT(dl_dinput_batch, i),
-            weights_t
+            dense->weights
         );
     }
 
