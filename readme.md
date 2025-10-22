@@ -47,7 +47,7 @@ Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to suppor
 │   └── starpu/      StarPU flake and dependencies
 ├── notes/
 │   ├── archives/
-│   ├── design/      Discussions concrening problems faced during implementation
+│   ├── design/      Discussions concerning problems faced during implementation
 │   ├── flamegraphs/
 │   └── lab/         My laboratory notebook
 ├── python-version/  Pytorch equivalent of CNN implemented with DAHL
@@ -91,7 +91,8 @@ cd ./datasets
 
 Train the CNN
 ```bash
-./example-mnist ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
+cd build
+./basic_cnn ../fashion-mnist/train-images-idx3-ubyte ../fashion-mnist/train-labels-idx1-ubyte
 ```
 
 ## Acknowledgements
