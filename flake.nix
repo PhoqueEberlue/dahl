@@ -4,7 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs.follows = "nixpkgs";
 
     # Required to run CUDA because of problems between cuda drivers (usually handled by the machine OS) and
     # the runtime cuda dependencies, here handled by this nix flake.
