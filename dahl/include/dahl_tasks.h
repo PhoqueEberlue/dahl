@@ -378,4 +378,6 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
 // `out` is compatible with redux objects.
 void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 
+void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
+
 #endif //!DAHL_TASKS_H

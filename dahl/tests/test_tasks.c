@@ -1257,6 +1257,17 @@ void test_convolution_2d_backward_input()
 
     ASSERT_BLOCK_EQUALS(expect, out);
 
+    // Trying the same with the padding free version
+    dahl_matrix* a_no_pad = MATRIX(testing_arena, 2, 2, {
+            { 3, 4 },
+            { 3, 4 },
+    });
+
+    out = block_init(testing_arena, expect_shape);
+    task_convolution_2d_backward_input_padding_free(a_no_pad, b, out);
+
+    ASSERT_BLOCK_EQUALS(expect, out);
+
     dahl_arena_reset(testing_arena);
 }
 

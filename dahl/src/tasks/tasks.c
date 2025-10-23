@@ -756,3 +756,16 @@ void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const*
                                  mode, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
+
+void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
+{
+    // Check and update mode if out is using redux mode.
+    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+    cl_convolution_2d_backward_input.modes[2] = mode;
+
+    int ret = starpu_task_insert(&cl_convolution_2d_backward_input_padding_free,
+                                 STARPU_R, in->handle,
+                                 STARPU_R, kernel->handle,
+                                 mode, out->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}

@@ -11,13 +11,13 @@ enable_language(CUDA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------ RELEASE OPTIONS ------------
-# set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 
 # ------------ DEBUG OPTIONS ------------
 # Enable debug flags and avoid optimizations
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
 
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)

@@ -1533,3 +1533,113 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
         }
     }
 }
+
+/*
+ *      -2  -1   0   1   2   3     
+ *     ┌ ─ ┬ ─ ┬ ─ ┬ ─ ┬ ─ ┬ ─ ┐
+ *  -2                                                    0   1   2   3
+ *     ├ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┤        0   1   2       ┌───┬───┬───┬───┐
+ *  -1                                ┌───┬───┬───┐   0 │   │   │   │   │
+ *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    0 │   │   │   │     ├───┼───┼───┼───┤
+ *   0         │   │   │              ├───┼───┼───┤   1 │   │   │   │   │
+ *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    1 │   │   │   │     ├───┼───┼───┼───┤
+ *   1         │   │   │              ├───┼───┼───┤   2 │   │   │   │   │
+ *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    2 │   │   │   │     ├───┼───┼───┼───┤
+ *   2        Input buffer            └───┴───┴───┘   3 │   │   │   │   │
+ *     ├ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┤         Kernel         └───┴───┴───┴───┘
+ *   3                                                       Output
+ *     └ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┘
+ *            Fake Padding
+ */
+static inline size_t sub_sat(size_t a, size_t b)
+{
+    size_t c = a - b;
+    if (c>a) { c = 0; }
+    return c;
+}
+
+void convolution_2d_backward_input_padding_free(void* buffers[3], void* cl_arg)
+{
+    // Input matrix, here the gradients output of the layer just after the convolution
+    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+
+    // Kernel block, here the filters (weights) associated to the convolution
+    size_t const k_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+    size_t const k_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+    size_t const k_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+    size_t const k_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+    size_t const k_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+    dahl_fp const* kernel = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+
+    // Output block, here the loss derivative of the input
+    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
+    size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
+    size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
+    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+
+    assert(out_nx == in_nx + k_nx - 1);
+    assert(out_ny == in_ny + k_ny - 1);
+    assert(out_nz == k_nz);
+
+    // Compute padding size required to produce the correct output shape.
+    size_t pad_nx = k_nx - 1;
+    size_t pad_ny = k_ny - 1;
+
+    // loop through i,j,k on axes x,y,z of the output block
+    for (size_t k = 0; k < out_nz; k++)
+    {
+        for (size_t j = 0; j < out_ny; j++)
+        {
+            for (size_t i = 0; i < out_nx; i++)
+            {
+                dahl_fp cell_res = 0.0F;
+                
+                // Computing start/end indexes to simulate zero padding for the input matrix
+                size_t y_start = sub_sat(j, pad_ny);
+
+                // reverse end so we can detect overflows in the same manner, minus 1 because this
+                // is the last part of the kernel
+                size_t y_end = sub_sat(in_ny - j, 1); 
+
+                // reverse once again to get the actual index of the end
+                y_end = in_ny - y_end;
+
+                // Here we compute where the kernel should start by substracting the end index.
+                // If it overflows, it means there's no more need to shift the kernel, all start at
+                // 0
+                size_t y_ker = sub_sat(k_ny, y_end);
+
+                // Loop through l,m on axes x,y of the input matrix
+                for (size_t m = y_start; m < y_end; m++)
+                {
+                    // Same but for x dimension
+                    size_t x_start = sub_sat(i, pad_nx);
+                    size_t x_end = sub_sat(in_nx - i, 1); 
+                    x_end = in_nx - x_end;
+                    size_t x_ker = sub_sat(k_nx, x_end);
+
+                    for (size_t l = x_start; l < x_end; l++)
+                    {
+                        // Reverse indexes x_ker and y_ker so we don't actually have to rotate(180) the kernel matrix.
+                        // However we still use k for axis z because we write each result for the current channel into an output channel.
+                        dahl_fp kernel_value = kernel[(k * k_ldz) + ((k_ny - 1 - y_ker) * k_ldy) + (k_nx - 1 - x_ker)];
+                        dahl_fp in_value = in[(in_ld * m) + l];
+
+                        cell_res += in_value * kernel_value;
+                        x_ker++;
+                    }
+
+                    y_ker++;
+                }
+
+                // Set the corresponding value for index i,j,k
+                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+            }
+        }
+    }
+}
