@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <threads.h>
+#include "../misc.h"
 
 // ---------------------------------------- TENSOR ----------------------------------------
 void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
@@ -1535,29 +1536,35 @@ void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
 }
 
 /*
+ * This function implements a "full" convolution with padding free input. This means that the output
+ * is larger than the input, but we don't need to use zero padding and compute useless operations on
+ * the padding.
+ * We do that by computing start/end indexes of each kernel window so that we ignore out-of-bound
+ * kernel values.
+ * It uses saturating arithmetic trick to prevent conditionnal branches to appear in for loops.
+ *
+ *      kernel size
+ *     ┌───────────┐
+ *     ▼           ▼
+ *        Actual range we want
+ *             ┌───┐
+ *             ▼   ▼
  *      -2  -1   0   1   2   3     
  *     ┌ ─ ┬ ─ ┬ ─ ┬ ─ ┬ ─ ┬ ─ ┐
- *  -2                                                    0   1   2   3
+ *  -2   0   0   0   0   0   0                            0   1   2   3
  *     ├ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┤        0   1   2       ┌───┬───┬───┬───┐
- *  -1                                ┌───┬───┬───┐   0 │   │   │   │   │
+ *  -1   0   0   0   0   0   0        ┌───┬───┬───┐   0 │   │   │   │   │
  *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    0 │   │   │   │     ├───┼───┼───┼───┤
- *   0         │   │   │              ├───┼───┼───┤   1 │   │   │   │   │
+ *   0   0   0 │   │   │ 0   0        ├───┼───┼───┤   1 │   │   │   │   │
  *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    1 │   │   │   │     ├───┼───┼───┼───┤
- *   1         │   │   │              ├───┼───┼───┤   2 │   │   │   │   │
+ *   1   0   0 │   │   │ 0   0        ├───┼───┼───┤   2 │   │   │   │   │
  *     ├ ─ ┼ ─ ┼───┼───┼ ─ ┼ ─ ┤    2 │   │   │   │     ├───┼───┼───┼───┤
- *   2        Input buffer            └───┴───┴───┘   3 │   │   │   │   │
+ *   2   0    Input buffer   0        └───┴───┴───┘   3 │   │   │   │   │
  *     ├ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┼ ─ ┤         Kernel         └───┴───┴───┴───┘
- *   3                                                       Output
- *     └ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┘
+ *   3   0   0   0   0   0   0       (omitted z dim)         Output
+ *     └ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┴ ─ ┘                         (omitted z dim)
  *            Fake Padding
  */
-static inline size_t sub_sat(size_t a, size_t b)
-{
-    size_t c = a - b;
-    if (c>a) { c = 0; }
-    return c;
-}
-
 void convolution_2d_backward_input_padding_free(void* buffers[3], void* cl_arg)
 {
     // Input matrix, here the gradients output of the layer just after the convolution
@@ -1598,15 +1605,24 @@ void convolution_2d_backward_input_padding_free(void* buffers[3], void* cl_arg)
             for (size_t i = 0; i < out_nx; i++)
             {
                 dahl_fp cell_res = 0.0F;
+
+                // [`y_start`, `y_end`[ corresponds to the window where we pull values from the                 
+                // input matrix, `y_ker` simulates how shifted the kernel is, its values gets    
+                // incremented each loop to simulate shifting. Same principle for x dimension.   
                 
-                // Computing start/end indexes to simulate zero padding for the input matrix
+                // Here, we will always shift our kernel up from `pad_ny` values relative to j.
+                // Using sub_sat let us handle cases where the kernel has values outside the matrix,
+                // underflow will saturate to value 0.
                 size_t y_start = sub_sat(j, pad_ny);
 
-                // reverse end so we can detect overflows in the same manner, minus 1 because this
-                // is the last part of the kernel
-                size_t y_end = sub_sat(in_ny - j, 1); 
+                // We can use the same trick for the end index, but here we "reverse" indexes, so we
+                // can use the underflow mechanic. Minus 1 because this is the remaining part of the
+                // kernel (pad_ny being included in y_start).
+                size_t y_end = sub_sat(in_ny - 1, j); 
 
-                // reverse once again to get the actual index of the end
+                // Reverse indexes once again to retrieve the actual index of the end. When we reach
+                // the bottom of the matrix, the kernel will be outside bounds so `y_end` values
+                // will be saturated to 0, thus `y_end` will equal `in_ny`.
                 y_end = in_ny - y_end;
 
                 // Here we compute where the kernel should start by substracting the end index.
@@ -1614,21 +1630,22 @@ void convolution_2d_backward_input_padding_free(void* buffers[3], void* cl_arg)
                 // 0
                 size_t y_ker = sub_sat(k_ny, y_end);
 
-                // Loop through l,m on axes x,y of the input matrix
+                // Loop through l,m on axes x,y of computed window
                 for (size_t m = y_start; m < y_end; m++)
                 {
-                    // Same but for x dimension
                     size_t x_start = sub_sat(i, pad_nx);
-                    size_t x_end = sub_sat(in_nx - i, 1); 
+                    size_t x_end = sub_sat(in_nx - 1, i); 
                     x_end = in_nx - x_end;
                     size_t x_ker = sub_sat(k_nx, x_end);
 
                     for (size_t l = x_start; l < x_end; l++)
                     {
-                        // Reverse indexes x_ker and y_ker so we don't actually have to rotate(180) the kernel matrix.
-                        // However we still use k for axis z because we write each result for the current channel into an output channel.
-                        dahl_fp kernel_value = kernel[(k * k_ldz) + ((k_ny - 1 - y_ker) * k_ldy) + (k_nx - 1 - x_ker)];
-                        dahl_fp in_value = in[(in_ld * m) + l];
+                        // Reverse indexes x_ker and y_ker so we don't actually have to rotate(180)
+                        // the kernel matrix. However we still use k for axis z because we write
+                        // each result for the current `kernel` channel into the same `out` channel.
+                        dahl_fp kernel_value = kernel[
+                            (k * k_ldz) + ((k_ny - 1 - y_ker) * k_ldy) + (k_nx - 1 - x_ker)];
+                        dahl_fp in_value = in[(m * in_ld) + l];
 
                         cell_res += in_value * kernel_value;
                         x_ker++;
