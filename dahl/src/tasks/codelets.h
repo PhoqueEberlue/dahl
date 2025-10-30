@@ -3,27 +3,32 @@
 
 #include "../../include/dahl_tasks.h"
 #include "../data_structures/data_structures.h"
+#include "../misc.h"
 #include <starpu.h>
 
 // Helper macro to generate the three essentials codelets definitions:
 // - The actual codelet function signature which is always the same, `void(void**, void*)`
-//   but here we also specify the number of buffers
+//   - the cpu version is generated with `func_name`
+//   - the gpu version have the prefix `cuda_` + `func_name`
 // - starpu_perfmodel
 // - starpu_codelet, referencing the function, number of buffers, their access modes and
 //   the perfmodel
-#define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                           \
-    void func_name(void* buffers[num_buffers], void* cl_arg);                        \
-                                                                                     \
-    static struct starpu_perfmodel perf_model_##func_name = {                        \
-        .type = STARPU_REGRESSION_BASED,                                             \
-        .symbol = #func_name                                                         \
-    };                                                                               \
-                                                                                     \
-    __attribute__((unused))static struct starpu_codelet cl_##func_name = {           \
-        .cpu_funcs = { func_name },                                                  \
-        .nbuffers = num_buffers,                                                     \
-        .modes = { __VA_ARGS__ },                                                    \
-        .model = &perf_model_##func_name                                             \
+#define DEFINE_STARPU_CODELET(func_name, num_buffers, ...)                  \
+    void func_name(void* buffers[num_buffers], void* cl_arg);               \
+    extern void cuda_##func_name(void *buffers[num_buffers], void *cl_arg); \
+                                                                            \
+    static struct starpu_perfmodel perf_model_##func_name = {               \
+        .type = STARPU_REGRESSION_BASED,                                    \
+        .symbol = #func_name                                                \
+    };                                                                      \
+                                                                            \
+    __attribute__((unused))static struct starpu_codelet cl_##func_name = {  \
+        .cpu_funcs = { func_name },                                         \
+        .cuda_funcs = { cuda_##func_name },                                 \
+        .cuda_flags = { STARPU_CUDA_ASYNC },                                \
+        .nbuffers = num_buffers,                                            \
+        .modes = { __VA_ARGS__ },                                           \
+        .model = &perf_model_##func_name                                    \
     };
 
 // ---------------------------------------- TENSOR ----------------------------------------

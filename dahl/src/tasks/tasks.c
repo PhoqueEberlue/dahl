@@ -1,4 +1,3 @@
-
 #include "codelets.h"
 
 // Including data.h and not include/dahl_data.h so we have access to the private functions

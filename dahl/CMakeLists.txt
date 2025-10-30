@@ -11,13 +11,13 @@ enable_language(CUDA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------ RELEASE OPTIONS ------------
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+# set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 
 # ------------ DEBUG OPTIONS ------------
 # Enable debug flags and avoid optimizations
-# set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
 
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)
@@ -29,25 +29,22 @@ else (STARPU_FOUND)
     message(FATAL_ERROR "StarPU not found")
 endif()
 
-# Example of linking cuda file to c
-add_library(scal_obj STATIC kernels/scal.cu)
 
 # Get every .h and .c in ./src ./include, and .cu in kernerls
 file(GLOB_RECURSE dahl_includes CONFIGURE_DEPENDS "./include/*.h")
 file(GLOB_RECURSE dahl_sources CONFIGURE_DEPENDS "./src/*.h" "./src/*.c")
-file(GLOB_RECURSE dahl_kernels CONFIGURE_DEPENDS "./kernels/*.cu")
+file(GLOB_RECURSE dahl_cuda_sources CONFIGURE_DEPENDS "./src/tasks/cuda/*.cu")
 
 # Tests files
 file(GLOB_RECURSE dahl_tests CONFIGURE_DEPENDS "./tests/*.c")
 
-set(kernel_files
-    kernels/scal.cu
-)
+# Creating a static library for cuda codelets
+add_library(cuda_codelets STATIC ${dahl_cuda_sources})
 
 add_library(dahl
     ${dahl_includes}
     ${dahl_sources}
-    ${dahl_kernels}
+    ${dahl_cuda}
 )
 
 add_executable(tests
@@ -58,6 +55,6 @@ add_executable(basic_cnn
     "./examples/basic_cnn.c"
 )
 
-target_link_libraries(dahl PRIVATE scal_obj -fsanitize=undefined)
+target_link_libraries(dahl PRIVATE cuda_codelets -fsanitize=undefined)
 target_link_libraries(tests PUBLIC dahl -fsanitize=undefined)
 target_link_libraries(basic_cnn PUBLIC dahl -fsanitize=undefined)
