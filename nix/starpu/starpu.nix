@@ -111,6 +111,11 @@ stdenv.mkDerivation (finalAttrs: {
   enableParallelBuilding = true;
   doCheck = true;
 
+  # Fixes /dev/tty not being available sometimes
+  checkPhase = ''
+    script -c make check
+    '';
+
   meta = {
     homepage = "https://starpu.gitlabpages.inria.fr/index.html";
     changelog = "https://files.inria.fr/starpu/starpu-${finalAttrs.version}/log.txt";
