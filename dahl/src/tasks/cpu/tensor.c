@@ -1,4 +1,5 @@
 #include "../codelets.h"
+#include "../macros.h"
 #include "starpu_data_interfaces.h"
 #include "starpu_task_util.h"
 #include "../../../include/dahl_types.h"
@@ -10,36 +11,25 @@
 
 void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
 {
-    size_t const in_nx = STARPU_TENSOR_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_TENSOR_GET_NY(buffers[0]);
-    size_t const in_nz = STARPU_TENSOR_GET_NZ(buffers[0]);
-    size_t const in_nt = STARPU_TENSOR_GET_NT(buffers[0]);
-    size_t const in_ldy = STARPU_TENSOR_GET_LDY(buffers[0]);
-    size_t const in_ldz = STARPU_TENSOR_GET_LDZ(buffers[0]);
-    size_t const in_ldt = STARPU_TENSOR_GET_LDT(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[0]);
+    auto in = STARPU_TENSOR_GET(buffers[0]);
+    auto out = STARPU_BLOCK_GET(buffers[1]);
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
 
-    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
-    size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
-    size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+    assert(in.nx == out.nx);
+    assert(in.ny == out.ny);
+    assert(in.nz == out.nz);
 
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
-    assert(in_nz == out_nz);
-
-    for (int t = 0; t < in_nt; t++)
+    for (int t = 0; t < in.nt; t++)
     {
-        for (int z = 0; z < in_nz; z++)
+        for (int z = 0; z < in.nz; z++)
         {
-            for (int y = 0; y < in_ny; y++)
+            for (int y = 0; y < in.ny; y++)
             {
-                for (int x = 0; x < in_nx; x++)
+                for (int x = 0; x < in.nx; x++)
                 {
-                    out[(z * out_ldz) + (y * out_ldy) + x] +=
-                        in[(t * in_ldt) + (z * in_ldz) + (y * in_ldy) + x];
+                    out_p[(z * out.ldz) + (y * out.ldy) + x] +=
+                        in_p[(t * in.ldt) + (z * in.ldz) + (y * in.ldy) + x];
                 }
             }
         }
@@ -48,29 +38,22 @@ void tensor_sum_t_axis(void* buffers[2], void* cl_arg)
 
 void tensor_sum_xyt_axes(void* buffers[2], void* cl_arg)
 {
-    size_t const in_nx = STARPU_TENSOR_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_TENSOR_GET_NY(buffers[0]);
-    size_t const in_nz = STARPU_TENSOR_GET_NZ(buffers[0]);
-    size_t const in_nt = STARPU_TENSOR_GET_NT(buffers[0]);
-    size_t const in_ldy = STARPU_TENSOR_GET_LDY(buffers[0]);
-    size_t const in_ldz = STARPU_TENSOR_GET_LDZ(buffers[0]);
-    size_t const in_ldt = STARPU_TENSOR_GET_LDT(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_TENSOR_GET_PTR(buffers[0]);
+    auto in = STARPU_TENSOR_GET(buffers[0]);
+    auto out = STARPU_VECTOR_GET(buffers[1]);
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
 
-    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+    assert(in.nz == out.nx);
 
-    assert(in_nz == out_len);
-
-    for (int t = 0; t < in_nt; t++)
+    for (int t = 0; t < in.nt; t++)
     {
-        for (int z = 0; z < in_nz; z++)
+        for (int z = 0; z < in.nz; z++)
         {
-            for (int y = 0; y < in_ny; y++)
+            for (int y = 0; y < in.ny; y++)
             {
-                for (int x = 0; x < in_nx; x++)
+                for (int x = 0; x < in.nx; x++)
                 {
-                    out[z] += in[(t * in_ldt) + (z * in_ldz) + (y * in_ldy) + x];
+                    out_p[z] += in_p[(t * in.ldt) + (z * in.ldz) + (y * in.ldy) + x];
                 }
             }
         }
