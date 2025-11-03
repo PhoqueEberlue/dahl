@@ -3,12 +3,15 @@ project(dahl)
  
 set(CMAKE_C_STANDARD 23)
 
+# CUDA config
 # TODO: chose the correct one: https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-architecture-arch
 set(CMAKE_CUDA_ARCHITECTURES all-major)
 enable_language(CUDA)
 
 # Shows compile command in ./build/compile_commands.json, useful for clangd language server
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Also makes it easier for clangd to see cuda dependencies
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
 
 # ------------ RELEASE OPTIONS ------------
 # set(CMAKE_BUILD_TYPE Release)
@@ -39,7 +42,7 @@ file(GLOB_RECURSE dahl_cuda_sources CONFIGURE_DEPENDS "./src/tasks/cuda/*.cu")
 file(GLOB_RECURSE dahl_tests CONFIGURE_DEPENDS "./tests/*.c")
 
 # Creating a static library for cuda codelets
-add_library(cuda_codelets STATIC ${dahl_cuda_sources})
+add_library(dahl_cuda_codelets STATIC ${dahl_cuda_sources})
 
 add_library(dahl
     ${dahl_includes}
@@ -55,6 +58,6 @@ add_executable(basic_cnn
     "./examples/basic_cnn.c"
 )
 
-target_link_libraries(dahl PRIVATE cuda_codelets -fsanitize=undefined)
+target_link_libraries(dahl PRIVATE dahl_cuda_codelets -fsanitize=undefined)
 target_link_libraries(tests PUBLIC dahl -fsanitize=undefined)
 target_link_libraries(basic_cnn PUBLIC dahl -fsanitize=undefined)

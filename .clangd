@@ -1,5 +1,9 @@
 CompileFlags:
-  Add: [-x, c, -nostdinc++]
+  # Clangd struggles to understand these nvcc flags
+  Remove: [
+    "-forward-unknown-to-host-compiler",
+    "-arch=all-major"
+  ]
 
 Clangd:
   HeaderInsertion: Never
