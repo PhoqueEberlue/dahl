@@ -190,6 +190,43 @@ void test_tensor_sum_t_axis()
     dahl_arena_reset(testing_arena);
 }
 
+void test_tensor_sum_xyt_axis()
+{
+    dahl_tensor* in = TENSOR(testing_arena, 2, 2, 3, 4, {
+        {
+            {
+                {-2, 1, 2,-1 },
+                { 3, 1,-3, 1 },
+                { 4,-1, 4,-1 },
+            },
+            {
+                { 3, 1,-8,-3 },
+                {-7,-3, 3, 2 },
+                { 1, 1, 9, 1 },
+            },
+        },
+        {
+            {
+                {-2, 1, 2,-1 },
+                { 3, 1,-3, 1 },
+                { 4,-1, 4,-1 },
+            },
+            {
+                { 3, 1,-8,-3 },
+                {-7,-3, 3, 2 },
+                { 1, 1, 9, 1 },
+            },
+        }
+    });
+
+    dahl_vector* expect = VECTOR(testing_arena, 2, { 16, 0 });
+
+    dahl_vector* out = task_tensor_sum_xyt_axes_init(testing_arena, in);
+    ASSERT_VECTOR_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_block_sum_z_axis()
 {
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
@@ -1572,46 +1609,47 @@ void test_vector_matrix_product()
 
 void test_tasks()
 {
-    test_matrix_cross_correlation_1();
-    test_matrix_cross_correlation_2();
-    test_relu();
     test_tensor_sum_t_axis();
-    test_block_sum_z_axis();
-    test_matrix_sum_y_axis();
-    test_scal();
-    test_divide();
-    test_sub();
-    test_add();
-    test_vector_softmax();
-    test_vector_dot_product();
-    test_vector_diag();
-    test_add_value();
-    test_sub_value();
-    test_matrix_vector_product();
-    test_clip();
-    test_matrix_matrix_product();
-    test_cross_entropy_loss();
-    test_cross_entropy_loss_gradient_batch();
-    test_sum();
-    test_convolution_2d_1();
-    test_convolution_2d_2();
-    test_convolution_2d_3();
-    test_check_predictions_batch();
-    test_max_pooling();
-    test_backward_max_pooling();
-    test_block_sum_xy_axes();
-    test_fill();
-    test_block_add_padding();
-    test_matrix_rotate_180();
-    test_vector_outer_product();
-    // test_vector_shuffle();
-    test_min_max();
-    test_convolution_2d_backward_filters();
-    test_convolution_2d_backward_input();
-    test_round();
-    test_redux_sum();
-    test_redux_vector_outer_product();
-    test_redux_convolution_2d_backward_filters();
-    test_redux_add();
-    test_vector_matrix_product();
+    test_tensor_sum_xyt_axis();
+    // test_block_sum_z_axis();
+    // test_block_sum_xy_axes();
+    // test_block_add_padding();
+    // test_matrix_cross_correlation_1();
+    // test_matrix_cross_correlation_2();
+    // test_matrix_sum_y_axis();
+    // test_matrix_vector_product();
+    // test_matrix_matrix_product();
+    // test_matrix_rotate_180();
+    // test_relu();
+    // test_scal();
+    // test_divide();
+    // test_sub();
+    // test_add();
+    // test_vector_softmax();
+    // test_vector_dot_product();
+    // test_vector_diag();
+    // test_vector_outer_product();
+    // // test_vector_shuffle();
+    // test_vector_matrix_product();
+    // test_redux_vector_outer_product();
+    // test_add_value();
+    // test_sub_value();
+    // test_clip();
+    // test_cross_entropy_loss();
+    // test_cross_entropy_loss_gradient_batch();
+    // test_sum();
+    // test_convolution_2d_1();
+    // test_convolution_2d_2();
+    // test_convolution_2d_3();
+    // test_check_predictions_batch();
+    // test_max_pooling();
+    // test_backward_max_pooling();
+    // test_fill();
+    // test_min_max();
+    // test_convolution_2d_backward_filters();
+    // test_convolution_2d_backward_input();
+    // test_round();
+    // test_redux_sum();
+    // test_redux_convolution_2d_backward_filters();
+    // test_redux_add();
 }

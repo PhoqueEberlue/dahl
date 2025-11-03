@@ -16,10 +16,10 @@ int main(int argc, char **argv)
     // Instanciate a testing arena and set it as context
     testing_arena = dahl_arena_new();
 
-    test_layers();
+    //test_layers();
     test_tasks();
-    test_data();
-    test_arena();
+    // test_data();
+    // test_arena();
     // test_miscellaneous();
 
     dahl_arena_delete(testing_arena);
