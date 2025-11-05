@@ -1,10 +1,7 @@
+#include <cstdio>
 #include <starpu.h>
-
-// Get the ptr of any StarPU data type. Does not perform any check.
-// This works because ptr is always the second field in the struct for vector, matrix, block and tensor,
-// so it does not matter what we cast `interface` into. 
-// This may be risky though, especially if the field order changes...
-#define STARPU_ANY_GET_PTR(interface) (((struct starpu_vector_interface *)(interface))->ptr)
+#include "../../../include/dahl_types.h"
+#include "../../macros.h"
 
 extern "C" void cuda_any_relu(void* buffers[2], void* cl_arg)
 {
@@ -29,16 +26,60 @@ extern "C" void cuda_any_power(void* buffers[2], void* cl_arg)
 
 }
 
+static __global__ void any_sub(
+        size_t nb_elem,
+        dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    c[index] = a[index] - b[index];
+}
 
 extern "C" void cuda_any_sub(void* buffers[3], void* cl_arg)
 {
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
+    auto a = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto b = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
+    auto c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_sub<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
+
+    cudaError_t status = cudaGetLastError();
+    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
+    cudaStreamSynchronize(starpu_cuda_get_local_stream());
 }
 
+static __global__ void any_add(
+        size_t nb_elem,
+        dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    c[index] = a[index] + b[index];
+}
 
 extern "C" void cuda_any_add(void* buffers[3], void* cl_arg)
 {
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
+    auto a = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto b = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
+    auto c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_add<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
+
+    cudaError_t status = cudaGetLastError();
+    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
+    cudaStreamSynchronize(starpu_cuda_get_local_stream());
 }
 
 

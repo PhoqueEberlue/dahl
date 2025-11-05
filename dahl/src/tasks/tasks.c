@@ -510,11 +510,16 @@ void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     size_t nb_elem = traits->get_nb_elem(c);
+
+    // Check and update mode if `c` is using redux mode.
+    enum starpu_data_access_mode mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    cl_any_sub.modes[2] = mode;
+
     int ret = starpu_task_insert(&cl_any_sub,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
-                                 STARPU_W, traits->get_handle(c), 0);
+                                 mode, traits->get_handle(c), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 

@@ -1527,7 +1527,7 @@ void test_redux_convolution_2d_backward_filters()
 
 void test_redux_add()
 {
-    dahl_block* a = BLOCK(testing_arena, 2, 3, 3, {
+    dahl_block* a = BLOCK(testing_arena, 2, 2, 2, {
         {
             { 2, 9 },
             { 2, 7 },
@@ -1538,7 +1538,7 @@ void test_redux_add()
         },
     });
 
-    dahl_block* b = BLOCK(testing_arena, 2, 3, 3, {
+    dahl_block* b = BLOCK(testing_arena, 2, 2, 2, {
         {
             { 0, 7 },
             { 9, 6 },
@@ -1549,7 +1549,7 @@ void test_redux_add()
         },
     });
 
-    dahl_block* c = BLOCK(testing_arena, 2, 3, 3, {
+    dahl_block* c = BLOCK(testing_arena, 2, 2, 2, {
         {
             { 8, 2 },
             { 3, 3 },
@@ -1560,7 +1560,7 @@ void test_redux_add()
         },
     });
 
-    dahl_block* d = BLOCK(testing_arena, 2, 3, 3, {
+    dahl_block* d = BLOCK(testing_arena, 2, 2, 2, {
         {
             { 2, 1 },
             { 0, -1 },
@@ -1571,12 +1571,23 @@ void test_redux_add()
         },
     });
 
-    dahl_block* out = block_init_redux(testing_arena, (dahl_shape3d){ .x = 3, .y = 3, .z = 2 });
-
+    dahl_block* out = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
+    dahl_block* out_tmp = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
     TASK_ADD(a, b, out);
-    TASK_ADD(c, d, out);
+    TASK_ADD(c, d, out_tmp);
+    TASK_ADD_SELF(out, out_tmp);
 
-    dahl_block* expect = BLOCK(testing_arena, 2, 3, 3, {
+    dahl_block* out_self = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
+    TASK_ADD_SELF(out_self, a);
+    TASK_ADD_SELF(out_self, b);
+    TASK_ADD_SELF(out_self, c);
+    TASK_ADD_SELF(out_self, d);
+
+    dahl_block* out_redux = block_init_redux(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
+    TASK_ADD(a, b, out_redux);
+    TASK_ADD(c, d, out_redux);
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 2, 2, {
         {
             { 12, 19 },
             { 14, 15 },
@@ -1588,6 +1599,33 @@ void test_redux_add()
     });
 
     ASSERT_BLOCK_EQUALS(expect, out);
+    ASSERT_BLOCK_EQUALS(expect, out_self);
+    ASSERT_BLOCK_EQUALS(expect, out_redux);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_redux_sub()
+{
+    dahl_shape4d shape = { .x = 5, .y = 5, .z = 3, .t = 1 };
+    dahl_tensor* a = tensor_init_random(testing_arena, shape, 10, 20);
+    dahl_tensor* b = tensor_init_random(testing_arena, shape, 10, 20);
+    dahl_tensor* c = tensor_init_random(testing_arena, shape, 10, 20);
+    dahl_tensor* d = tensor_init_random(testing_arena, shape, 10, 20);
+
+    // Computing expect without redux mode to verify the result after
+    dahl_tensor* expect = tensor_init(testing_arena, shape);
+    dahl_tensor* tmp = tensor_init(testing_arena, shape);
+    TASK_SUB(a, b, expect);
+    TASK_SUB(c, d, tmp);
+    TASK_ADD_SELF(expect, tmp);
+
+    dahl_tensor* out = tensor_init_redux(testing_arena, shape);
+
+    TASK_SUB(a, b, out);
+    TASK_SUB(c, d, out);
+
+    ASSERT_TENSOR_EQUALS_ROUND(expect, out, 14);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1631,7 +1669,6 @@ void test_tasks()
     // test_vector_outer_product();
     // // test_vector_shuffle();
     // test_vector_matrix_product();
-    // test_redux_vector_outer_product();
     // test_add_value();
     // test_sub_value();
     // test_clip();
@@ -1649,7 +1686,9 @@ void test_tasks()
     // test_convolution_2d_backward_filters();
     // test_convolution_2d_backward_input();
     // test_round();
+    test_redux_add();
+    // test_redux_sub();
+    // test_redux_vector_outer_product();
     // test_redux_sum();
     // test_redux_convolution_2d_backward_filters();
-    // test_redux_add();
 }
