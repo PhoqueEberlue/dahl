@@ -222,6 +222,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 // Performs `c` = `a` - `b`, where:
 // - `-` is the value by value substraction
 // - `a`, `b` and `c` are dahl_any objects of the same shape
+// `c` is compatible with redux objects.
 #define TASK_SUB(A, B, C)                               \
     do {                                                \
         _Static_assert(TYPES_MATCH((A), (B)),           \
