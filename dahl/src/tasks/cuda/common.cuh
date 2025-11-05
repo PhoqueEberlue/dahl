@@ -4,6 +4,12 @@
 #include <starpu.h>
 #include "../../../include/dahl_types.h"
 
+static inline void dahl_cuda_check_error_and_sync() {
+    cudaError_t status = cudaGetLastError();
+    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
+    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+}
+
 static __global__ void cuda_accumulate(
         size_t nb_elem, dahl_fp* dst_p, dahl_fp const* src_p)
 {

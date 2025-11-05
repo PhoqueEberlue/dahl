@@ -45,10 +45,7 @@ extern "C" void cuda_tensor_sum_t_axis(void* buffers[2], void* cl_arg)
 
     tensor_sum_t_axis<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(
             in, out, in_p, out_p);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }
 
 static __global__ void tensor_sum_xyt_axes(
@@ -86,10 +83,7 @@ extern "C" void cuda_tensor_sum_xyt_axes(void* buffers[2], void* cl_arg)
     size_t blocks = (in.nz + threadsPerBlock - 1) / threadsPerBlock;
 
     tensor_sum_xyt_axes<<<blocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(in, in_p, out_p);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }
 
 
@@ -113,8 +107,5 @@ extern "C" void cuda_tensor_accumulate(void *buffers[2], void *cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     cuda_accumulate<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, dst_p, src_p);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }

@@ -2,6 +2,7 @@
 #include <starpu.h>
 #include "../../../include/dahl_types.h"
 #include "../../macros.h"
+#include "common.cuh"
 
 extern "C" void cuda_any_relu(void* buffers[2], void* cl_arg)
 {
@@ -48,10 +49,7 @@ extern "C" void cuda_any_sub(void* buffers[3], void* cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     any_sub<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }
 
 static __global__ void any_add(
@@ -76,10 +74,7 @@ extern "C" void cuda_any_add(void* buffers[3], void* cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     any_add<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }
 
 

@@ -46,8 +46,5 @@ extern "C" void cuda_block_accumulate(void *buffers[2], void *cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     cuda_accumulate<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, dst_p, src_p);
-
-    cudaError_t status = cudaGetLastError();
-    if (status != cudaSuccess) STARPU_CUDA_REPORT_ERROR(status);
-    cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    dahl_cuda_check_error_and_sync();
 }

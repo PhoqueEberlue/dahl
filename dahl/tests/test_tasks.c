@@ -1661,8 +1661,8 @@ void test_tasks()
     // test_relu();
     // test_scal();
     // test_divide();
-    // test_sub();
-    // test_add();
+    test_sub();
+    test_add();
     // test_vector_softmax();
     // test_vector_dot_product();
     // test_vector_diag();
@@ -1686,7 +1686,7 @@ void test_tasks()
     // test_convolution_2d_backward_filters();
     // test_convolution_2d_backward_input();
     // test_round();
-    test_redux_add();
+    // test_redux_add();
     // test_redux_sub();
     // test_redux_vector_outer_product();
     // test_redux_sum();
