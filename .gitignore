@@ -47,3 +47,4 @@ dahl/datasets/mushroom-species/
 dahl/datasets/fashion-mnist/
 dahl/datasets/cifar-10/
 dahl/build/
+dahl/sandbox/build/
