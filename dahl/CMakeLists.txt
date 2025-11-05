@@ -47,7 +47,6 @@ add_library(dahl_cuda_codelets STATIC ${dahl_cuda_sources})
 add_library(dahl
     ${dahl_includes}
     ${dahl_sources}
-    ${dahl_cuda}
 )
 
 add_executable(tests
