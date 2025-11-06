@@ -182,10 +182,34 @@ extern "C" void cuda_any_add_value(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
+static __global__ void any_add_value(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp min, dahl_fp max)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+
+    if (in[index] > max)
+        out[index] = max;
+    else if (in[index] < min)
+        out[index] = min;
+    else
+        out[index] = in[index];
+}
 
 extern "C" void cuda_any_clip(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    dahl_fp min;
+    dahl_fp max;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &min, &max);
 
+    auto in = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_add_value<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, min, max);
+    dahl_cuda_check_error_and_sync();
 }
 
 

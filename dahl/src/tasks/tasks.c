@@ -572,12 +572,16 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
 
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits)
 {
+    // Check self mode
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_clip.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_clip,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &min, sizeof(min),
                                  STARPU_VALUE, &max, sizeof(max),
-                                 STARPU_R, traits->get_handle(in),
+                                 in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }

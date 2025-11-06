@@ -1731,6 +1731,7 @@ void test_tasks()
     test_sub();
     test_add();
     test_add_value();
+    test_clip();
     // test_vector_softmax();
     // test_vector_dot_product();
     // test_vector_diag();
@@ -1738,7 +1739,6 @@ void test_tasks()
     // // test_vector_shuffle();
     // test_vector_matrix_product();
     // test_sub_value();
-    // test_clip();
     // test_cross_entropy_loss();
     // test_cross_entropy_loss_gradient_batch();
     // test_sum();
