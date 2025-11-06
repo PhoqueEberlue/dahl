@@ -1,5 +1,7 @@
 #include <cmath>
 #include <cstdio>
+#include <cuda_runtime_api.h>
+#include <driver_types.h>
 #include <starpu.h>
 #include "../../../include/dahl_types.h"
 #include "../../macros.h"
@@ -257,23 +259,50 @@ extern "C" void cuda_any_wait(void* buffers[1], void* cl_arg)
 
 extern "C" void cuda_any_copy(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    cudaMemcpy(out, in, nb_elem * sizeof(dahl_fp), cudaMemcpyKind::cudaMemcpyDefault);
 }
 
 
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_any_min(void* buffers[2], void* cl_arg)
 {
 
 }
 
 
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_any_max(void* buffers[2], void* cl_arg)
 {
 
 }
 
+static __global__ void any_round(size_t nb_elem, dahl_fp const* in, dahl_fp* out, int8_t precision)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    dahl_fp power = pow(10.0F, precision);
+    out[index] = round(in[index] * power) / power;
+}
 
 extern "C" void cuda_any_round(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    int8_t precision;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &precision);
+
+    auto in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_round<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, precision);
+    dahl_cuda_check_error_and_sync();
 
 }

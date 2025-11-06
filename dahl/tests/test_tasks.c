@@ -1100,6 +1100,20 @@ void test_fill()
     ASSERT_VECTOR_EQUALS(expect, vector);
 }
 
+void test_copy()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 2, 5, {
+        { 8.0F, 0.0F, 5.0F, -1.0F, -42.0F },
+        { 8.0F, 0.0F, 5.0F, -1.0F, -42.0F },
+    });
+
+    dahl_matrix* out = matrix_init(testing_arena, (dahl_shape2d){ .x = 5, .y = 2 });
+    dahl_matrix* expect = matrix;
+
+    TASK_COPY(matrix, out);
+    ASSERT_MATRIX_EQUALS(expect, out);
+}
+
 void test_block_add_padding()
 {
     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
@@ -1733,6 +1747,8 @@ void test_tasks()
     test_add_value();
     test_clip();
     test_fill();
+    test_copy();
+    test_round();
     
     // test_vector_softmax();
     // test_vector_dot_product();
@@ -1753,7 +1769,6 @@ void test_tasks()
     // test_min_max();
     // test_convolution_2d_backward_filters();
     // test_convolution_2d_backward_input();
-    // test_round();
     // test_redux_add();
     // test_redux_sub();
     // test_redux_vector_outer_product();

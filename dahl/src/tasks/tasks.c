@@ -691,11 +691,15 @@ dahl_scalar* task_max_init(dahl_arena* arena, void const* object, dahl_traits* t
 
 void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits)
 {
+    // Check self mode
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_round.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(in);
     int ret = starpu_task_insert(&cl_any_round,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &precision, sizeof(precision),
-                                 STARPU_R, traits->get_handle(in),
+                                 in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
