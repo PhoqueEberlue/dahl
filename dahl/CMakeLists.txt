@@ -4,8 +4,9 @@ project(dahl)
 set(CMAKE_C_STANDARD 23)
 
 # CUDA config
-# TODO: chose the correct one: https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-architecture-arch
-set(CMAKE_CUDA_ARCHITECTURES all-major)
+# https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-architecture-arch
+set(CMAKE_CUDA_ARCHITECTURES 60 70 80 86 89)
+
 enable_language(CUDA)
 
 # Shows compile command in ./build/compile_commands.json, useful for clangd language server
