@@ -37,12 +37,40 @@ extern "C" void cuda_block_sum_z_axis(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
+static __global__ void block_sum_y_axis(
+        struct starpu_block_interface const in,
+        struct starpu_matrix_interface  const out)
+{
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
+
+    size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t z = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= in.nx || z >= in.nz) return;
+
+    dahl_fp sum = 0.0;
+
+    for (size_t y = 0; y < in.ny; y++)
+    {
+        sum += in_p[(z * in.ldz) + (y * in.ldy) + x];
+    }
+
+    out_p[(z * out.ld) + x] += sum;
+}
 
 extern "C" void cuda_block_sum_y_axis(void* buffers[2], void* cl_arg)
 {
+    auto in = STARPU_BLOCK_GET(buffers[0]);
+    auto out = STARPU_MATRIX_GET(buffers[1]);
 
+    dim3 block(16, 16);  // 256 threads per block
+    dim3 grid((in.nx + block.x - 1) / block.x,
+              (in.nz + block.z - 1) / block.z);
+
+    block_sum_y_axis<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(in, out);
+    dahl_cuda_check_error_and_sync();
 }
-
 
 extern "C" void cuda_block_sum_xy_axes(void* buffers[2], void* cl_arg)
 {

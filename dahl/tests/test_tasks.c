@@ -311,6 +311,33 @@ void test_block_sum_z_axis()
     dahl_arena_reset(testing_arena);
 }
 
+void test_block_sum_y_axis()
+{
+    dahl_block* in = BLOCK(testing_arena, 2, 3, 4, {
+        {
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
+        },
+        {
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
+        },
+    });
+
+    dahl_matrix* expect = MATRIX(testing_arena, 2, 4, {
+        { 5, 1, 3,-1 },
+        {-3,-1, 4, 0 },
+    });
+
+    dahl_matrix* out = task_block_sum_y_axis_init(testing_arena, in);
+
+    ASSERT_MATRIX_EQUALS(expect, out);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_matrix_sum_y_axis()
 {
     dahl_shape2d a_shape = { .x = 4, .y = 3 };
@@ -1729,6 +1756,7 @@ void test_tasks()
     test_tensor_sum_t_axis();
     test_tensor_sum_xyt_axis();
     test_block_sum_z_axis();
+    test_block_sum_y_axis();
     // test_block_sum_xy_axes();
     // test_block_add_padding();
     // test_matrix_cross_correlation_1();
