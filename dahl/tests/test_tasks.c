@@ -1728,7 +1728,7 @@ void test_tasks()
 {
     test_tensor_sum_t_axis();
     test_tensor_sum_xyt_axis();
-    // test_block_sum_z_axis();
+    test_block_sum_z_axis();
     // test_block_sum_xy_axes();
     // test_block_add_padding();
     // test_matrix_cross_correlation_1();

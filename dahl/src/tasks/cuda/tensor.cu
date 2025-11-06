@@ -9,9 +9,11 @@
 
 static __global__ void tensor_sum_t_axis(
         struct starpu_tensor_interface const in,
-        struct starpu_block_interface  const out,
-        dahl_fp const* in_p, dahl_fp* out_p)
+        struct starpu_block_interface  const out)
 {
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
+
     // Compute 3D thread index
     size_t x = blockIdx.x * blockDim.x + threadIdx.x;
     size_t y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -35,23 +37,23 @@ extern "C" void cuda_tensor_sum_t_axis(void* buffers[2], void* cl_arg)
 {
     auto in = STARPU_TENSOR_GET(buffers[0]);
     auto out = STARPU_BLOCK_GET(buffers[1]);
-    auto in_p = (dahl_fp const*)in.ptr;
-    auto out_p = (dahl_fp*)out.ptr;
 
     dim3 block(8, 8, 8);
     dim3 grid((in.nx + block.x - 1) / block.x,
               (in.ny + block.y - 1) / block.y,
               (in.nz + block.z - 1) / block.z);
 
-    tensor_sum_t_axis<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(
-            in, out, in_p, out_p);
+    tensor_sum_t_axis<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(in, out);
     dahl_cuda_check_error_and_sync();
 }
 
 static __global__ void tensor_sum_xyt_axes(
         struct starpu_tensor_interface const in,
-        dahl_fp const* in_p, dahl_fp* out_p)
+        struct starpu_vector_interface out)
 {
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
+
     size_t z = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (z >= in.nz) return;
@@ -76,13 +78,11 @@ extern "C" void cuda_tensor_sum_xyt_axes(void* buffers[2], void* cl_arg)
 {
     auto in = STARPU_TENSOR_GET(buffers[0]);
     auto out = STARPU_VECTOR_GET(buffers[1]);
-    auto in_p = (dahl_fp const*)in.ptr;
-    auto out_p = (dahl_fp*)out.ptr;
 
     size_t threadsPerBlock = 256;
     size_t blocks = (in.nz + threadsPerBlock - 1) / threadsPerBlock;
 
-    tensor_sum_xyt_axes<<<blocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(in, in_p, out_p);
+    tensor_sum_xyt_axes<<<blocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(in, out);
     dahl_cuda_check_error_and_sync();
 }
 
