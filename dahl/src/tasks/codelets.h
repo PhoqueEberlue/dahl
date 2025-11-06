@@ -53,7 +53,7 @@ DEFINE_STARPU_CODELET(block_accumulate, 2, false, STARPU_RW|STARPU_COMMUTE, STAR
 
 // ---------------------------------------- MATRIX ----------------------------------------
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, false, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_max_pooling, 3, false, STARPU_R, STARPU_W, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, false, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_matrix_product, 3, false, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, false, STARPU_R, STARPU_W);

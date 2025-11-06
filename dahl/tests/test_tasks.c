@@ -1792,7 +1792,7 @@ void test_tasks()
     // test_convolution_2d_2();
     // test_convolution_2d_3();
     // test_check_predictions_batch();
-    // test_max_pooling();
+    test_max_pooling();
     // test_backward_max_pooling();
     // test_min_max();
     // test_convolution_2d_backward_filters();

@@ -103,9 +103,10 @@ extern "C" void cuda_block_sum_xy_axes(void* buffers[2], void* cl_arg)
                in.nz);
 
     block_sum_xy_axes<<<grid, block>>>(in, out);
+    dahl_cuda_check_error_and_sync();
 }
 
-
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_block_add_padding(void* buffers[2], void* cl_arg)
 {
 
