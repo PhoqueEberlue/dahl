@@ -1732,6 +1732,8 @@ void test_tasks()
     test_add();
     test_add_value();
     test_clip();
+    test_fill();
+    
     // test_vector_softmax();
     // test_vector_dot_product();
     // test_vector_diag();
@@ -1748,7 +1750,6 @@ void test_tasks()
     // test_check_predictions_batch();
     // test_max_pooling();
     // test_backward_max_pooling();
-    // test_fill();
     // test_min_max();
     // test_convolution_2d_backward_filters();
     // test_convolution_2d_backward_input();

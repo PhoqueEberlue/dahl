@@ -182,7 +182,7 @@ extern "C" void cuda_any_add_value(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-static __global__ void any_add_value(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp min, dahl_fp max)
+static __global__ void any_clip(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp min, dahl_fp max)
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
@@ -208,26 +208,43 @@ extern "C" void cuda_any_clip(void* buffers[2], void* cl_arg)
     int threadsPerBlock = 256;
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
-    any_add_value<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, min, max);
+    any_clip<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, min, max);
     dahl_cuda_check_error_and_sync();
 }
 
 
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_any_sum(void* buffers[2], void* cl_arg)
 {
 
 }
 
-
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_any_mean(void* buffers[2], void* cl_arg)
 {
 
 }
 
+static __global__ void any_fill(size_t nb_elem, dahl_fp* buf, dahl_fp value)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    buf[index] = value;
+}
 
 extern "C" void cuda_any_fill(void* buffers[1], void* cl_arg)
 {
+    size_t nb_elem;
+    dahl_fp value;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &value);
 
+    auto buf = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_fill<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, buf, value);
+    dahl_cuda_check_error_and_sync();
 }
 
 
