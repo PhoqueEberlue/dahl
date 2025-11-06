@@ -466,7 +466,7 @@ dahl_vector* task_vector_matrix_product_init(dahl_arena* arena, dahl_vector cons
 // ---------------------------------------- TRAITS ----------------------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
-    // Handle case where function got called with `_self` variant
+    // Handle case where function got called with `_self` variant. Required when using CUDA
     enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
     cl_any_relu.modes[0] = in_mode;
 
@@ -491,22 +491,28 @@ void task_relu_backward(void const* input, void const* gradients, void* out, dah
 
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
 {
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_scal.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_scal,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &factor, sizeof(factor),
-                                 STARPU_R, traits->get_handle(in),
+                                 in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
 {
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_power.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_power,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &power, sizeof(power),
-                                 STARPU_R, traits->get_handle(in),
+                                 in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }

@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <starpu.h>
 #include "../../../include/dahl_types.h"
@@ -60,15 +61,53 @@ extern "C" void cuda_any_relu_backward(void* buffers[3], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
+static __global__ void any_scal(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp factor)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    out[index] = in[index] * factor;
+}
 
 extern "C" void cuda_any_scal(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    dahl_fp factor;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &factor);
+
+    auto in = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_scal<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(
+            nb_elem, in, out, factor);
+    dahl_cuda_check_error_and_sync();
 
 }
 
+static __global__ void any_power(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp power)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    out[index] = pow(in[index], power);
+}
 
 extern "C" void cuda_any_power(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    dahl_fp power;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &power);
+
+    dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_power<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(
+            nb_elem, in, out, power);
+    dahl_cuda_check_error_and_sync();
 
 }
 

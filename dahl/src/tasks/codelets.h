@@ -82,8 +82,8 @@ DEFINE_STARPU_CODELET(scalar_accumulate, 2, false, STARPU_RW|STARPU_COMMUTE, STA
 // Codelets that can be used with any type
 DEFINE_STARPU_CODELET(any_relu, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_relu_backward, 3, true, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_scal, 2, false, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_power, 2, false, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(any_scal, 2, true, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(any_power, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_sub, 3, true, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(any_add, 3, true, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(any_add_value, 2, false, STARPU_R, STARPU_W);

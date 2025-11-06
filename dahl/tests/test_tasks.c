@@ -375,6 +375,21 @@ void test_scal()
     dahl_arena_reset(testing_arena);
 }
 
+void test_power()
+{
+    dahl_vector* in = VECTOR(testing_arena, 4, { 1, 2, 3, 4 });
+    dahl_vector* expect = VECTOR(testing_arena, 4, { 1, 4, 9, 16 });
+
+    TASK_POWER_SELF(in, 2);
+    ASSERT_VECTOR_EQUALS(expect, in);
+
+    expect = VECTOR(testing_arena, 4, { 1, 1, 1, 1 });
+    TASK_POWER_SELF(in, 0);
+    ASSERT_VECTOR_EQUALS(expect, in);
+
+    dahl_arena_reset(testing_arena);
+}
+
 void test_divide()
 {
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
@@ -1710,7 +1725,8 @@ void test_tasks()
     // test_matrix_rotate_180();
     test_relu();
     test_relu_backward();
-    // test_scal();
+    test_scal();
+    test_power();
     // test_divide();
     test_sub();
     test_add();
