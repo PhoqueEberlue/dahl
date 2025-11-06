@@ -136,9 +136,7 @@ extern "C" void cuda_any_sub(void* buffers[3], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-static __global__ void any_add(
-        size_t nb_elem,
-        dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
+static __global__ void any_add(size_t nb_elem, dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
@@ -161,10 +159,27 @@ extern "C" void cuda_any_add(void* buffers[3], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
+static __global__ void any_add_value(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp value)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    out[index] = in[index] + value;
+}
 
 extern "C" void cuda_any_add_value(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    dahl_fp value;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &value);
 
+    auto in = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_add_value<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, value);
+    dahl_cuda_check_error_and_sync();
 }
 
 

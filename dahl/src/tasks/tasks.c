@@ -519,43 +519,53 @@ void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
 
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
-    size_t nb_elem = traits->get_nb_elem(c);
-
     // Check and update mode if `c` is using redux mode.
-    enum starpu_data_access_mode mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
-    cl_any_sub.modes[2] = mode;
+    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    cl_any_sub.modes[2] = c_mode;
 
+    // Check self mode
+    enum starpu_data_access_mode a_mode = (a == c)?STARPU_RW:STARPU_R; 
+    cl_any_sub.modes[0] = a_mode;
+
+    size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_any_sub,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 STARPU_R, traits->get_handle(a),
+                                 a_mode, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
-                                 mode, traits->get_handle(c), 0);
+                                 c_mode, traits->get_handle(c), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 {
-    size_t nb_elem = traits->get_nb_elem(c);
-
     // Check and update mode if `c` is using redux mode.
-    enum starpu_data_access_mode mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
-    cl_any_add.modes[2] = mode;
+    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    cl_any_add.modes[2] = c_mode;
 
+    // Check self mode
+    enum starpu_data_access_mode a_mode = (a == c)?STARPU_RW:STARPU_R; 
+    cl_any_add.modes[0] = a_mode;
+
+    size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_any_add,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 STARPU_R, traits->get_handle(a),
+                                 a_mode, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
-                                 mode, traits->get_handle(c), 0);
+                                 c_mode, traits->get_handle(c), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits)
 {
+    // Check self mode
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_add_value.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_add_value,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &value, sizeof(value),
-                                 STARPU_R, traits->get_handle(in),
+                                 in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
