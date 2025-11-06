@@ -77,6 +77,8 @@ void test_matrix_cross_correlation_2()
     };
 
     assert_matrix_cross_correlation((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
+
+    dahl_arena_reset(testing_arena);
 }
 
 void test_relu()
@@ -131,6 +133,54 @@ void test_relu()
 
     TASK_RELU(vector, out_vector);
     ASSERT_VECTOR_EQUALS(expect_vector, out_vector);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_relu_backward()
+{
+    dahl_block* input = BLOCK(testing_arena, 2, 3, 4, {
+        {
+            {-2.0F, 1.0F, 2.0F,-1.0F },
+            { 3.0F, 1.0F,-3.0F, 1.0F },
+            { 4.0F,-1.0F, 4.0F,-1.0F },
+        },
+        {
+            { 3.0F, 1.0F,-8.0F,-3.0F },
+            {-7.0F,-3.0F, 3.0F, 2.0F },
+            { 1.0F, 1.0F, 9.0F, 1.0F },
+        },
+    });
+
+    dahl_block* gradients = BLOCK(testing_arena, 2, 3, 4, {
+        {
+            { 0.5F, 0.5F, 0.2F, 0.4F },
+            { 0.8F, 4.8F, 7.0F, 6.7F },
+            { 4.9F, 7.7F, 6.0F, 6.0F },
+        },
+        {
+            { 0.5F, 5.0F, 9.3F, 1.0F },
+            { 7.9F, 9.8F, 8.4F, 0.6F },
+            { 4.5F, 0.8F, 7.7F, 8.2F },
+        },
+    });
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 3, 4, {
+        {
+            { 0.0F, 0.5F, 0.2F, 0.0F },
+            { 0.8F, 4.8F, 0.0F, 6.7F },
+            { 4.9F, 0.0F, 6.0F, 0.0F },
+        },
+        {
+            { 0.5F, 5.0F, 0.0F, 0.0F },
+            { 0.0F, 0.0F, 8.4F, 0.6F },
+            { 4.5F, 0.8F, 7.7F, 8.2F },
+        },
+    });
+
+    dahl_block* out = block_init(testing_arena, (dahl_shape3d){ .x = 4, .y = 3, .z = 2 });
+    TASK_RELU_BACKWARD(input, gradients, out);
+    ASSERT_BLOCK_EQUALS(expect, out);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1658,7 +1708,8 @@ void test_tasks()
     // test_matrix_vector_product();
     // test_matrix_matrix_product();
     // test_matrix_rotate_180();
-    // test_relu();
+    test_relu();
+    test_relu_backward();
     // test_scal();
     // test_divide();
     test_sub();

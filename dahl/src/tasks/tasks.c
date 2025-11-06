@@ -466,10 +466,14 @@ dahl_vector* task_vector_matrix_product_init(dahl_arena* arena, dahl_vector cons
 // ---------------------------------------- TRAITS ----------------------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits)
 {
+    // Handle case where function got called with `_self` variant
+    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
+    cl_any_relu.modes[0] = in_mode;
+
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_relu,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 STARPU_R, traits->get_handle(in), 
+                                 in_mode, traits->get_handle(in), 
                                  STARPU_W, traits->get_handle(out), 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
 }
