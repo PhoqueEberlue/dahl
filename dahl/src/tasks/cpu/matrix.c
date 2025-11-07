@@ -86,6 +86,7 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     {
         for (size_t i = 0; i < out_nx; i++)
         {
+            // Compute pooling window bounds
             size_t start_l = j * pool_size;
             size_t start_k = i * pool_size;
             size_t end_l = start_l + pool_size;

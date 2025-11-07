@@ -1036,7 +1036,7 @@ void test_check_predictions_batch()
     ASSERT_FP_EQUALS(1, scalar_get_value(correct_predictions));
 }
 
-void test_max_pooling()
+void test_matrix_max_pooling()
 {
     dahl_matrix* in = MATRIX(testing_arena, 4, 6, {
         { 1, 2, 3, 8, 9, 3 },
@@ -1070,7 +1070,7 @@ void test_max_pooling()
     ASSERT_MATRIX_EQUALS(expect_mask, mask);
 }
 
-void test_backward_max_pooling()
+void test_matrix_backward_max_pooling()
 {
     dahl_matrix* in = MATRIX(testing_arena, 2, 3, {
         { 3, 8, 9 },
@@ -1763,7 +1763,9 @@ void test_tasks()
     // test_matrix_cross_correlation_2();
     // test_matrix_sum_y_axis();
     // test_matrix_vector_product();
-    // test_matrix_matrix_product();
+    test_matrix_max_pooling();
+    test_matrix_backward_max_pooling();
+    test_matrix_matrix_product();
     // test_matrix_rotate_180();
     test_relu();
     test_relu_backward();
@@ -1792,8 +1794,6 @@ void test_tasks()
     // test_convolution_2d_2();
     // test_convolution_2d_3();
     // test_check_predictions_batch();
-    test_max_pooling();
-    // test_backward_max_pooling();
     // test_min_max();
     // test_convolution_2d_backward_filters();
     // test_convolution_2d_backward_input();

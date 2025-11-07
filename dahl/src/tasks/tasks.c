@@ -156,10 +156,14 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
 
 void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t pool_size)
 {
+    // Check self mode
+    enum starpu_data_access_mode mask_mode = (mask == out)?STARPU_RW:STARPU_R; 
+    cl_matrix_backward_max_pooling.modes[1] = mask_mode;
+
     int ret = starpu_task_insert(&cl_matrix_backward_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
-                             STARPU_R, mask->handle, 
+                             mask_mode, mask->handle, 
                              STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
