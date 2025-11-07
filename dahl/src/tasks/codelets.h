@@ -101,10 +101,10 @@ DEFINE_STARPU_CODELET(any_round, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(check_predictions_batch, 3, false, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, false, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_gradient, 3, false, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(convolution_2d, 3, false, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, false, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
+DEFINE_STARPU_CODELET(convolution_2d, 3, true, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, true, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(convolution_2d_backward_input, 3, false, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(convolution_2d_backward_input_padding_free, 3, false, STARPU_R, STARPU_R, STARPU_RW);
+DEFINE_STARPU_CODELET(convolution_2d_backward_input_padding_free, 3, true, STARPU_R, STARPU_R, STARPU_RW);
 
 // ---------------------------------------- Special codelets ----------------------------------------
 

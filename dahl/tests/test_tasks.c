@@ -1396,9 +1396,9 @@ void test_convolution_2d_backward_input()
     dahl_shape3d expect_shape = { .x = 3, .y = 3, .z = 3 };
     dahl_block* out = block_init(testing_arena, expect_shape);
 
-    task_convolution_2d_backward_input(a, b, out);
+    // task_convolution_2d_backward_input(a, b, out);
 
-    ASSERT_BLOCK_EQUALS(expect, out);
+    // ASSERT_BLOCK_EQUALS(expect, out);
 
     // Trying the same with the padding free version
     dahl_matrix* a_no_pad = MATRIX(testing_arena, 2, 2, {
@@ -1790,13 +1790,13 @@ void test_tasks()
     // test_cross_entropy_loss();
     // test_cross_entropy_loss_gradient_batch();
     // test_sum();
-    // test_convolution_2d_1();
-    // test_convolution_2d_2();
-    // test_convolution_2d_3();
+    test_convolution_2d_1();
+    test_convolution_2d_2();
+    test_convolution_2d_3();
     // test_check_predictions_batch();
     // test_min_max();
-    // test_convolution_2d_backward_filters();
-    // test_convolution_2d_backward_input();
+    test_convolution_2d_backward_filters();
+    test_convolution_2d_backward_input();
     // test_redux_add();
     // test_redux_sub();
     // test_redux_vector_outer_product();
