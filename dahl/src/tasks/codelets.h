@@ -56,11 +56,11 @@ DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, false, STARPU_R, STARPU_R, ST
 DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_matrix_product, 3, true, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, false, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_vector_product, 3, false, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_transpose, 2, false, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, true, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_vector_product, 3, true, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_transpose, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_resize, 1, false, STARPU_W);
-DEFINE_STARPU_CODELET(matrix_rotate_180, 2, false, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_rotate_180, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_zero, 1, false, STARPU_W); // not available as a task, only for STARPU_REDUX
 DEFINE_STARPU_CODELET(matrix_accumulate, 2, false, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 

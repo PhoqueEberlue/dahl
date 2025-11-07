@@ -1761,12 +1761,12 @@ void test_tasks()
     // test_block_add_padding();
     // test_matrix_cross_correlation_1();
     // test_matrix_cross_correlation_2();
-    // test_matrix_sum_y_axis();
-    // test_matrix_vector_product();
     test_matrix_max_pooling();
     test_matrix_backward_max_pooling();
     test_matrix_matrix_product();
-    // test_matrix_rotate_180();
+    test_matrix_sum_y_axis();
+    test_matrix_vector_product();
+    test_matrix_rotate_180();
     test_relu();
     test_relu_backward();
     test_scal();

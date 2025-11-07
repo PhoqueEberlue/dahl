@@ -165,38 +165,154 @@ extern "C" void cuda_matrix_matrix_product(void* buffers[3], void* cl_arg)
     dim3 grid((c.nx + block.x - 1) / block.x,
               (c.ny + block.y - 1) / block.y);
 
-    matrix_matrix_product<<<grid, block>>>(a, b ,c);
+    matrix_matrix_product<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(a, b ,c);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void matrix_sum_y_axis(
+        struct starpu_matrix_interface const in,
+        struct starpu_vector_interface  const out)
+{
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
+
+    // Column index handled by this thread
+    size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (x >= in.nx)
+        return;
+
+    dahl_fp sum = 0.0;
+
+    // Sum along Y axis
+    for (size_t y = 0; y < in.ny; y++)
+    {
+        sum += in_p[(y * in.ld) + x];
+    }
+
+    out_p[x] = sum;
+}
+
+extern "C" void cuda_matrix_sum_y_axis(void* buffers[2], void* cl_arg)
+{
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto out = STARPU_VECTOR_GET(buffers[1]);
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (in.nx + threadsPerBlock - 1) / threadsPerBlock;
+
+    matrix_sum_y_axis<<<blocksPerGrid, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(in, out);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void matrix_vector_product(
+        struct starpu_matrix_interface const mat,
+        struct starpu_vector_interface const vec,
+        struct starpu_vector_interface  const out)
+{
+    auto mat_p = (dahl_fp const*)mat.ptr;
+    auto vec_p = (dahl_fp const*)vec.ptr;
+    auto out_p = (dahl_fp*)out.ptr;   
+
+    // Thread index: one thread per row of the matrix
+    size_t y = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (y >= mat.ny)
+        return;
+
+    dahl_fp sum = 0.0;
+
+    // Compute dot product of row `y` of mat with vec
+    for (size_t x = 0; x < mat.nx; x++)
+    {
+        sum += mat_p[(y * mat.ld) + x] * vec_p[x];
+    }
+
+    out_p[y] = sum;
+}
+
+extern "C" void cuda_matrix_vector_product(void* buffers[3], void* cl_arg)
+{
+    auto mat = STARPU_MATRIX_GET(buffers[0]);
+    auto vec = STARPU_VECTOR_GET(buffers[1]);
+    auto out = STARPU_VECTOR_GET(buffers[2]);
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (mat.ny + threadsPerBlock - 1) / threadsPerBlock;
+
+    matrix_vector_product<<<blocksPerGrid, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(mat, vec, out);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void matrix_transpose(
+        struct starpu_matrix_interface const in,
+        struct starpu_matrix_interface  const out)
+{
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;   
+
+    // Thread coordinates (x = column, y = row)
+    size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= in.nx || y >= in.ny)
+        return;
+
+    // Perform the transpose
+    out_p[(x * out.ld) + y] = in_p[(y * in.ld) + x];
+}
+
+extern "C" void cuda_matrix_transpose(void* buffers[2], void* cl_arg)
+{
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto out = STARPU_MATRIX_GET(buffers[1]);
+
+    dim3 block(16, 16);
+    dim3 grid((in.nx + block.x - 1) / block.x,
+              (in.ny + block.y - 1) / block.y);
+
+    matrix_transpose<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(in, out);
     dahl_cuda_check_error_and_sync();
 }
 
 
-extern "C" void cuda_matrix_sum_y_axis(void* buffers[2], void* cl_arg)
-{
-
-}
-
-
-extern "C" void cuda_matrix_vector_product(void* buffers[3], void* cl_arg)
-{
-
-}
-
-
-extern "C" void cuda_matrix_transpose(void* buffers[2], void* cl_arg)
-{
-
-}
-
-
+// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_matrix_resize(void* buffers[1], void* cl_arg)
 {
 
 }
 
+static __global__ void matrix_rotate_180(
+        struct starpu_matrix_interface const in,
+        struct starpu_matrix_interface  const out)
+{
+    auto in_p = (dahl_fp const*)in.ptr;
+    auto out_p = (dahl_fp*)out.ptr;   
+
+    // Thread coordinates (x = column, y = row)
+    size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= in.nx || y >= in.ny)
+        return;
+
+    // Perform the transpose
+    size_t y_rot = (out.ny - 1 - y);
+    size_t x_rot = (out.nx - 1 - x);
+    out_p[(y_rot * out.ld) + x_rot] = in_p[(y * in.ld) + x];
+}
 
 extern "C" void cuda_matrix_rotate_180(void* buffers[2], void* cl_arg)
 {
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto out = STARPU_MATRIX_GET(buffers[1]);
 
+    dim3 block(16, 16);
+    dim3 grid((in.nx + block.x - 1) / block.x,
+              (in.ny + block.y - 1) / block.y);
+
+    matrix_rotate_180<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(in, out);
+    dahl_cuda_check_error_and_sync();
 }
 
 
