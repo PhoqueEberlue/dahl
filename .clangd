@@ -2,8 +2,8 @@ CompileFlags:
   # Clangd struggles to understand these nvcc flags
   Remove: [
     "-forward-unknown-to-host-compiler",
-    "-arch=all-major"
+    "-arch=all-major",
+    "-forward-unknown-to-host-compiler",
   ]
-
 Clangd:
   HeaderInsertion: Never
