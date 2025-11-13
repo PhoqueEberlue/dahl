@@ -3,6 +3,8 @@
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <starpu.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "../../../include/dahl_types.h"
 #include "../../macros.h"
 #include "common.cuh"
@@ -119,7 +121,11 @@ static __global__ void any_sub(
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
-    c[index] = a[index] - b[index];
+    // TODO: remove increment and keep asign after StarPU CUDA accumulate gets fixed.
+    if (a != c)
+        c[index] += a[index] - b[index];
+    else
+        c[index] = a[index] - b[index];
 }
 
 extern "C" void cuda_any_sub(void* buffers[3], void* cl_arg)
@@ -142,7 +148,11 @@ static __global__ void any_add(size_t nb_elem, dahl_fp const* a, dahl_fp const* 
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
-    c[index] = a[index] + b[index];
+    // TODO: remove increment and keep asign after StarPU CUDA accumulate gets fixed.
+    if (a != c)
+        c[index] += a[index] + b[index];
+    else
+        c[index] = a[index] + b[index];
 }
 
 extern "C" void cuda_any_add(void* buffers[3], void* cl_arg)
@@ -249,14 +259,6 @@ extern "C" void cuda_any_fill(void* buffers[1], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-
-// For debug purposes
-extern "C" void cuda_any_wait(void* buffers[1], void* cl_arg)
-{
-
-}
-
-
 extern "C" void cuda_any_copy(void* buffers[2], void* cl_arg)
 {
     size_t nb_elem;
@@ -304,5 +306,4 @@ extern "C" void cuda_any_round(void* buffers[2], void* cl_arg)
 
     any_round<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out, precision);
     dahl_cuda_check_error_and_sync();
-
 }

@@ -4,22 +4,195 @@
 #include "../../../include/dahl_types.h"
 #include "starpu_cuda.h"
 
-extern "C" void cuda_check_predictions_batch(void* buffers[3], void* cl_arg)
+static __global__ void check_predictions_batch(
+    struct starpu_matrix_interface const pred,
+    struct starpu_matrix_interface const targ,
+    struct starpu_variable_interface const correct_predictions)
 {
+    auto const pred_p = (const dahl_fp*)pred.ptr;
+    auto const targ_p = (const dahl_fp*)targ.ptr;
+    auto correct_p = (dahl_fp*)correct_predictions.ptr;
 
+    unsigned int y = blockIdx.x * blockDim.x + threadIdx.x;
+    if (y >= pred.ny)
+        return;
+
+    // Find argmax across x dimension
+    dahl_fp max_val = pred_p[y * pred.ld];
+    size_t max_index = 0;
+
+    for (size_t x = 1; x < pred.nx; x++)
+    {
+        dahl_fp val = pred_p[(y * pred.ld) + x];
+        if (val > max_val)
+        {
+            max_val = val;
+            max_index = x;
+        }
+    }
+
+    // Compare to target
+    if (targ_p[(y * targ.ld) + max_index] == 1)
+        atomicAdd(correct_p, 1.0F);
 }
 
+extern "C" void cuda_check_predictions_batch(void* buffers[3], void* cl_arg)
+{
+    auto pred = STARPU_MATRIX_GET(buffers[0]);
+    auto targ = STARPU_MATRIX_GET(buffers[1]);
+    auto correct_predictions = STARPU_VARIABLE_GET(buffers[2]);
+
+    // Zero initialize result on device
+    dahl_fp zero = 0;
+    cudaMemcpyAsync((void*)correct_predictions.ptr, &zero, sizeof(dahl_fp),
+                    cudaMemcpyHostToDevice, starpu_cuda_get_local_stream());
+
+    // Configure 1 thread per batch row
+    unsigned int threads = 256;
+    unsigned int blocks = (pred.ny + threads - 1) / threads;
+
+    check_predictions_batch<<<blocks, threads, 0, starpu_cuda_get_local_stream()>>>(
+        pred, targ, correct_predictions);
+
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void cross_entropy_loss_batch(
+    struct starpu_matrix_interface const pred,
+    struct starpu_matrix_interface const targ,
+    struct starpu_variable_interface const out)
+{
+    auto const pred_p = (const dahl_fp*)pred.ptr;
+    auto const targ_p = (const dahl_fp*)targ.ptr;
+    auto out_p  = (dahl_fp*)out.ptr;
+
+    unsigned int y = blockIdx.x * blockDim.x + threadIdx.x;
+    if (y >= pred.ny)
+        return;
+
+    // Find max value in the prediction batch
+    dahl_fp max_pred = pred_p[y * pred.ld];
+    for (size_t x = 1; x < pred.nx; x++)
+    {
+        dahl_fp val = pred_p[y * pred.ld + x];
+        if (val > max_pred)
+            max_pred = val;
+    }
+
+    // Compute log-sum-exp
+    dahl_fp sum_exp = 0.0;
+    for (size_t x = 0; x < pred.nx; x++)
+        sum_exp += exp(pred_p[(y * pred.ld) + x] - max_pred);
+
+    dahl_fp log_sum_exp = log(sum_exp);
+
+    // Finding the index of the true class because targ is in one-hot format
+    size_t true_idx = 0;
+    for (size_t x = 0; x < targ.nx; x++)
+    {
+        if (targ_p[(y * targ.ld) + x] == 1.0)
+        {
+            true_idx = x;
+            break;
+        }
+    }
+
+    // Log probability of the true class
+    dahl_fp log_prob = pred_p[(y * pred.ld) + true_idx] - max_pred - log_sum_exp;
+    dahl_fp loss = -log_prob / (dahl_fp)pred.ny;
+
+    // Accumulate loss (negative log likelihood)
+    atomicAdd(out_p, loss);
+}
 
 extern "C" void cuda_cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
 {
+    auto pred = STARPU_MATRIX_GET(buffers[0]);
+    auto targ = STARPU_MATRIX_GET(buffers[1]);
+    auto out  = STARPU_VARIABLE_GET(buffers[2]);
 
+    // Zero the output loss accumulator on device
+    dahl_fp zero = 0.0;
+    cudaMemcpyAsync((void*)out.ptr, &zero, sizeof(dahl_fp),
+                    cudaMemcpyHostToDevice, starpu_cuda_get_local_stream());
+
+    // Configure launch: 1 thread per sample
+    unsigned int threads = 256;
+    unsigned int blocks = (pred.ny + threads - 1) / threads;
+
+    cross_entropy_loss_batch<<<blocks, threads, 0, starpu_cuda_get_local_stream()>>>(
+        pred, targ, out);
+
+    dahl_cuda_check_error_and_sync();
 }
 
-
-extern "C" void cuda_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
+static __global__ void cross_entropy_loss_gradient_batch(
+    struct starpu_matrix_interface const pred,
+    struct starpu_matrix_interface const targ,
+    struct starpu_matrix_interface const out)
 {
+    auto const pred_p = (const dahl_fp*)pred.ptr;
+    auto const targ_p = (const dahl_fp*)targ.ptr;
+    auto out_p = (dahl_fp*)out.ptr;
 
+    unsigned int y = blockIdx.x * blockDim.x + threadIdx.x;
+    if (y >= pred.ny)
+        return;
+
+    const size_t num_classes = pred.nx;
+    const size_t ld = pred.ld;
+    const dahl_fp inv_batch = 1.0 / (dahl_fp)pred.ny;
+
+    // Find max value in the prediction batch
+    dahl_fp max_pred = pred_p[y * ld];
+    for (size_t x = 1; x < num_classes; x++)
+    {
+        dahl_fp val = pred_p[y * ld + x];
+        if (val > max_pred)
+            max_pred = val;
+    }
+
+    // Compute denominator of softmax
+    dahl_fp sum_exp = 0.0;
+    for (size_t x = 0; x < num_classes; x++)
+        sum_exp += exp(pred_p[(y * ld) + x] - max_pred);
+
+    // Softmax probabilities and gradient
+    for (size_t x = 0; x < num_classes; x++)
+    {
+        dahl_fp p = exp(pred_p[(y * ld) + x] - max_pred) / sum_exp;
+        out_p[(y * ld) + x] = p * inv_batch;
+    }
+
+    // Finding the index of the true class because targ is in one-hot format
+    size_t true_idx = 0;
+    for (size_t x = 0; x < num_classes; x++)
+    {
+        if (targ_p[(y * ld) + x] == 1.0)
+        {
+            true_idx = x;
+            break;
+        }
+    }
+
+    out_p[(y * ld) + true_idx] -= inv_batch;
 }
+
+extern "C" void cuda_cross_entropy_loss_gradient_batch(void* buffers[3], void* cl_arg)
+{
+    auto pred = STARPU_MATRIX_GET(buffers[0]);
+    auto targ = STARPU_MATRIX_GET(buffers[1]);
+    auto out  = STARPU_MATRIX_GET(buffers[2]);
+
+    dim3 block(256);
+    dim3 grid((pred.ny + block.x - 1) / block.x);
+
+    cross_entropy_loss_gradient_batch<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(
+        pred, targ, out);
+
+    dahl_cuda_check_error_and_sync();
+}
+
 
 static __global__ void convolution_2d(
         struct starpu_block_interface const in,
@@ -106,8 +279,9 @@ static __global__ void convolution_2d_backward_filters(
         }
     }
 
+    // TODO: remove += when starpu redux cuda is fixed
     // Set the corresponding value for index i,j,k
-    out_p[(k * out.ldz) + (j * out.ldy) + i] = cell_res;
+    out_p[(k * out.ldz) + (j * out.ldy) + i] += cell_res;
 }
 
 extern "C" void cuda_convolution_2d_backward_filters(void* buffers[3], void* cl_arg)

@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <starpu.h>
 #include "common.cuh"
 #include "../../macros.h"
@@ -40,10 +41,10 @@ static __global__ void matrix_max_pooling(
     {
         for (size_t x = start_x; x < end_x; x++)
         {
-            dahl_fp v = in_p[(y * in.ld) + x];
-            if (v > current_max)
+            dahl_fp value = in_p[(y * in.ld) + x];
+            if (value > current_max)
             {
-                current_max = v;
+                current_max = value;
                 current_max_y = y;
                 current_max_x = x;
             }
@@ -315,14 +316,50 @@ extern "C" void cuda_matrix_rotate_180(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-
 extern "C" void cuda_matrix_zero(void *buffers[1], void *cl_arg)
 {
-
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+	cudaMemsetAsync((dahl_fp*)in.ptr, 0, in.ld * in.ny * in.elemsize, 
+            starpu_cuda_get_local_stream());
 }
-
 
 extern "C" void cuda_matrix_accumulate(void *buffers[2], void *cl_arg)
 {
+    auto dst = STARPU_MATRIX_GET(buffers[0]);
+    auto src = STARPU_MATRIX_GET(buffers[1]);
+    auto dst_p = (dahl_fp*)dst.ptr;
+    auto src_p = (dahl_fp const*)src.ptr;
 
+    size_t nb_elem = dst.nx * dst.ny;
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    cuda_accumulate<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, dst_p, src_p);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void matrix_print(struct starpu_matrix_interface const mat)
+{
+    auto matrix_p = (dahl_fp const*)mat.ptr;
+
+    printf("matrix=%p nx=%llu ny=%llu ld=%llu\n{ ", (void*)mat.ptr, mat.nx, mat.ny, mat.ld);
+    for(size_t y = 0; y < mat.ny; y++)
+    {
+        printf("\t{ ");
+        for(size_t x = 0; x < mat.nx; x++)
+        {
+            dahl_fp value = matrix_p[(y * mat.ld) + x];
+            printf("%f, ", value);
+        }
+        printf("},\n");
+    }
+    printf("}\n");
+}
+
+extern "C" void cuda_matrix_print(void *buffers[1], void *cl_arg)
+{
+    auto matrix = STARPU_MATRIX_GET(buffers[0]);
+    matrix_print<<<1, 1, 0, starpu_cuda_get_local_stream()>>>(matrix);
+    dahl_cuda_check_error_and_sync();
 }

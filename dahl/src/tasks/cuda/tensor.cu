@@ -2,10 +2,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "../../macros.h"
-#include "../../../include/dahl_types.h"
 #include "starpu_cuda.h"
 #include "starpu_data_interfaces.h"
 #include "./common.cuh"
+#include "../../../include/dahl_data.h"
 
 static __global__ void tensor_sum_t_axis(
         struct starpu_tensor_interface const in,
@@ -107,5 +107,42 @@ extern "C" void cuda_tensor_accumulate(void *buffers[2], void *cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     cuda_accumulate<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, dst_p, src_p);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void tensor_print(struct starpu_tensor_interface const ts)
+{
+    auto tensor_p = (dahl_fp const*)ts.ptr;
+
+    printf("tensor=%p nx=%llu ny=%llu nz=%llu nt=%llu ldy=%llu ldz=%llu ldt=%llu\n{\n", 
+            (void*)ts.ptr, ts.nx, ts.ny, ts.nz, ts.nt, ts.ldy, ts.ldz, ts.ldt);
+    for(size_t t = 0; t < ts.nt; t++)
+    {
+        printf("\t{\n");
+        for(size_t z = 0; z < ts.nz; z++)
+        {
+            printf("\t\t{\n");
+            for(size_t y = 0; y < ts.ny; y++)
+            {
+                printf("\t\t\t{ ");
+                for(size_t x = 0; x < ts.nx; x++)
+                {
+                    dahl_fp value = 
+                        tensor_p[(t * ts.ldt) + (z * ts.ldz) + (y * ts.ldy) + x];
+                    printf("%f, ", value);
+                }
+                printf("},\n");
+            }
+            printf("\t\t},\n");
+        }
+        printf("\t},\n");
+    }
+	printf("}\n");
+}
+
+extern "C" void cuda_tensor_print(void *buffers[1], void *cl_arg)
+{
+    auto tensor = STARPU_TENSOR_GET(buffers[0]);
+    tensor_print<<<1, 1, 0, starpu_cuda_get_local_stream()>>>(tensor);
     dahl_cuda_check_error_and_sync();
 }

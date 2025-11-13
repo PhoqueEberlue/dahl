@@ -1,4 +1,5 @@
 #include <starpu.h>
+#include <stdio.h>
 #include "./common.cuh"
 #include "../../macros.h"
 
@@ -116,7 +117,7 @@ extern "C" void cuda_block_add_padding(void* buffers[2], void* cl_arg)
 extern "C" void cuda_block_zero(void *buffers[1], void *cl_arg)
 {
     auto in = STARPU_BLOCK_GET(buffers[0]);
-	cudaMemsetAsync((dahl_fp*)in.ptr, 0, in.ldy * in.nz * in.elemsize, 
+	cudaMemsetAsync((dahl_fp*)in.ptr, 0, in.ldz * in.nz * in.elemsize, 
             starpu_cuda_get_local_stream());
 }
 
@@ -133,5 +134,36 @@ extern "C" void cuda_block_accumulate(void *buffers[2], void *cl_arg)
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
     cuda_accumulate<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, dst_p, src_p);
+    dahl_cuda_check_error_and_sync();
+}
+
+static __global__ void block_print(struct starpu_block_interface const bl)
+{
+    auto block_p = (dahl_fp const*)bl.ptr;
+
+    printf("block=%p nx=%llu ny=%llu nz=%llu ldy=%llu ldz=%llu\n{\n", 
+            (void*)bl.ptr, bl.nx, bl.ny, bl.nz, bl.ldy, bl.ldz);
+    for(size_t z = 0; z < bl.nz; z++)
+    {
+        printf("\t{\n");
+        for(size_t y = 0; y < bl.ny; y++)
+        {
+            printf("\t\t{ ");
+            for(size_t x = 0; x < bl.nx; x++)
+            {
+                dahl_fp value = block_p[(z * bl.ldz) + (y * bl.ldy) + x];
+                printf("%f, ", value);
+            }
+            printf("},\n");
+        }
+        printf("\t},\n");
+    }
+    printf("}\n");
+}
+
+extern "C" void cuda_block_print(void *buffers[1], void *cl_arg)
+{
+    auto block = STARPU_BLOCK_GET(buffers[0]);
+    block_print<<<1, 1, 0, starpu_cuda_get_local_stream()>>>(block);
     dahl_cuda_check_error_and_sync();
 }

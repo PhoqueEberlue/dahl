@@ -15,7 +15,9 @@ static __global__ void cuda_accumulate(
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
-    dst_p[index] += src_p[index];
+    // dst_p[index] += src_p[index];
+    // TODO: tmp test, remove after
+    atomicAdd(&dst_p[index], src_p[index]);
 }
 
 #endif //!DAHL_COMMON_CUH
