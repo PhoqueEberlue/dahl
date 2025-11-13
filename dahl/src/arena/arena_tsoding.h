@@ -158,8 +158,8 @@ Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + (sizeof(uintptr_t) * capacity);
     // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
-    Region *r = (Region*)malloc(size_bytes); 
-    starpu_memory_pin(r->data, capacity * sizeof(uintptr_t));
+    Region *r;
+    starpu_malloc((void**)&r, size_bytes);
     ARENA_ASSERT(r); // TODO: since ARENA_ASSERT is disableable go through all the places where we use it to check for failed memory allocation and return with NULL there.
     r->next = NULL;
     r->count = 0;
@@ -437,8 +437,7 @@ void arena_free(Arena *a)
     while (r) {
         Region *r0 = r;
         r = r->next;
-        starpu_memory_unpin(r0->data, r0->capacity * sizeof(uintptr_t));
-        free_region(r0);
+        starpu_free_noflag(r0, r0->capacity * sizeof(uintptr_t));
     }
     a->begin = NULL;
     a->end = NULL;
@@ -449,8 +448,7 @@ void arena_trim(Arena *a){
     while (r) {
         Region *r0 = r;
         r = r->next;
-        starpu_memory_unpin(r0->data, r0->capacity * sizeof(uintptr_t));
-        free_region(r0);
+        starpu_free_noflag(r0, r0->capacity * sizeof(uintptr_t));
     }
     a->end->next = NULL;
 }
