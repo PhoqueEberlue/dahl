@@ -38,7 +38,7 @@ void task_tensor_sum_xyt_axes(dahl_tensor const* in, dahl_vector* out)
 {
     int ret = starpu_task_insert(&cl_tensor_sum_xyt_axes,
                                  STARPU_R, in->handle,
-                                 STARPU_W, out->handle, 0);
+                                 STARPU_RW, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -47,6 +47,12 @@ dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena* arena, dahl_tensor const*
     dahl_vector* out = vector_init(arena, tensor_get_shape(in).z);
     task_tensor_sum_xyt_axes(in, out);
     return out;
+}
+
+void task_cuda_tensor_print(dahl_tensor const* tensor)
+{
+    int ret = starpu_task_insert(&cl_cuda_tensor_print, STARPU_R, tensor->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 // ---------------------------------------- BLOCK ----------------------------------------
@@ -119,19 +125,25 @@ dahl_vector* task_block_sum_xy_axes_init(dahl_arena* arena, dahl_block const* in
     return out;
 }
 
-void task_block_add_padding(dahl_block const* in, dahl_block* out)
-{
-    int ret = starpu_task_insert(&cl_block_add_padding,
-                                 STARPU_R, in->handle,
-                                 STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-}
+// void task_block_add_padding(dahl_block const* in, dahl_block* out)
+// {
+//     int ret = starpu_task_insert(&cl_block_add_padding,
+//                                  STARPU_R, in->handle,
+//                                  STARPU_W, out->handle, 0);
+//     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+// }
+// 
+// dahl_block* task_block_add_padding_init(dahl_arena* arena, dahl_block const* in, dahl_shape3d const new_shape)
+// {
+//     dahl_block* out = block_init(arena, new_shape);
+//     task_block_add_padding(in, out);
+//     return out;
+// }
 
-dahl_block* task_block_add_padding_init(dahl_arena* arena, dahl_block const* in, dahl_shape3d const new_shape)
+void task_cuda_block_print(dahl_block const* block)
 {
-    dahl_block* out = block_init(arena, new_shape);
-    task_block_add_padding(in, out);
-    return out;
+    int ret = starpu_task_insert(&cl_cuda_block_print, STARPU_R, block->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 // ---------------------------------------- MATRIX ----------------------------------------
@@ -149,7 +161,7 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
-                             STARPU_W, mask->handle, 
+                             STARPU_RW, mask->handle, 
                              STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
@@ -315,6 +327,12 @@ dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* i
     return out;
 }
 
+void task_cuda_matrix_print(dahl_matrix const* matrix)
+{
+    int ret = starpu_task_insert(&cl_cuda_matrix_print, STARPU_R, matrix->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+}
+
 // ---------------------------------------- VECTOR ----------------------------------------
 // Note: do not implement a self function (in and out being the same buffers), as 
 // out buffer is used to store partial computations this would mess the results.
@@ -373,10 +391,7 @@ dahl_matrix* task_vector_diag_init(dahl_arena* arena, dahl_vector const* in)
 void task_vector_softmax_derivative(dahl_arena* scratch_arena, dahl_vector const* in, dahl_matrix* out)
 {
     task_vector_diag(in, out);
-    dahl_matrix* in_col = task_vector_to_column_matrix_init(scratch_arena, in);
-    dahl_matrix* in_row = task_vector_to_row_matrix_init(scratch_arena, in);
-    dahl_matrix* partial_res = task_matrix_matrix_product_init(scratch_arena, in_col, in_row);
-
+    dahl_matrix* partial_res = task_vector_outer_product_init(scratch_arena, in, in);
     TASK_SUB_SELF(out, partial_res);
 }
 
@@ -389,32 +404,32 @@ dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* 
     return result;
 }
 
-void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out)
-{
-    int ret = starpu_task_insert(&cl_vector_to_matrix,
-                                 STARPU_R, in->handle, 
-                                 STARPU_W, out->handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
-}
-
-dahl_matrix* task_vector_to_matrix_init(dahl_arena* arena, dahl_vector const* vector, dahl_shape2d new_shape)
-{
-    dahl_matrix* res = matrix_init(arena, new_shape);
-    task_vector_to_matrix(vector, res);
-    return res;
-}
-
-dahl_matrix* task_vector_to_column_matrix_init(dahl_arena* arena, dahl_vector const* vector)
-{
-    dahl_shape2d new_shape = { .x = 1, .y = vector_get_len(vector) };
-    return task_vector_to_matrix_init(arena, vector, new_shape);
-}
-
-dahl_matrix* task_vector_to_row_matrix_init(dahl_arena* arena, dahl_vector const* vector)
-{
-    dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
-    return task_vector_to_matrix_init(arena, vector, new_shape);
-}
+// void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out)
+// {
+//     int ret = starpu_task_insert(&cl_vector_to_matrix,
+//                                  STARPU_R, in->handle, 
+//                                  STARPU_W, out->handle, 0);
+// 	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+// }
+// 
+// dahl_matrix* task_vector_to_matrix_init(dahl_arena* arena, dahl_vector const* vector, dahl_shape2d new_shape)
+// {
+//     dahl_matrix* res = matrix_init(arena, new_shape);
+//     task_vector_to_matrix(vector, res);
+//     return res;
+// }
+// 
+// dahl_matrix* task_vector_to_column_matrix_init(dahl_arena* arena, dahl_vector const* vector)
+// {
+//     dahl_shape2d new_shape = { .x = 1, .y = vector_get_len(vector) };
+//     return task_vector_to_matrix_init(arena, vector, new_shape);
+// }
+// 
+// dahl_matrix* task_vector_to_row_matrix_init(dahl_arena* arena, dahl_vector const* vector)
+// {
+//     dahl_shape2d new_shape = { .x = vector_get_len(vector), .y = 1 };
+//     return task_vector_to_matrix_init(arena, vector, new_shape);
+// }
 
 void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_matrix* c)
 {
@@ -465,6 +480,12 @@ dahl_vector* task_vector_matrix_product_init(dahl_arena* arena, dahl_vector cons
     task_vector_matrix_product(vec, mat, out);
 
     return out;
+}
+
+void task_cuda_vector_print(dahl_vector const* vec)
+{
+    int ret = starpu_task_insert(&cl_cuda_vector_print, STARPU_R, vec->handle, 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 // ---------------------------------------- TRAITS ----------------------------------------
@@ -524,38 +545,50 @@ void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     // Check and update mode if `c` is using redux mode.
-    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_RW;
     cl_any_sub.modes[2] = c_mode;
-
-    // Check self mode
-    enum starpu_data_access_mode a_mode = (a == c)?STARPU_RW:STARPU_R; 
-    cl_any_sub.modes[0] = a_mode;
 
     size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_any_sub,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 a_mode, traits->get_handle(a),
+                                 STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  c_mode, traits->get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_sub_self(void* self, void const* other, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(self);
+    int ret = starpu_task_insert(&cl_any_sub_self,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_RW, traits->get_handle(self),
+                                 STARPU_R, traits->get_handle(other), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
 {
     // Check and update mode if `c` is using redux mode.
-    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_W;
+    enum starpu_data_access_mode c_mode = traits->get_is_redux(c)?STARPU_REDUX:STARPU_RW;
     cl_any_add.modes[2] = c_mode;
-
-    // Check self mode
-    enum starpu_data_access_mode a_mode = (a == c)?STARPU_RW:STARPU_R; 
-    cl_any_add.modes[0] = a_mode;
 
     size_t nb_elem = traits->get_nb_elem(c);
     int ret = starpu_task_insert(&cl_any_add,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 a_mode, traits->get_handle(a),
+                                 STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  c_mode, traits->get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+}
+
+void task_add_self(void* self, void const* other, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(self);
+    int ret = starpu_task_insert(&cl_any_add_self,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_RW, traits->get_handle(self),
+                                 STARPU_R, traits->get_handle(other), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
@@ -645,7 +678,9 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
     int ret = starpu_task_insert(&cl_any_wait,
                                  STARPU_VALUE, &duration, sizeof(duration),
                                  STARPU_W, traits->get_handle(object), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    // Can't use sleep for CUDA, so we ignore error "-19:No such device"
+    if (ret != -19)
+        STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_copy(void const* in, void* out, dahl_traits* traits)
@@ -743,7 +778,7 @@ dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix c
 
 void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients)
 {
-    int ret = starpu_task_insert(&cl_cross_entropy_loss_gradient,
+    int ret = starpu_task_insert(&cl_cross_entropy_loss_gradient_batch,
                              STARPU_R, predictions->handle,
                              STARPU_R, targets->handle,
                              STARPU_W, gradients->handle, 0);
@@ -780,24 +815,24 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
-void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
-{
-    // Check and update mode if out is using redux mode.
-    enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
-    cl_convolution_2d_backward_input.modes[2] = mode;
-
-    int ret = starpu_task_insert(&cl_convolution_2d_backward_input,
-                                 STARPU_R, in->handle,
-                                 STARPU_R, kernel->handle,
-                                 mode, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
-}
+// void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
+// {
+//     // Check and update mode if out is using redux mode.
+//     enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
+//     cl_convolution_2d_backward_input.modes[2] = mode;
+// 
+//     int ret = starpu_task_insert(&cl_convolution_2d_backward_input,
+//                                  STARPU_R, in->handle,
+//                                  STARPU_R, kernel->handle,
+//                                  mode, out->handle, 0);
+//     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+// }
 
 void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
 {
     // Check and update mode if out is using redux mode.
     enum starpu_data_access_mode mode = out->is_redux?STARPU_REDUX:STARPU_RW;
-    cl_convolution_2d_backward_input.modes[2] = mode;
+    cl_convolution_2d_backward_input_padding_free.modes[2] = mode;
 
     int ret = starpu_task_insert(&cl_convolution_2d_backward_input_padding_free,
                                  STARPU_R, in->handle,

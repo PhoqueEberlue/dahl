@@ -86,21 +86,6 @@ void vector_diag(void* buffers[2], void* cl_arg)
     }
 }
 
-void vector_to_matrix(void* buffers[2], void* cl_arg)
-{
-    size_t const in_len = STARPU_VECTOR_GET_NX(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[0]);
-
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
-
-    assert(out_nx * out_ny == in_len);
-    
-    for (size_t i = 0; i < in_len; i++)
-        out[i] = in[i];
-}
-
 void vector_outer_product(void* buffers[3], void* cl_arg)
 {
     size_t const a_len = STARPU_VECTOR_GET_NX(buffers[0]);
@@ -121,7 +106,7 @@ void vector_outer_product(void* buffers[3], void* cl_arg)
     {
         for (size_t x = 0; x < a_len; x++)
         {
-            c[(y * c_ld) + x] = b[y] * a[x];
+            c[(y * c_ld) + x] += b[y] * a[x];
         }
     }
 }

@@ -279,7 +279,6 @@ static __global__ void convolution_2d_backward_filters(
         }
     }
 
-    // TODO: remove += when starpu redux cuda is fixed
     // Set the corresponding value for index i,j,k
     out_p[(k * out.ldz) + (j * out.ldy) + i] += cell_res;
 }

@@ -78,7 +78,6 @@ static __global__ void vector_outer_product(
     size_t x = blockIdx.x * blockDim.x + threadIdx.x;
     size_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    // TODO: remove += when starpu redux for cuda is fixed
     if (x < a.nx && y < b.nx)
         c_p[(y * c.ld) + x] += b_p[y] * a_p[x];
 }

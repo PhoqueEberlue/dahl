@@ -120,7 +120,7 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     *out = batch_loss / (dahl_fp)pred_ny;
 }
 
-void cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
+void cross_entropy_loss_gradient_batch(void* buffers[3], void* cl_arg)
 {
     // Predictions batch
     size_t const pred_nx = STARPU_MATRIX_GET_NX(buffers[0]);
@@ -302,73 +302,73 @@ void convolution_2d_backward_filters(void* buffers[3], void* cl_arg)
                 }
 
                 // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+                out[(k * out_ldz) + (j * out_ldy) + i] += cell_res;
             }
         }
     }
 }
 
-void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
-{
-    // Input matrix, here the gradients output of the layer just after the convolution
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
-
-    // Kernel block, here the filters (weights) associated to the convolution
-    size_t const k_nx = STARPU_BLOCK_GET_NX(buffers[1]);
-    size_t const k_ny = STARPU_BLOCK_GET_NY(buffers[1]);
-    size_t const k_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
-    size_t const k_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
-    size_t const k_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
-    dahl_fp const* kernel = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
-
-    // Output block, here the loss derivative of the input
-    size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[2]);
-    size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[2]);
-    size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
-    size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
-    size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
-
-    assert(out_nx == in_nx - k_nx + 1);
-    assert(out_ny == in_ny - k_ny + 1);
-    assert(out_nz == k_nz);
-
-    // loop through i,j,k on axes x,y,z of the output block
-    for (size_t k = 0; k < out_nz; k++)
-    {
-        for (size_t j = 0; j < out_ny; j++)
-        {
-            for (size_t i = 0; i < out_nx; i++)
-            {
-                dahl_fp cell_res = 0.0F;
-
-                // loop through l,m on axes x,y of the kernel
-                for (size_t m = 0; m < k_ny; m++)
-                {
-                    for (size_t l = 0; l < k_nx; l++)
-                    {
-                        // Reverse indexes l and m so we don't actually have to rotate(180) the kernel matrix.
-                        // However we still use k for axis z because we write each result for the current channel into an output channel.
-                        dahl_fp kernel_value = kernel[(k * k_ldz) + ((k_ny - 1 - m) * k_ldy) + (k_nx - 1 - l)];
-                        // Here we use k, the index on the z axis of the output, as input owns as many channels.
-                        // The kernel doesn't own a channel dimension in this function, so we ignore it.
-                        // Then we add the offset of the slidding window (i,j) to (l,m)
-                        // as they both correspond to (x,y).
-                        dahl_fp in_value = in[((m + j) * in_ld) + l + i];
-
-                        cell_res += in_value * kernel_value;
-                    }
-                }
-
-                // Set the corresponding value for index i,j,k
-                out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
-            }
-        }
-    }
-}
+// void convolution_2d_backward_input(void* buffers[3], void* cl_arg)
+// {
+//     // Input matrix, here the gradients output of the layer just after the convolution
+//     size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
+//     size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
+//     size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
+//     dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+// 
+//     // Kernel block, here the filters (weights) associated to the convolution
+//     size_t const k_nx = STARPU_BLOCK_GET_NX(buffers[1]);
+//     size_t const k_ny = STARPU_BLOCK_GET_NY(buffers[1]);
+//     size_t const k_nz = STARPU_BLOCK_GET_NZ(buffers[1]);
+//     size_t const k_ldy = STARPU_BLOCK_GET_LDY(buffers[1]);
+//     size_t const k_ldz = STARPU_BLOCK_GET_LDZ(buffers[1]);
+//     dahl_fp const* kernel = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[1]);
+// 
+//     // Output block, here the loss derivative of the input
+//     size_t const out_nx = STARPU_BLOCK_GET_NX(buffers[2]);
+//     size_t const out_ny = STARPU_BLOCK_GET_NY(buffers[2]);
+//     size_t const out_nz = STARPU_BLOCK_GET_NZ(buffers[2]);
+//     size_t const out_ldy = STARPU_BLOCK_GET_LDY(buffers[2]);
+//     size_t const out_ldz = STARPU_BLOCK_GET_LDZ(buffers[2]);
+//     dahl_fp* out = (dahl_fp*)STARPU_BLOCK_GET_PTR(buffers[2]);
+// 
+//     assert(out_nx == in_nx - k_nx + 1);
+//     assert(out_ny == in_ny - k_ny + 1);
+//     assert(out_nz == k_nz);
+// 
+//     // loop through i,j,k on axes x,y,z of the output block
+//     for (size_t k = 0; k < out_nz; k++)
+//     {
+//         for (size_t j = 0; j < out_ny; j++)
+//         {
+//             for (size_t i = 0; i < out_nx; i++)
+//             {
+//                 dahl_fp cell_res = 0.0F;
+// 
+//                 // loop through l,m on axes x,y of the kernel
+//                 for (size_t m = 0; m < k_ny; m++)
+//                 {
+//                     for (size_t l = 0; l < k_nx; l++)
+//                     {
+//                         // Reverse indexes l and m so we don't actually have to rotate(180) the kernel matrix.
+//                         // However we still use k for axis z because we write each result for the current channel into an output channel.
+//                         dahl_fp kernel_value = kernel[(k * k_ldz) + ((k_ny - 1 - m) * k_ldy) + (k_nx - 1 - l)];
+//                         // Here we use k, the index on the z axis of the output, as input owns as many channels.
+//                         // The kernel doesn't own a channel dimension in this function, so we ignore it.
+//                         // Then we add the offset of the slidding window (i,j) to (l,m)
+//                         // as they both correspond to (x,y).
+//                         dahl_fp in_value = in[((m + j) * in_ld) + l + i];
+// 
+//                         cell_res += in_value * kernel_value;
+//                     }
+//                 }
+// 
+//                 // Set the corresponding value for index i,j,k
+//                 out[(k * out_ldz) + (j * out_ldy) + i] = cell_res;
+//             }
+//         }
+//     }
+// }
 
 /*
  * This function implements a "full" convolution with padding free input. This means that the output

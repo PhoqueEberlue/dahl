@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <threads.h>
+#include <sys/mman.h>
 
 void matrix_cross_correlation(void* buffers[3], void* cl_arg)
 {

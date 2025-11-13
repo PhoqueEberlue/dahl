@@ -23,6 +23,7 @@ dahl_block* task_tensor_sum_t_axis_init(dahl_arena*, dahl_tensor const* in);
 void task_tensor_sum_xyt_axes(dahl_tensor const* in, dahl_vector* out);
 dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena*, dahl_tensor const* in);
 
+void task_cuda_tensor_print(dahl_tensor const* tensor);
 // ------------------------------------ TASKS FOR DAHL_BLOCK TYPE ------------------------------------
 // Sum the block values over the z axis and return it as a matrix of the same x,y shape.
 void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out);
@@ -42,12 +43,13 @@ dahl_vector* task_block_sum_xy_axes_init(dahl_arena*, dahl_block const* in);
 // Add padding to the block `in` by fitting it to `out` that should be of a greater shape.
 // E.g.: in(4,3,2) with out(6,5,2) will add zeros on the corner of the matrices, but not on the z dimension.
 // If the new padding is even, the remainder is placed at the end of the axis.
-void task_block_add_padding(dahl_block const* in, dahl_block* out);
+// void task_block_add_padding(dahl_block const* in, dahl_block* out);
 
 // Add padding to the block `in` by returning a new block with the `new_shape` that should be greater than `in`'s shape.
 // If the new padding is even, the remainder is placed at the end of the axis.
-dahl_block* task_block_add_padding_init(dahl_arena*, dahl_block const* in, dahl_shape3d new_shape);
+// dahl_block* task_block_add_padding_init(dahl_arena*, dahl_block const* in, dahl_shape3d new_shape);
 
+void task_cuda_block_print(dahl_block const* block);
 // ------------------------------------ TASKS FOR DAHL_MATRIX TYPE ------------------------------------
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator
@@ -98,6 +100,7 @@ void task_matrix_rotate_180(dahl_matrix const* in, dahl_matrix* out);
 // Rotate matrix `in` by 180 degrees and return the result into a new matrix
 dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* in);
 
+void task_cuda_matrix_print(dahl_matrix const* matrix);
 // ------------------------------------ TASKS FOR DAHL_VECTOR TYPE ------------------------------------
 // Performs the softmax function with `in` vector and writes the result to `out`.
 void task_vector_softmax(dahl_vector const* in, dahl_vector* out);
@@ -119,16 +122,18 @@ dahl_matrix* task_vector_diag_init(dahl_arena*, dahl_vector const* in);
 void task_vector_softmax_derivative(dahl_arena* scratch_arena, dahl_vector const* in, dahl_matrix* out);
 dahl_matrix* task_vector_softmax_derivative_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_vector const* in);
 
-void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
-
-// Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
-dahl_matrix* task_vector_to_matrix_init(dahl_arena*, dahl_vector const*, dahl_shape2d new_shape);
-
-// Copy the vector into a new column matrix of shape (1, len)
-dahl_matrix* task_vector_to_column_matrix_init(dahl_arena*, dahl_vector const*);
-
-// Copy the vector into a new row matrix of shape (len, 1)
-dahl_matrix* task_vector_to_row_matrix_init(dahl_arena*, dahl_vector const*);
+// TODO: we don't need these functions anymore, however they could be refactored as no copy data
+// transformations such as `tensor_flatten_along_t_no_copy`, thus they would not be tasks anymore.
+// void task_vector_to_matrix(dahl_vector const* in, dahl_matrix* out);
+// 
+// // Copy the vector into a new matrix. The shape product must be equal to the lenght of the orignal vector (x*y==len)
+// dahl_matrix* task_vector_to_matrix_init(dahl_arena*, dahl_vector const*, dahl_shape2d new_shape);
+// 
+// // Copy the vector into a new column matrix of shape (1, len)
+// dahl_matrix* task_vector_to_column_matrix_init(dahl_arena*, dahl_vector const*);
+// 
+// // Copy the vector into a new row matrix of shape (len, 1)
+// dahl_matrix* task_vector_to_row_matrix_init(dahl_arena*, dahl_vector const*);
 
 // Compute the outer product of vectors `a` and `b`, storing the result into the matrix `c` with dimensions len(a) x len(b)
 // `c` is compatible with redux objects.
@@ -146,13 +151,17 @@ void task_vector_shuffle(dahl_vector* vec);
 void task_vector_matrix_product(dahl_vector const* vec, dahl_matrix const* mat, dahl_vector* out);
 dahl_vector* task_vector_matrix_product_init(dahl_arena*, dahl_vector const* vec, dahl_matrix const* mat);
 
+void task_cuda_vector_print(dahl_vector const* vec);
+
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
 void task_relu(void const* in, void* out, dahl_traits* traits);
 void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits);
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
+void task_sub_self(void* self, void const* other, dahl_traits* traits);
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits);
+void task_add_self(void* self, void const* other, dahl_traits* traits);
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits);
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits);
@@ -219,7 +228,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two
 #define TASK_DIVIDE_SELF(SELF, DIVISOR) TASK_DIVIDE(SELF, SELF, DIVISOR)
 
-// Performs `c` = `a` - `b`, where:
+// Performs `c` += `a` - `b`, where:
 // - `-` is the value by value substraction
 // - `a`, `b` and `c` are dahl_any objects of the same shape
 // `c` is compatible with redux objects.
@@ -232,13 +241,19 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
         task_sub(A, B, C, GET_TRAITS(C));               \
     } while (0)
 
-// Performs a_self -= b, where:
-// - `-` is the value by value substraction
-// - `a_self` and `b` are dahl data structures objects of the same type and shape
-// - `a_self` is modified by the function with the substraction result
-#define TASK_SUB_SELF(A_SELF, B) TASK_SUB(A_SELF, B, A_SELF)
+// Performs `self` -= `other`, where:
+// - `+` is the value by value substraction
+// - `self` and `other` are dahl_any objects of the same shape
+// - `self` is modified by the function with the substraction result
+// In contrast to TASK_SUB, `self` is NOT compatible with redux objects.
+#define TASK_SUB_SELF(SELF, OTHER)                             \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((SELF), (OTHER)),           \
+                   "SELF and OTHER must be of the same type"); \
+        task_sub_self(SELF, OTHER, GET_TRAITS(SELF));          \
+    } while (0)
 
-// Performs `c` = `a` + `b`, where:
+// Performs `c` += `a` + `b`, where:
 // - `+` is the value by value addition
 // - `a`, `b` and `c` are dahl_any objects of the same shape
 // `c` is compatible with redux objects.
@@ -251,13 +266,17 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
         task_add(A, B, C, GET_TRAITS(C));               \
     } while (0)
 
-// Performs `a_self` += `b`, where:
+// Performs `self` += `other`, where:
 // - `+` is the value by value addition
-// - `a_self` and `b` are dahl_any objects of the same shape
-// - `a_self` is modified by the function with the addition result
-// /!\ Care: `c` is NOT compatible with redux objects on the self version.
-// TODO Find a way to make it work
-#define TASK_ADD_SELF(A_SELF, B) TASK_ADD(A_SELF, B, A_SELF)
+// - `self` and `other` are dahl_any objects of the same shape
+// - `self` is modified by the function with the addition result
+// In contrast to TASK_ADD, `self` is NOT compatible with redux objects.
+#define TASK_ADD_SELF(SELF, OTHER)                             \
+    do {                                                       \
+        _Static_assert(TYPES_MATCH((SELF), (OTHER)),           \
+                   "SELF and OTHER must be of the same type"); \
+        task_add_self(SELF, OTHER, GET_TRAITS(SELF));          \
+    } while (0)
 
 // Add `value` to every elements of `in` and put the result in `out`
 #define TASK_ADD_VALUE(IN, OUT, VALUE)                   \
@@ -377,7 +396,7 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
 // `out` is derivative of the input.
 // Results are computed on each `kernel` channels and stored on their respective `out` channel.
 // `out` is compatible with redux objects.
-void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
+// void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 
 void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out);
 

@@ -95,7 +95,21 @@ void any_sub(void* buffers[3], void* cl_arg)
 
     for (size_t i = 0; i < nb_elem; i++)
     {
-        c[i] = a[i] - b[i];
+        c[i] += a[i] - b[i];
+    }
+}
+
+void any_sub_self(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp* self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp const* other = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        self[i] -= other[i];
     }
 }
 
@@ -110,7 +124,21 @@ void any_add(void* buffers[3], void* cl_arg)
 
     for (size_t i = 0; i < nb_elem; i++)
     {
-        c[i] = a[i] + b[i];
+        c[i] += a[i] + b[i];
+    }
+}
+
+void any_add_self(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
+
+    dahl_fp* self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    dahl_fp const* other = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        self[i] += other[i];
     }
 }
 
