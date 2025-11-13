@@ -1,9 +1,10 @@
 #include "data_structures.h"
+#include "starpu.h"
 #include "starpu_data.h"
 #include "starpu_data_interfaces.h"
 #include "../tasks/codelets.h"
 
-void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux)
+void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     // The vector cannot be partitioned so we don't allocate space for the partition list
     metadata* md = dahl_arena_alloc(arena, sizeof(metadata));
@@ -13,19 +14,18 @@ void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     dahl_vector* vector = dahl_arena_alloc(arena, sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
-    vector->is_redux = is_redux;
-
-    if (is_redux) { vector_enable_redux(vector); }
+    vector->is_redux = false;
 
     return vector;
 }
 
-dahl_vector* _vector_init_data(dahl_arena* arena, size_t const len, bool is_redux)
+dahl_fp* _vector_data_alloc(dahl_arena* arena, size_t const len)
 {
-    dahl_fp* data = dahl_arena_alloc(arena, len * sizeof(dahl_fp));
+    return dahl_arena_alloc(arena, len * sizeof(dahl_fp));
+}
 
-    for (size_t i = 0; i < len; i++) { data[i] = 0.0F; }
-
+starpu_data_handle_t _vector_data_register(dahl_arena* arena, size_t const len, dahl_fp* data)
+{
     starpu_data_handle_t handle = nullptr;
     starpu_vector_data_register(
         &handle,
@@ -36,41 +36,47 @@ dahl_vector* _vector_init_data(dahl_arena* arena, size_t const len, bool is_redu
     );
 
     dahl_arena_attach_handle(arena, handle);
-
-    return _vector_init_from_ptr(arena, handle, data, false);
+    return handle;
 }
 
 dahl_vector* vector_init(dahl_arena* arena, size_t const len)
 {
-    return _vector_init_data(arena, len, false);
+    dahl_fp* data = _vector_data_alloc(arena, len);
+    memset(data, 0, len * sizeof(dahl_fp));
+
+    starpu_data_handle_t handle = _vector_data_register(arena, len, data);
+    dahl_vector* vector = _vector_init_from_ptr(arena, handle, data);
+    return vector;
 }
 
 dahl_vector* vector_init_redux(dahl_arena* arena, size_t const len)
 {
-    return _vector_init_data(arena, len, true);
+    dahl_vector* vector = vector_init(arena, len);
+    // Enable redux mode
+    vector_enable_redux(vector);
+    return vector;
 }
 
 dahl_vector* vector_init_from(dahl_arena* arena, size_t const len, dahl_fp const* data)
 {
-    dahl_vector* vector = vector_init(arena, len);
-    vector_set_from(vector, data);
-    return vector;
+    dahl_fp* vector_data = _vector_data_alloc(arena, len);
+
+    for (size_t i = 0; i < len; i++)
+         vector_data[i] = data[i];
+
+    starpu_data_handle_t handle = _vector_data_register(arena, len, vector_data);
+    return _vector_init_from_ptr(arena, handle, vector_data);
 }
 
 dahl_vector* vector_init_random(dahl_arena* arena, size_t const len, dahl_fp min, dahl_fp max)
 {
-    dahl_vector* vector = vector_init(arena, len);
-
-    vector_acquire(vector);
+    dahl_fp* vector_data = _vector_data_alloc(arena, len);
 
     for (size_t x = 0; x < len; x++)
-    {
-        vector_set_value(vector, x, fp_rand(min, max));
-    }
+        vector_data[x] = fp_rand(min, max);
 
-    vector_release(vector);
-
-    return vector;
+    starpu_data_handle_t handle = _vector_data_register(arena, len, vector_data);
+    return _vector_init_from_ptr(arena, handle, vector_data);
 }
 
 size_t vector_get_len(dahl_vector const *const vector)

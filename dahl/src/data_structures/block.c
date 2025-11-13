@@ -1,13 +1,15 @@
 #include "data_structures.h"
 #include "custom_filters.h"
 #include "../misc.h"
+#include "starpu_data.h"
 #include "sys/types.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "../tasks/codelets.h"
 
-void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux)
+// Allocate a dahl_block structure from a handle, and a pointer to data.
+void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     metadata* md = dahl_arena_alloc(
         arena,
@@ -27,20 +29,22 @@ void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_
     block->handle = handle;
     block->data = data;
     block->meta = md;
-    block->is_redux = is_redux;
-
-    if (is_redux) { block_enable_redux(block); }
+    block->is_redux = false;
 
     return block;
 }
 
-dahl_block* _block_init_data(dahl_arena* arena, dahl_shape3d const shape, bool is_redux)
+// Allocate enough space for the given `shape` into the `arena`.
+dahl_fp* _block_data_alloc(dahl_arena* arena, dahl_shape3d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z;
-    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
+    return dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
+}
 
-    for (size_t i = 0; i < n_elems; i++) { data[i] = 0.0F; }
-
+// Registers some `data` array to starpu, returning a handle with block type and correct dimensions.
+starpu_data_handle_t _block_data_register(
+        dahl_arena* arena, dahl_shape3d const shape, dahl_fp* data)
+{
     starpu_data_handle_t handle = nullptr;
     starpu_block_data_register(
         &handle,
@@ -55,31 +59,40 @@ dahl_block* _block_init_data(dahl_arena* arena, dahl_shape3d const shape, bool i
     );
 
     dahl_arena_attach_handle(arena, handle); 
-
-    return _block_init_from_ptr(arena, handle, data, is_redux);
+    return handle;
 }
 
 dahl_block* block_init(dahl_arena* arena, dahl_shape3d const shape)
 {
-    return _block_init_data(arena, shape, false);
+    dahl_fp* data = _block_data_alloc(arena, shape);
+    memset(data, 0, shape.x*shape.y*shape.z * sizeof(dahl_fp));
+    starpu_data_handle_t handle = _block_data_register(arena, shape, data);
+    dahl_block* block = _block_init_from_ptr(arena, handle, data);
+    return block;
 }
 
 dahl_block* block_init_redux(dahl_arena* arena, dahl_shape3d const shape)
 {
-    return _block_init_data(arena, shape, true);
+    dahl_block* block = block_init(arena, shape);
+    // Enable redux mode
+    block_enable_redux(block);
+    return block;
 }
 
 dahl_block* block_init_from(dahl_arena* arena, dahl_shape3d const shape, dahl_fp const* data)
 {
-    dahl_block* block = block_init(arena, shape);
-    block_set_from(block, data);
-    return block;
+    dahl_fp* block_data = _block_data_alloc(arena, shape);
+
+    for (size_t i = 0; i < shape.x*shape.y*shape.z; i++)
+         block_data[i] = data[i];
+
+    starpu_data_handle_t handle = _block_data_register(arena, shape, block_data);
+    return _block_init_from_ptr(arena, handle, block_data);
 }
 
 dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape, dahl_fp min, dahl_fp max)
 {
-    dahl_block* block = block_init(arena, shape);
-    block_acquire(block);
+    dahl_fp* block_data = _block_data_alloc(arena, shape);
 
     for (size_t z = 0; z < shape.z; z++)
     {
@@ -87,14 +100,14 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape, dahl_
         {
             for (size_t x = 0; x < shape.x; x++)
             {
-                block_set_value(block, x, y, z, fp_rand(min, max));
+                size_t index = (z * shape.x * shape.y) + (y * shape.x) + x;
+                block_data[index] = fp_rand(min, max);
             }
         }
     }
 
-    block_release(block);
-
-    return block;
+    starpu_data_handle_t handle = _block_data_register(arena, shape, block_data);
+    return _block_init_from_ptr(arena, handle, block_data);
 }
 
 void block_enable_redux(dahl_block* block)

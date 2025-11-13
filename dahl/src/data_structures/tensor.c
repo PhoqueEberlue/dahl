@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux)
+void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     metadata* md = dahl_arena_alloc(
         arena,
@@ -31,21 +31,20 @@ void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     tensor->handle = handle;
     tensor->data = data;
     tensor->meta = md;
-    tensor->is_redux = is_redux;
-
-    if (is_redux) { tensor_enable_redux(tensor); }
+    tensor->is_redux = false;
 
     return tensor;
 }
 
-dahl_tensor* _tensor_init_data(dahl_arena* arena, dahl_shape4d const shape, bool is_redux)
+dahl_fp* _tensor_data_alloc(dahl_arena* arena, dahl_shape4d const shape)
 {
     size_t n_elems = shape.x * shape.y * shape.z * shape.t;
-    dahl_fp* data = dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
+    return dahl_arena_alloc(arena, n_elems * sizeof(dahl_fp));
+}
 
-    for (size_t i = 0; i < n_elems; i++)
-        data[i] = 0.0F;
-
+starpu_data_handle_t _tensor_data_register(
+        dahl_arena* arena, dahl_shape4d const shape, dahl_fp* data)
+{
     starpu_data_handle_t handle = nullptr;
     starpu_tensor_data_register(
         &handle,
@@ -62,31 +61,41 @@ dahl_tensor* _tensor_init_data(dahl_arena* arena, dahl_shape4d const shape, bool
     );
 
     dahl_arena_attach_handle(arena, handle);
-
-    return _tensor_init_from_ptr(arena, handle, data, is_redux);
+    return handle;
 }
 
 dahl_tensor* tensor_init(dahl_arena* arena, dahl_shape4d const shape)
 {
-    return _tensor_init_data(arena, shape, false);
+    dahl_fp* data = _tensor_data_alloc(arena, shape);
+    memset(data, 0, shape.x*shape.y*shape.z*shape.t * sizeof(dahl_fp));
+    starpu_data_handle_t handle = _tensor_data_register(arena, shape, data);
+    dahl_tensor* tensor = _tensor_init_from_ptr(arena, handle, data);
+    return tensor;
 }
 
 dahl_tensor* tensor_init_redux(dahl_arena* arena, dahl_shape4d const shape)
 {
-    return _tensor_init_data(arena, shape, true);
+    dahl_tensor* tensor = tensor_init(arena, shape);
+    // Enable redux mode
+    tensor_enable_redux(tensor);
+    return tensor;
 }
 
 dahl_tensor* tensor_init_from(dahl_arena* arena, dahl_shape4d const shape, dahl_fp const* data)
 {
-    dahl_tensor* tensor = tensor_init(arena, shape);
-    tensor_set_from(tensor, data);
-    return tensor;
+    dahl_fp* tensor_data = _tensor_data_alloc(arena, shape);
+
+    for (size_t i = 0; i < shape.x*shape.y*shape.z*shape.t; i++)
+         tensor_data[i] = data[i];
+
+    starpu_data_handle_t handle = _tensor_data_register(arena, shape, tensor_data);
+    return _tensor_init_from_ptr(arena, handle, tensor_data);
 }
 
-dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape, dahl_fp min, dahl_fp max)
+dahl_tensor* tensor_init_random(
+        dahl_arena* arena, dahl_shape4d const shape, dahl_fp min, dahl_fp max)
 {
-    dahl_tensor* tensor = tensor_init(arena, shape);
-    tensor_acquire(tensor);
+    dahl_fp* tensor_data = _tensor_data_alloc(arena, shape);
 
     for (size_t t = 0; t < shape.t; t++)
     {
@@ -96,14 +105,17 @@ dahl_tensor* tensor_init_random(dahl_arena* arena, dahl_shape4d const shape, dah
             {
                 for (size_t x = 0; x < shape.x; x++)
                 {
-                    tensor_set_value(tensor, x, y, z, t, fp_rand(min, max));
+                    size_t index = (t * shape.x * shape.y * shape.z) +
+                                   (z * shape.x * shape.y) +
+                                   (y * shape.x) + x;
+                    tensor_data[index] = fp_rand(min, max);
                 }
             }
         }
     }
 
-    tensor_release(tensor);
-    return tensor;
+    starpu_data_handle_t handle = _tensor_data_register(arena, shape, tensor_data);
+    return _tensor_init_from_ptr(arena, handle, tensor_data);
 }
 
 void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data)
@@ -160,22 +172,14 @@ void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t 
 dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
 {
     dahl_shape4d shape = tensor_get_shape(tensor);
-    size_t new_nx = shape.x * shape.y * shape.z;
-    size_t new_ny = shape.t;
+    dahl_shape2d new_shape = { .x = shape.x * shape.y * shape.z, .y = shape.t };
 
-    starpu_data_handle_t handle = nullptr;
-    starpu_matrix_data_register(
-        &handle,
-        STARPU_MAIN_RAM,
-        (uintptr_t)tensor->data,
-        new_nx,
-        new_nx,
-        new_ny,
-        sizeof(dahl_fp)
-    );
-
-    dahl_arena_attach_handle(tensor->meta->origin_arena, handle);
-    dahl_matrix* res = _matrix_init_from_ptr(tensor->meta->origin_arena, handle, tensor->data, false);
+    // Registers our tensor data as a matrix (with new shape), handle will be attached to the
+    // tensor's origin arena.
+    starpu_data_handle_t handle = _matrix_data_register(
+            tensor->meta->origin_arena, new_shape, tensor->data);
+    
+    dahl_matrix* res = _matrix_init_from_ptr(tensor->meta->origin_arena, handle, tensor->data);
 
     // Here we use the same trick when doing manual partitioning:
     // Use cl_switch to force data refresh in our new handle from the tensor handle

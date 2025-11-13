@@ -18,7 +18,7 @@
 
 typedef const struct _dahl_traits
 {
-    void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*, bool);
+    void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*);
     starpu_data_handle_t (*get_handle)(void const*);
     dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
@@ -118,23 +118,28 @@ dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* tr
                                 struct starpu_data_filter* f, starpu_data_handle_t main_handle,
                                 dahl_arena* origin_arena);
 
-void _partition_submit_if_needed(metadata* meta, int8_t index, bool should_be_mut, starpu_data_handle_t main_handle);
+void _partition_submit_if_needed(
+        metadata* meta, int8_t index, bool should_be_mut, starpu_data_handle_t main_handle);
 
-void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
-void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
-void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
-void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data, bool is_redux);
+void* _tensor_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
+void* _block_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
+void* _matrix_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
+void* _vector_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
 
+starpu_data_handle_t _tensor_data_register(dahl_arena*, dahl_shape4d shape, dahl_fp* data);
+starpu_data_handle_t _block_data_register(dahl_arena*, dahl_shape3d shape, dahl_fp* data);
+starpu_data_handle_t _matrix_data_register(dahl_arena*, dahl_shape2d shape, dahl_fp* data);
+starpu_data_handle_t _vector_data_register(dahl_arena*, size_t len, dahl_fp* data);
 
-starpu_data_handle_t _scalar_get_handle(void const* scalar);
-starpu_data_handle_t _vector_get_handle(void const* vector);
+starpu_data_handle_t _tensor_get_handle(void const* tensor);
 starpu_data_handle_t _block_get_handle(void const* block);
 starpu_data_handle_t _matrix_get_handle(void const* matrix);
-starpu_data_handle_t _tensor_get_handle(void const* tensor);
+starpu_data_handle_t _vector_get_handle(void const* vector);
+starpu_data_handle_t _scalar_get_handle(void const* scalar);
 
+dahl_partition* _tensor_get_current_partition(void const* tensor);
 dahl_partition* _block_get_current_partition(void const* block);
 dahl_partition* _matrix_get_current_partition(void const* matrix);
-dahl_partition* _tensor_get_current_partition(void const* tensor);
 
 size_t _tensor_get_nb_elem(void const* tensor);
 size_t _block_get_nb_elem(void const* block);
