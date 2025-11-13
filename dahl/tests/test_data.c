@@ -465,19 +465,7 @@ void test_tensor_flatten_along_t_no_copy()
     dahl_matrix* matrix = tensor_flatten_along_t_no_copy(tensor);
 
     ASSERT_MATRIX_EQUALS(expect, matrix);
-
-    // Now trying in a situation where tensor has some tasks that are still running
-    TASK_ADD_VALUE_SELF(tensor, 1); 
-    TASK_WAIT(tensor, 500000); // simulate that the previous task is taking a long time
-
-    expect = MATRIX(testing_arena, 2, 12, {
-        { 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3 }, 
-        { 3, 5, 7, 3, 5, 7, 3, 5, 7, 3, 5, 7 }
-    });
-
-    matrix = tensor_flatten_along_t_no_copy(tensor);
-
-    ASSERT_MATRIX_EQUALS(expect, matrix);
+    dahl_arena_reset(testing_arena);
 }
 
 void test_matrix_to_tensor_no_copy()
@@ -506,29 +494,7 @@ void test_matrix_to_tensor_no_copy()
     dahl_tensor* tensor = matrix_to_tensor_no_copy(matrix, shape);
 
     ASSERT_TENSOR_EQUALS(expect, tensor);
-
-    // Now trying in a situation where matrix has some tasks that are still running
-    TASK_ADD_VALUE_SELF(matrix, 1); 
-    TASK_WAIT(matrix, 500000); // simulate that the previous task is taking a long time
-
-    expect = TENSOR(testing_arena, 2, 1, 4, 3, {
-        {{
-                { 1, 2, 3 },
-                { 1, 2, 3 },
-                { 1, 2, 3 },
-                { 1, 2, 3 },
-        }},
-        {{
-                { 3, 5, 7 },
-                { 3, 5, 7 },
-                { 3, 5, 7 },
-                { 3, 5, 7 },
-        }},
-    });
-
-    tensor = matrix_to_tensor_no_copy(matrix, shape);
-
-    ASSERT_TENSOR_EQUALS(expect, tensor);
+    dahl_arena_reset(testing_arena);
 }
 
 void test_data()

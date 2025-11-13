@@ -257,6 +257,7 @@ void test_flow()
     }
 
     dahl_arena_delete(scratch_arena);
+    dahl_arena_reset(testing_arena);
 }
 
 void test_layers()

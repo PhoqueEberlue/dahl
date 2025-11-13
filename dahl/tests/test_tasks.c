@@ -760,7 +760,7 @@ void test_clip()
     dahl_arena_reset(testing_arena);
 }
 
-void test_cross_entropy_loss()
+void test_cross_entropy_loss_batch()
 {
     dahl_shape2d constexpr pred_shape = { .x = 10, .y = 1 }; // 10 classes, 1 batch size
     dahl_fp pred[1][10] = {{ 
@@ -1141,93 +1141,93 @@ void test_copy()
     ASSERT_MATRIX_EQUALS(expect, out);
 }
 
-void test_block_add_padding()
-{
-    dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
-
-    dahl_fp data[2][3][4] = {
-        {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
-        },
-        {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
-        },
-    };
-
-    dahl_fp expect[4][5][6] = {
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-        },
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F,-2.000000F, 1.000000F, 2.000000F,-1.000000F, 0.000000F }, 
-            { 0.000000F, 3.000000F, 1.000000F,-3.000000F, 1.000000F, 0.000000F }, 
-            { 0.000000F, 4.000000F,-1.000000F, 4.000000F,-1.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-        },
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 3.000000F, 1.000000F,-8.000000F,-3.000000F, 0.000000F }, 
-            { 0.000000F,-7.000000F,-3.000000F, 3.000000F, 2.000000F, 0.000000F }, 
-            { 0.000000F, 1.000000F, 1.000000F, 9.000000F, 1.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-        },
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
-        },
-    };
-
-    dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
-
-    dahl_shape3d padded_shape = { .x = 6, .y = 5, .z = 4 };
-    dahl_block* padded_block = task_block_add_padding_init(testing_arena, block, padded_shape);
-
-    dahl_block* expect_block = block_init_from(testing_arena, padded_shape, (dahl_fp*)&expect);
-
-    ASSERT_BLOCK_EQUALS(expect_block, padded_block);
-
-    dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
-    dahl_block* padded_block_2 = task_block_add_padding_init(testing_arena, block, padded_shape_2);
-
-    dahl_fp expect_2[2][7][8] = {
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F,-2.000000F, 1.000000F, 2.000000F,-1.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 3.000000F, 1.000000F,-3.000000F, 1.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 4.000000F,-1.000000F, 4.000000F,-1.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-        },
-        {
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 3.000000F, 1.000000F,-8.000000F,-3.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F,-7.000000F,-3.000000F, 3.000000F, 2.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 1.000000F, 1.000000F, 9.000000F, 1.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-            { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
-        },
-    };
-
-    dahl_block* expect_block_2 = block_init_from(testing_arena, padded_shape_2, (dahl_fp*)&expect_2);
-
-    ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
-
-    dahl_arena_reset(testing_arena);
-}
+// void test_block_add_padding()
+// {
+//     dahl_shape3d data_shape = { .x = 4, .y = 3, .z = 2 };
+// 
+//     dahl_fp data[2][3][4] = {
+//         {
+//             {-2.0F, 1.0F, 2.0F,-1.0F },
+//             { 3.0F, 1.0F,-3.0F, 1.0F },
+//             { 4.0F,-1.0F, 4.0F,-1.0F },
+//         },
+//         {
+//             { 3.0F, 1.0F,-8.0F,-3.0F },
+//             {-7.0F,-3.0F, 3.0F, 2.0F },
+//             { 1.0F, 1.0F, 9.0F, 1.0F },
+//         },
+//     };
+// 
+//     dahl_fp expect[4][5][6] = {
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//         },
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F,-2.000000F, 1.000000F, 2.000000F,-1.000000F, 0.000000F }, 
+//             { 0.000000F, 3.000000F, 1.000000F,-3.000000F, 1.000000F, 0.000000F }, 
+//             { 0.000000F, 4.000000F,-1.000000F, 4.000000F,-1.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//         },
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 3.000000F, 1.000000F,-8.000000F,-3.000000F, 0.000000F }, 
+//             { 0.000000F,-7.000000F,-3.000000F, 3.000000F, 2.000000F, 0.000000F }, 
+//             { 0.000000F, 1.000000F, 1.000000F, 9.000000F, 1.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//         },
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F }, 
+//         },
+//     };
+// 
+//     dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
+// 
+//     dahl_shape3d padded_shape = { .x = 6, .y = 5, .z = 4 };
+//     dahl_block* padded_block = task_block_add_padding_init(testing_arena, block, padded_shape);
+// 
+//     dahl_block* expect_block = block_init_from(testing_arena, padded_shape, (dahl_fp*)&expect);
+// 
+//     ASSERT_BLOCK_EQUALS(expect_block, padded_block);
+// 
+//     dahl_shape3d padded_shape_2 = { .x = 8, .y = 7, .z = 2 };
+//     dahl_block* padded_block_2 = task_block_add_padding_init(testing_arena, block, padded_shape_2);
+// 
+//     dahl_fp expect_2[2][7][8] = {
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F,-2.000000F, 1.000000F, 2.000000F,-1.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 3.000000F, 1.000000F,-3.000000F, 1.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 4.000000F,-1.000000F, 4.000000F,-1.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//         },
+//         {
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 3.000000F, 1.000000F,-8.000000F,-3.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F,-7.000000F,-3.000000F, 3.000000F, 2.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 1.000000F, 1.000000F, 9.000000F, 1.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//             { 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, 0.000000F, }, 
+//         },
+//     };
+// 
+//     dahl_block* expect_block_2 = block_init_from(testing_arena, padded_shape_2, (dahl_fp*)&expect_2);
+// 
+//     ASSERT_BLOCK_EQUALS(expect_block_2, padded_block_2);
+// 
+//     dahl_arena_reset(testing_arena);
+// }
 
 void test_matrix_rotate_180()
 {
@@ -1397,7 +1397,6 @@ void test_convolution_2d_backward_input()
     dahl_block* out = block_init(testing_arena, expect_shape);
 
     // task_convolution_2d_backward_input(a, b, out);
-
     // ASSERT_BLOCK_EQUALS(expect, out);
 
     // Trying the same with the padding free version
@@ -1677,18 +1676,19 @@ void test_redux_add()
         },
     });
 
+    // Trying normal ADD, without redux
     dahl_block* out = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
-    dahl_block* out_tmp = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
     TASK_ADD(a, b, out);
-    TASK_ADD(c, d, out_tmp);
-    TASK_ADD_SELF(out, out_tmp);
+    TASK_ADD(c, d, out);
 
+    // Trying ADD_SELF, which is not compatible with redux
     dahl_block* out_self = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
     TASK_ADD_SELF(out_self, a);
     TASK_ADD_SELF(out_self, b);
     TASK_ADD_SELF(out_self, c);
     TASK_ADD_SELF(out_self, d);
 
+    // Trying redux version of the normal ADD.
     dahl_block* out_redux = block_init_redux(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
     TASK_ADD(a, b, out_redux);
     TASK_ADD(c, d, out_redux);
@@ -1721,10 +1721,8 @@ void test_redux_sub()
 
     // Computing expect without redux mode to verify the result after
     dahl_tensor* expect = tensor_init(testing_arena, shape);
-    dahl_tensor* tmp = tensor_init(testing_arena, shape);
     TASK_SUB(a, b, expect);
-    TASK_SUB(c, d, tmp);
-    TASK_ADD_SELF(expect, tmp);
+    TASK_SUB(c, d, expect);
 
     dahl_tensor* out = tensor_init_redux(testing_arena, shape);
 
@@ -1753,12 +1751,15 @@ void test_vector_matrix_product()
 
 void test_tasks()
 {
+    // Tensor
     test_tensor_sum_t_axis();
     test_tensor_sum_xyt_axis();
+    // Block
     test_block_sum_z_axis();
     test_block_sum_y_axis();
     test_block_sum_xy_axes();
     // test_block_add_padding();
+    // Matrix
     // test_matrix_cross_correlation_1();
     // test_matrix_cross_correlation_2();
     test_matrix_max_pooling();
@@ -1767,11 +1768,17 @@ void test_tasks()
     test_matrix_sum_y_axis();
     test_matrix_vector_product();
     test_matrix_rotate_180();
+    // Vector
+    test_vector_diag();
+    test_vector_dot_product();
+    test_vector_outer_product();
+    test_vector_matrix_product();
+    // Any
     test_relu();
     test_relu_backward();
     test_scal();
     test_power();
-    // test_divide();
+    test_divide();
     test_sub();
     test_add();
     test_add_value();
@@ -1779,27 +1786,26 @@ void test_tasks()
     test_fill();
     test_copy();
     test_round();
+    // ML
+    test_check_predictions_batch();
+    test_cross_entropy_loss_batch();
+    test_cross_entropy_loss_gradient_batch();
+    // test_min_max();
+    test_convolution_2d_backward_filters();
+    test_convolution_2d_backward_input();
     
-    // test_vector_softmax();
-    // test_vector_dot_product();
-    // test_vector_diag();
-    // test_vector_outer_product();
+    // Redux
+    test_redux_add();
+    test_redux_sub();
+    test_redux_vector_outer_product();
+    // test_redux_sum();
+    test_redux_convolution_2d_backward_filters();
+    //
+    //// test_vector_softmax();
     // // test_vector_shuffle();
-    // test_vector_matrix_product();
     // test_sub_value();
-    // test_cross_entropy_loss();
-    // test_cross_entropy_loss_gradient_batch();
     // test_sum();
     test_convolution_2d_1();
     test_convolution_2d_2();
     test_convolution_2d_3();
-    // test_check_predictions_batch();
-    // test_min_max();
-    test_convolution_2d_backward_filters();
-    test_convolution_2d_backward_input();
-    // test_redux_add();
-    // test_redux_sub();
-    // test_redux_vector_outer_product();
-    // test_redux_sum();
-    // test_redux_convolution_2d_backward_filters();
 }
