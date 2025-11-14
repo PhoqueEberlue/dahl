@@ -291,7 +291,8 @@ void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape)
     task->handles[0] = mat->handle;
  
     /* submit the task to StarPU */
-    starpu_task_submit(task);
+    int ret = starpu_task_submit(task);
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
 }
 
 void task_matrix_as_flat_row(dahl_matrix* mat)

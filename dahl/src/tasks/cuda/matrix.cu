@@ -4,6 +4,7 @@
 #include "../../macros.h"
 #include "../../../include/dahl_types.h"
 #include "starpu_cuda.h"
+#include "starpu_data_interfaces.h"
 
 extern "C" void cuda_matrix_cross_correlation(void* buffers[3], void* cl_arg)
 {
@@ -276,11 +277,16 @@ extern "C" void cuda_matrix_transpose(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-
-// TODO: Does not make much sense to implement for cuda right?
 extern "C" void cuda_matrix_resize(void* buffers[1], void* cl_arg)
 {
+    size_t new_nx;
+    size_t new_ny;
+    size_t new_ld;
+    starpu_codelet_unpack_args(cl_arg, &new_nx, &new_ny, &new_ld);
 
+    STARPU_MATRIX_SET_NX(buffers[0], new_nx);
+    STARPU_MATRIX_SET_NY(buffers[0], new_ny);
+    STARPU_MATRIX_SET_LD(buffers[0], new_ld);
 }
 
 static __global__ void matrix_rotate_180(
