@@ -96,4 +96,6 @@ So you can use another type but the software should be recompiled.
 
 rmq: some functions that take exclusively doubles will stop working if you change the type. This should be addressed later.
 
+[Fri Nov 14 08:00:08 AM UTC 2025]
 
+Should have clearly inlined + restrict the pointers to have a more fair benchmark.
