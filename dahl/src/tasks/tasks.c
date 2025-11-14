@@ -14,7 +14,7 @@ void task_tensor_sum_t_axis(dahl_tensor const* in, dahl_block* out)
     int ret = starpu_task_insert(&cl_tensor_sum_t_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_tensor_sum_t_axis");
 }
 
 dahl_block* task_tensor_sum_t_axis_init(dahl_arena* arena, dahl_tensor const* in)
@@ -39,7 +39,7 @@ void task_tensor_sum_xyt_axes(dahl_tensor const* in, dahl_vector* out)
     int ret = starpu_task_insert(&cl_tensor_sum_xyt_axes,
                                  STARPU_R, in->handle,
                                  STARPU_RW, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_tensor_sum_xyt_axes");
 }
 
 dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena* arena, dahl_tensor const* in)
@@ -52,7 +52,7 @@ dahl_vector* task_tensor_sum_xyt_axes_init(dahl_arena* arena, dahl_tensor const*
 void task_cuda_tensor_print(dahl_tensor const* tensor)
 {
     int ret = starpu_task_insert(&cl_cuda_tensor_print, STARPU_R, tensor->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_cuda_tensor_print");
 }
 
 // ---------------------------------------- BLOCK ----------------------------------------
@@ -61,7 +61,7 @@ void task_block_sum_z_axis(dahl_block const* in, dahl_matrix* out)
     int ret = starpu_task_insert(&cl_block_sum_z_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_block_sum_z_axis");
 }
 
 dahl_matrix* task_block_sum_z_axis_init(dahl_arena* arena, dahl_block const* in)
@@ -85,7 +85,7 @@ void task_block_sum_y_axis(dahl_block const* in, dahl_matrix* out)
     int ret = starpu_task_insert(&cl_block_sum_y_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_block_sum_y_axis");
 }
 
 dahl_matrix* task_block_sum_y_axis_init(dahl_arena* arena, dahl_block const* in)
@@ -114,7 +114,7 @@ void task_block_sum_xy_axes(dahl_block const* in, dahl_vector* out)
     int ret = starpu_task_insert(&cl_block_sum_xy_axes,
                                  STARPU_R, in->handle,
                                  mode, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_block_sum_xy_axes");
 }
 
 dahl_vector* task_block_sum_xy_axes_init(dahl_arena* arena, dahl_block const* in)
@@ -153,7 +153,7 @@ void task_matrix_cross_correlation(dahl_matrix const* in, dahl_matrix const* ker
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_cross_correlation");
 }
 
 void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matrix* out, size_t pool_size)
@@ -163,7 +163,7 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
                              STARPU_R, in->handle,
                              STARPU_RW, mask->handle, 
                              STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_max_pooling");
 }
 
 void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* mask, dahl_matrix* out, size_t pool_size)
@@ -177,7 +177,7 @@ void task_matrix_backward_max_pooling(dahl_matrix const* in, dahl_matrix const* 
                              STARPU_R, in->handle,
                              mask_mode, mask->handle, 
                              STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_backward_max_pooling");
 }
 
 void task_matrix_backward_max_pooling_self(dahl_matrix const* in, dahl_matrix* mask_self, size_t pool_size)
@@ -191,7 +191,7 @@ void task_matrix_matrix_product(dahl_matrix const* a, dahl_matrix const* b, dahl
                              STARPU_R, a->handle,
                              STARPU_R, b->handle, 
                              STARPU_W, c->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_matrix_product");
 }
 
 dahl_matrix* task_matrix_matrix_product_init(dahl_arena* arena, dahl_matrix const* a, dahl_matrix const* b)
@@ -212,7 +212,7 @@ void task_matrix_sum_y_axis(dahl_matrix const* in, dahl_vector* out)
     int ret = starpu_task_insert(&cl_matrix_sum_y_axis,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_sum_y_axis");
 }
 
 dahl_vector* task_matrix_sum_y_axis_init(dahl_arena* arena, dahl_matrix const* in)
@@ -231,7 +231,7 @@ void task_matrix_vector_product(dahl_matrix const* mat, dahl_vector const* vec, 
                              STARPU_R, mat->handle,
                              STARPU_R, vec->handle,
                              STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_vector_product");
 }
 
 dahl_vector* task_matrix_vector_product_init(dahl_arena* arena, dahl_matrix const* mat, dahl_vector const* vec)
@@ -253,7 +253,7 @@ void task_matrix_transpose(dahl_matrix const* in, dahl_matrix* out)
     int ret = starpu_task_insert(&cl_matrix_transpose,
                              STARPU_R, in->handle,
                              STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_transpose");
 }
 
 dahl_matrix* task_matrix_transpose_init(dahl_arena* arena, dahl_matrix const* in)
@@ -292,7 +292,7 @@ void task_matrix_resize(dahl_matrix* mat, dahl_shape2d shape)
  
     /* submit the task to StarPU */
     int ret = starpu_task_submit(task);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_resize");
 }
 
 void task_matrix_as_flat_row(dahl_matrix* mat)
@@ -318,7 +318,7 @@ void task_matrix_rotate_180(dahl_matrix const* in, dahl_matrix* out)
     int ret = starpu_task_insert(&cl_matrix_rotate_180,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_rotate_180");
 }
 
 dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* in)
@@ -331,7 +331,7 @@ dahl_matrix* task_matrix_rotate_180_init(dahl_arena* arena, dahl_matrix const* i
 void task_cuda_matrix_print(dahl_matrix const* matrix)
 {
     int ret = starpu_task_insert(&cl_cuda_matrix_print, STARPU_R, matrix->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_cuda_matrix_print");
 }
 
 // ---------------------------------------- VECTOR ----------------------------------------
@@ -342,7 +342,7 @@ void task_vector_softmax(dahl_vector const* in, dahl_vector* out)
     int ret = starpu_task_insert(&cl_vector_softmax,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_vector_softmax");
 }
 
 dahl_vector* task_vector_softmax_init(dahl_arena* arena, dahl_vector const* in)
@@ -360,7 +360,7 @@ void task_vector_dot_product(dahl_vector const* a, dahl_vector const* b, dahl_sc
                                  STARPU_R, a->handle, 
                                  STARPU_R, b->handle, 
                                  STARPU_W, c->handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "task_vector_dot_product");
 }
 
 dahl_scalar* task_vector_dot_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b)
@@ -375,7 +375,7 @@ void task_vector_diag(dahl_vector const* in, dahl_matrix* out)
     int ret = starpu_task_insert(&cl_vector_diag,
                                  STARPU_R, in->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_vector_diag");
 }
 
 dahl_matrix* task_vector_diag_init(dahl_arena* arena, dahl_vector const* in)
@@ -442,7 +442,7 @@ void task_vector_outer_product(dahl_vector const* a, dahl_vector const* b, dahl_
                                  STARPU_R, a->handle, 
                                  STARPU_R, b->handle, 
                                  mode, c->handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "task_vector_outer_product");
 }
 
 dahl_matrix* task_vector_outer_product_init(dahl_arena* arena, dahl_vector const* a, dahl_vector const* b)
@@ -457,7 +457,7 @@ void task_vector_shuffle(dahl_vector* vec)
 {
     int ret = starpu_task_insert(&cl_vector_shuffle,
                                  STARPU_RW, vec->handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "task_vector_shuffle");
 }
 
 void task_vector_matrix_product(dahl_vector const* vec, dahl_matrix const* mat, dahl_vector* out)
@@ -486,7 +486,7 @@ dahl_vector* task_vector_matrix_product_init(dahl_arena* arena, dahl_vector cons
 void task_cuda_vector_print(dahl_vector const* vec)
 {
     int ret = starpu_task_insert(&cl_cuda_vector_print, STARPU_R, vec->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_cuda_vector_print");
 }
 
 // ---------------------------------------- TRAITS ----------------------------------------
@@ -501,7 +501,7 @@ void task_relu(void const* in, void* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  in_mode, traits->get_handle(in), 
                                  STARPU_W, traits->get_handle(out), 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "task_relu");
 }
 
 void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits)
@@ -512,7 +512,7 @@ void task_relu_backward(void const* input, void const* gradients, void* out, dah
                                  STARPU_R, traits->get_handle(input), 
                                  STARPU_R, traits->get_handle(gradients), 
                                  STARPU_W, traits->get_handle(out), 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_matrix_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "task_relu_backward");
 }
 
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
@@ -526,7 +526,7 @@ void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
                                  STARPU_VALUE, &factor, sizeof(factor),
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_scal");
 }
 
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
@@ -540,7 +540,7 @@ void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits)
                                  STARPU_VALUE, &power, sizeof(power),
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_power");
 }
 
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
@@ -555,7 +555,7 @@ void task_sub(void const* a, void const* b, void* c, dahl_traits* traits)
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  c_mode, traits->get_handle(c), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_sub");
 }
 
 void task_sub_self(void* self, void const* other, dahl_traits* traits)
@@ -565,7 +565,7 @@ void task_sub_self(void* self, void const* other, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_RW, traits->get_handle(self),
                                  STARPU_R, traits->get_handle(other), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_sub_self");
 }
 
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
@@ -580,7 +580,7 @@ void task_add(void const* a, void const* b, void* c, dahl_traits* traits)
                                  STARPU_R, traits->get_handle(a),
                                  STARPU_R, traits->get_handle(b),
                                  c_mode, traits->get_handle(c), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_add");
 }
 
 void task_add_self(void* self, void const* other, dahl_traits* traits)
@@ -590,7 +590,7 @@ void task_add_self(void* self, void const* other, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_RW, traits->get_handle(self),
                                  STARPU_R, traits->get_handle(other), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_add_self");
 }
 
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits)
@@ -605,7 +605,7 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
                                  STARPU_VALUE, &value, sizeof(value),
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_add_value");
 }
 
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits)
@@ -621,7 +621,7 @@ void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits*
                                  STARPU_VALUE, &max, sizeof(max),
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_clip");
 }
 
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
@@ -636,7 +636,7 @@ void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  mode, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_sum");
 }
 
 dahl_scalar* task_sum_init(dahl_arena* arena, void const* object, dahl_traits* traits)
@@ -654,7 +654,7 @@ void task_mean(void const* in, dahl_scalar* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_mean");
 }
 
 dahl_scalar* task_mean_init(dahl_arena* arena, void const* object, dahl_traits* traits)
@@ -671,7 +671,7 @@ void task_fill(void* object, dahl_fp value, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &value, sizeof(value),
                                  STARPU_W, traits->get_handle(object), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_fill");
 }
 
 void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
@@ -681,7 +681,7 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
                                  STARPU_W, traits->get_handle(object), 0);
     // Can't use sleep for CUDA, so we ignore error "-19:No such device"
     if (ret != -19)
-        STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+        STARPU_CHECK_RETURN_VALUE(ret, "task_wait");
 }
 
 void task_copy(void const* in, void* out, dahl_traits* traits)
@@ -692,7 +692,7 @@ void task_copy(void const* in, void* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_copy");
 }
 
 void task_min(void const* in, dahl_scalar* out, dahl_traits* traits)
@@ -702,7 +702,7 @@ void task_min(void const* in, dahl_scalar* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_min");
 }
 
 dahl_scalar* task_min_init(dahl_arena* arena, void const* object, dahl_traits* traits)
@@ -719,7 +719,7 @@ void task_max(void const* in, dahl_scalar* out, dahl_traits* traits)
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_R, traits->get_handle(in),
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_max");
 }
 
 dahl_scalar* task_max_init(dahl_arena* arena, void const* object, dahl_traits* traits)
@@ -741,7 +741,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
                                  STARPU_VALUE, &precision, sizeof(precision),
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_round");
 }
 
 // ---------------------------------------- ML Related ----------------------------------------
@@ -751,7 +751,7 @@ void task_check_predictions_batch(dahl_matrix const* prediction_batch, dahl_matr
                                  STARPU_R, prediction_batch->handle,
                                  STARPU_R, target_batch->handle,
                                  STARPU_W, good_predictions->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_check_predictions_batch");
 }
 
 dahl_scalar* task_check_predictions_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
@@ -767,7 +767,7 @@ void task_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_mat
                                  STARPU_R, prediction_batch->handle,
                                  STARPU_R, target_batch->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_cross_entropy_loss_batch");
 }
 
 dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch)
@@ -783,7 +783,7 @@ void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl
                              STARPU_R, predictions->handle,
                              STARPU_R, targets->handle,
                              STARPU_W, gradients->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_cross_entropy_loss_gradient_batch");
 }
 
 dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
@@ -800,7 +800,7 @@ void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_ma
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
                                  STARPU_W, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_convolution_2d");
 }
 
 void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix const* kernel, dahl_block* out)
@@ -813,7 +813,7 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
                                  mode, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_convolution_2d_backward_filters");
 }
 
 // void task_convolution_2d_backward_input(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
@@ -826,7 +826,7 @@ void task_convolution_2d_backward_filters(dahl_block const* in, dahl_matrix cons
 //                                  STARPU_R, in->handle,
 //                                  STARPU_R, kernel->handle,
 //                                  mode, out->handle, 0);
-//     STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+//     STARPU_CHECK_RETURN_VALUE(ret, "task_convolution_2d_backward_input");
 // }
 
 void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl_block const* kernel, dahl_block* out)
@@ -839,5 +839,5 @@ void task_convolution_2d_backward_input_padding_free(dahl_matrix const* in, dahl
                                  STARPU_R, in->handle,
                                  STARPU_R, kernel->handle,
                                  mode, out->handle, 0);
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_block_submit");
+    STARPU_CHECK_RETURN_VALUE(ret, "task_convolution_2d_backward_input_padding_free");
 }

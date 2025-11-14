@@ -184,7 +184,7 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
     // Here we use the same trick when doing manual partitioning:
     // Use cl_switch to force data refresh in our new handle from the tensor handle
 	int ret = starpu_task_insert(&cl_switch, STARPU_RW, tensor->handle, STARPU_W, handle, 0);
-	STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
+	STARPU_CHECK_RETURN_VALUE(ret, "tensor_flatten_along_t_no_copy");
 
     // Then deactivate the tensor handle
     starpu_data_invalidate_submit(tensor->handle);
