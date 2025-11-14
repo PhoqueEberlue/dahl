@@ -9,26 +9,26 @@ void test_tensor_partition_along_t()
     dahl_fp data[2][2][3][4] = {
         {
             {
-                {-2.0F, 1.0F, 2.0F,-1.0F },
-                { 3.0F, 1.0F,-3.0F, 1.0F },
-                { 4.0F,-1.0F, 4.0F,-1.0F },
+                {-2, 1, 2,-1 },
+                { 3, 1,-3, 1 },
+                { 4,-1, 4,-1 },
             },
             {
-                { 3.0F, 1.0F,-8.0F,-3.0F },
-                {-7.0F,-3.0F, 3.0F, 2.0F },
-                { 1.0F, 1.0F, 9.0F, 1.0F },
+                { 3, 1,-8,-3 },
+                {-7,-3, 3, 2 },
+                { 1, 1, 9, 1 },
             },
         },
         {
             {
-                { 2.0F,-1.0F,-2.0F, 1.0F },
-                {-3.0F,-1.0F, 3.0F,-1.0F },
-                {-4.0F, 1.0F,-4.0F, 1.0F },
+                { 2,-1,-2, 1 },
+                {-3,-1, 3,-1 },
+                {-4, 1,-4, 1 },
             },
             {
-                {-3.0F,-1.0F, 8.0F, 3.0F },
-                { 7.0F, 3.0F,-3.0F,-2.0F },
-                {-1.0F,-1.0F,-9.0F,-1.0F },
+                {-3,-1, 8, 3 },
+                { 7, 3,-3,-2 },
+                {-1,-1,-9,-1 },
             },
         }
     };
@@ -39,27 +39,27 @@ void test_tensor_partition_along_t()
 
     dahl_fp expect_0[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
     dahl_fp expect_1[2][3][4] = {
         {
-            { 2.0F,-1.0F,-2.0F, 1.0F },
-            {-3.0F,-1.0F, 3.0F,-1.0F },
-            {-4.0F, 1.0F,-4.0F, 1.0F },
+            { 2,-1,-2, 1 },
+            {-3,-1, 3,-1 },
+            {-4, 1,-4, 1 },
         },
         {
-            {-3.0F,-1.0F, 8.0F, 3.0F },
-            { 7.0F, 3.0F,-3.0F,-2.0F },
-            {-1.0F,-1.0F,-9.0F,-1.0F },
+            {-3,-1, 8, 3 },
+            { 7, 3,-3,-2 },
+            {-1,-1,-9,-1 },
         },
     };
 
@@ -88,10 +88,10 @@ void test_tensor_partition_along_t_batch()
     dahl_shape4d data_shape = { .x = 2, .y = 1, .z = 1, .t = 4 };
 
     dahl_fp data[4][1][1][2] = {
-        { { { 1.0F, 2.0F }, }, },
-        { { { 3.0F, 4.0F }, }, },
-        { { { 5.0F, 6.0F }, }, },
-        { { { 7.0F, 8.0F }, }, }
+        { { { 1, 2 }, }, },
+        { { { 3, 4 }, }, },
+        { { { 5, 6 }, }, },
+        { { { 7, 8 }, }, }
     };
 
     dahl_tensor* tensor = tensor_init_from(testing_arena, data_shape, (dahl_fp*)&data);
@@ -99,13 +99,13 @@ void test_tensor_partition_along_t_batch()
     dahl_shape4d expect_shape = { .x = 2, .y = 1, .z = 1, .t = 2 };
 
     dahl_fp expect_0[2][1][1][2] = { 
-        { { { 1.0F, 2.0F }, }, },
-        { { { 3.0F, 4.0F }, }, }
+        { { { 1, 2 }, }, },
+        { { { 3, 4 }, }, }
     };
 
     dahl_fp expect_1[2][1][1][2] = { 
-        { { { 5.0F, 6.0F }, }, },
-        { { { 7.0F, 8.0F }, }, }
+        { { { 5, 6 }, }, },
+        { { { 7, 8 }, }, }
     };
 
     dahl_tensor const* expect_tensor_0 = tensor_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
@@ -135,14 +135,14 @@ void test_block_partition_along_z()
 
     dahl_fp data[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
@@ -151,15 +151,15 @@ void test_block_partition_along_z()
     dahl_shape2d expect_shape = { .x = 4, .y = 3 };
 
     dahl_fp expect_0[3][4] = {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
     dahl_fp expect_1[3][4] = {
-        { 3.0F, 1.0F,-8.0F,-3.0F },
-        {-7.0F,-3.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1,-8,-3 },
+        {-7,-3, 3, 2 },
+        { 1, 1, 9, 1 },
     };
 
     dahl_matrix const* expect_matrix_0 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
@@ -188,26 +188,26 @@ void test_block_partition_flatten_to_vector()
 
     dahl_fp data[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
     dahl_block* block = block_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
     dahl_fp expect[24] = {
-        -2.0F, 1.0F, 2.0F,-1.0F,
-        3.0F, 1.0F,-3.0F, 1.0F,
-        4.0F,-1.0F, 4.0F,-1.0F,
-        3.0F, 1.0F,-8.0F,-3.0F,
-       -7.0F,-3.0F, 3.0F, 2.0F,
-        1.0F, 1.0F, 9.0F, 1.0F,
+        -2, 1, 2,-1,
+        3, 1,-3, 1,
+        4,-1, 4,-1,
+        3, 1,-8,-3,
+       -7,-3, 3, 2,
+        1, 1, 9, 1,
     };
 
     dahl_vector const* expect_vector = vector_init_from(testing_arena, 24, (dahl_fp*)&expect);
@@ -228,11 +228,11 @@ void test_matrix_partition_along_y()
     dahl_shape2d data_shape = { .x = 4, .y = 5 };
 
     dahl_fp data[5][4] = {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
     dahl_matrix const* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
@@ -256,29 +256,29 @@ void test_matrix_partition_along_y()
 void test_matrix_partition_along_y_batch()
 {
     dahl_matrix* matrix = MATRIX(testing_arena, 6, 4, {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 8.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-3.0F, 4.0F,-1.0F },
-        { 8.0F, 8.0F,-5.0F, 3.0F },
-        { 4.0F,-1.0F, 9.0F,-2.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 8, 1,-3, 1 },
+        { 4,-3, 4,-1 },
+        { 8, 8,-5, 3 },
+        { 4,-1, 9,-2 },
     });
 
     dahl_matrix* expect_matrices[3];
 
     expect_matrices[0] = MATRIX(testing_arena, 2, 4, {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
     });
 
     expect_matrices[1] = MATRIX(testing_arena, 2, 4, {
-        { 8.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-3.0F, 4.0F,-1.0F },
+        { 8, 1,-3, 1 },
+        { 4,-3, 4,-1 },
     });
 
     expect_matrices[2] = MATRIX(testing_arena, 2, 4, {
-        { 8.0F, 8.0F,-5.0F, 3.0F },
-        { 4.0F,-1.0F, 9.0F,-2.0F },
+        { 8, 8,-5, 3 },
+        { 4,-1, 9,-2 },
     });
 
     matrix_partition_along_y_batch(matrix, 2);
@@ -297,9 +297,9 @@ void test_matrix_partition_along_y_batch()
 void test_matrix_get_shape()
 {
     dahl_fp data[3][4] = {
-        { 3.0F, 1.0F,-8.0F,-3.0F },
-        {-7.0F,-3.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1,-8,-3 },
+        {-7,-3, 3, 2 },
+        { 1, 1, 9, 1 },
     };
 
     dahl_shape2d shape = { .x = 4, .y = 3 };
@@ -325,14 +325,14 @@ void test_recursive_partitioning()
 
     dahl_fp data[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
@@ -340,14 +340,14 @@ void test_recursive_partitioning()
 
     dahl_vector* expect[2][3] = {
         {
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){-2.0F, 1.0F, 2.0F,-1.0F }),
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3.0F, 1.0F,-3.0F, 1.0F }),
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 4.0F,-1.0F, 4.0F,-1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){-2, 1, 2,-1 }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3, 1,-3, 1 }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 4,-1, 4,-1 }),
         },
         {
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3.0F, 1.0F,-8.0F,-3.0F }),
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){-7.0F,-3.0F, 3.0F, 2.0F }),
-            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 1.0F, 1.0F, 9.0F, 1.0F }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 3, 1,-8,-3 }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){-7,-3, 3, 2 }),
+            vector_init_from(testing_arena, 4, (dahl_fp[4]){ 1, 1, 9, 1 }),
         }
     };
 
@@ -378,9 +378,9 @@ void test_mut_partitioning()
     dahl_shape2d data_shape = { .x = 4, .y = 3 };
 
     dahl_fp data[3][4] = {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
@@ -408,15 +408,15 @@ void test_partition_reuse()
     dahl_shape2d data_shape = { .x = 4, .y = 3 };
 
     dahl_fp data[3][4] = {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
     dahl_fp expect[3][4] = {
-        {-8.0F, 4.0F, 8.0F,-4.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-8, 4, 8,-4 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);

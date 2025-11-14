@@ -46,14 +46,14 @@ void test_return_values()
     dahl_arena_reset(testing_arena);
 
     dahl_fp* a = dahl_arena_alloc(testing_arena, sizeof(dahl_fp));
-    *a = 42.0F;
+    *a = 42;
 
     dahl_arena_reset(testing_arena);
 
     dahl_fp* b = dahl_arena_alloc(testing_arena, sizeof(dahl_fp));
 
     // The memory is not reseted to 0, so the old value is still here
-    ASSERT_FP_EQUALS(*b, 42.0F);
+    ASSERT_FP_EQUALS(*b, 42);
     dahl_arena_reset(testing_arena);
 }
 

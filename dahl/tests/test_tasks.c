@@ -28,23 +28,23 @@ void test_matrix_cross_correlation_1()
     dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
 
     dahl_fp a[5][5] = {
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+        { 1, 1, 1, 1, 1 },
+        { 1, 1, 1, 1, 1 },
+        { 1, 1, 1, 1, 1 },
+        { 1, 1, 1, 1, 1 },
+        { 1, 1, 1, 1, 1 },
     };
 
     dahl_fp b[3][3] = {
-        { 1.0F, 0.0F, 1.0F },
-        { 0.0F, 1.0F, 0.0F },
-        { 1.0F, 0.0F, 1.0F },
+        { 1, 0, 1 },
+        { 0, 1, 0 },
+        { 1, 0, 1 },
     };
 
     dahl_fp expect[3][3] = {
-        { 5.0F, 5.0F, 5.0F },
-        { 5.0F, 5.0F, 5.0F },
-        { 5.0F, 5.0F, 5.0F },
+        { 5, 5, 5 },
+        { 5, 5, 5 },
+        { 5, 5, 5 },
     };
 
     assert_matrix_cross_correlation((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
@@ -57,23 +57,23 @@ void test_matrix_cross_correlation_2()
     dahl_shape2d expect_shape = { .x = a_shape.x - b_shape.x + 1, .y = a_shape.y - b_shape.y + 1 };
 
     dahl_fp a[5][7] = {
-        { 0.0F, 1.0F, 0.0F, 4.0F, 0.0F, 3.0F, 2.0F },
-        { 0.0F, 0.0F, 6.0F, 0.0F, 8.0F, 1.0F, 1.0F },
-        { 1.0F, 1.0F, 0.0F, 0.0F, 7.0F, 1.0F, 0.0F },
-        { 0.0F, 0.0F, 2.0F, 1.0F, 0.0F, 1.0F, 1.0F },
-        { 8.0F, 9.0F, 0.0F, 2.0F, 3.0F, 0.0F, 0.0F },
+        { 0, 1, 0, 4, 0, 3, 2 },
+        { 0, 0, 6, 0, 8, 1, 1 },
+        { 1, 1, 0, 0, 7, 1, 0 },
+        { 0, 0, 2, 1, 0, 1, 1 },
+        { 8, 9, 0, 2, 3, 0, 0 },
     };
 
     dahl_fp b[3][4] = {
-        { 2.0F, 1.0F, 2.0F, 1.0F },
-        { 3.0F, 1.0F, 3.0F, 1.0F },
-        { 4.0F, 1.0F, 4.0F, 1.0F },
+        { 2, 1, 2, 1 },
+        { 3, 1, 3, 1 },
+        { 4, 1, 4, 1 },
     };
 
     dahl_fp expect[3][4] = {
-        { 28.0F, 35.0F, 79.0F, 39.0F }, 
-        { 25.0F, 30.0F, 61.0F, 30.0F }, 
-        { 53.0F, 61.0F, 37.0F, 27.0F },
+        { 28, 35, 79, 39 }, 
+        { 25, 30, 61, 30 }, 
+        { 53, 61, 37, 27 },
     };
 
     assert_matrix_cross_correlation((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
@@ -85,27 +85,27 @@ void test_relu()
 {
     dahl_block* block = BLOCK(testing_arena, 2, 3, 4, {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     });
 
     dahl_block* expect_block = BLOCK(testing_arena, 2, 3, 4, {
         {
-            { 0.0F, 1.0F, 2.0F, 0.0F },
-            { 3.0F, 1.0F, 0.0F, 1.0F },
-            { 4.0F, 0.0F, 4.0F, 0.0F },
+            { 0, 1, 2, 0 },
+            { 3, 1, 0, 1 },
+            { 4, 0, 4, 0 },
         },
         {
-            { 3.0F, 1.0F, 0.0F, 0.0F },
-            { 0.0F, 0.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1, 0, 0 },
+            { 0, 0, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     });
 
@@ -113,23 +113,23 @@ void test_relu()
     ASSERT_BLOCK_EQUALS(expect_block, block);
 
     dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
-        { 3.0F, 1.0F,-8.0F,-3.0F },
-        {-7.0F,-3.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1,-8,-3 },
+        {-7,-3, 3, 2 },
+        { 1, 1, 9, 1 },
     });
 
     dahl_matrix* expect_matrix = MATRIX(testing_arena, 3, 4, {
-        { 3.0F, 1.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1, 0, 0 },
+        { 0, 0, 3, 2 },
+        { 1, 1, 9, 1 },
     });
 
     TASK_RELU_SELF(matrix);
     ASSERT_MATRIX_EQUALS(expect_matrix, matrix);
 
-    dahl_vector* vector = VECTOR(testing_arena, 4, { 3.0F, 1.0F,-8.0F,-3.0F });
+    dahl_vector* vector = VECTOR(testing_arena, 4, { 3, 1,-8,-3 });
     dahl_vector* out_vector = vector_init(testing_arena, 4);
-    dahl_vector* expect_vector = VECTOR(testing_arena, 4, { 3.0F, 1.0F, 0.0F, 0.0F });
+    dahl_vector* expect_vector = VECTOR(testing_arena, 4, { 3, 1, 0, 0 });
 
     TASK_RELU(vector, out_vector);
     ASSERT_VECTOR_EQUALS(expect_vector, out_vector);
@@ -141,25 +141,25 @@ void test_relu_backward()
 {
     dahl_block* input = BLOCK(testing_arena, 2, 3, 4, {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     });
 
     dahl_block* gradients = BLOCK(testing_arena, 2, 3, 4, {
         {
             { 0.5F, 0.5F, 0.2F, 0.4F },
-            { 0.8F, 4.8F, 7.0F, 6.7F },
-            { 4.9F, 7.7F, 6.0F, 6.0F },
+            { 0.8F, 4.8F, 7, 6.7F },
+            { 4.9F, 7.7F, 6, 6 },
         },
         {
-            { 0.5F, 5.0F, 9.3F, 1.0F },
+            { 0.5F, 5, 9.3F, 1 },
             { 7.9F, 9.8F, 8.4F, 0.6F },
             { 4.5F, 0.8F, 7.7F, 8.2F },
         },
@@ -167,13 +167,13 @@ void test_relu_backward()
 
     dahl_block* expect = BLOCK(testing_arena, 2, 3, 4, {
         {
-            { 0.0F, 0.5F, 0.2F, 0.0F },
-            { 0.8F, 4.8F, 0.0F, 6.7F },
-            { 4.9F, 0.0F, 6.0F, 0.0F },
+            { 0, 0.5F, 0.2F, 0 },
+            { 0.8F, 4.8F, 0, 6.7F },
+            { 4.9F, 0, 6, 0 },
         },
         {
-            { 0.5F, 5.0F, 0.0F, 0.0F },
-            { 0.0F, 0.0F, 8.4F, 0.6F },
+            { 0.5F, 5, 0, 0 },
+            { 0, 0, 8.4F, 0.6F },
             { 4.5F, 0.8F, 7.7F, 8.2F },
         },
     });
@@ -193,40 +193,40 @@ void test_tensor_sum_t_axis()
     dahl_fp a[2][2][3][4] = {
         {
             {
-                {-2.0F, 1.0F, 2.0F,-1.0F },
-                { 3.0F, 1.0F,-3.0F, 1.0F },
-                { 4.0F,-1.0F, 4.0F,-1.0F },
+                {-2, 1, 2,-1 },
+                { 3, 1,-3, 1 },
+                { 4,-1, 4,-1 },
             },
             {
-                { 3.0F, 1.0F,-8.0F,-3.0F },
-                {-7.0F,-3.0F, 3.0F, 2.0F },
-                { 1.0F, 1.0F, 9.0F, 1.0F },
+                { 3, 1,-8,-3 },
+                {-7,-3, 3, 2 },
+                { 1, 1, 9, 1 },
             },
         },
         {
             {
-                {-2.0F, 1.0F, 2.0F,-1.0F },
-                { 3.0F, 1.0F,-3.0F, 1.0F },
-                { 4.0F,-1.0F, 4.0F,-1.0F },
+                {-2, 1, 2,-1 },
+                { 3, 1,-3, 1 },
+                { 4,-1, 4,-1 },
             },
             {
-                { 3.0F, 1.0F,-8.0F,-3.0F },
-                {-7.0F,-3.0F, 3.0F, 2.0F },
-                { 1.0F, 1.0F, 9.0F, 1.0F },
+                { 3, 1,-8,-3 },
+                {-7,-3, 3, 2 },
+                { 1, 1, 9, 1 },
             },
         }
     };
 
     dahl_fp expect[2][3][4] = {
         {
-            {-4.0F, 2.0F, 4.0F,-2.0F },
-            { 6.0F, 2.0F,-6.0F, 2.0F },
-            { 8.0F,-2.0F, 8.0F,-2.0F },
+            {-4, 2, 4,-2 },
+            { 6, 2,-6, 2 },
+            { 8,-2, 8,-2 },
         },
         {
-            { 6.0F, 2.0F,-16.0F,-6.0F },
-            {-14.0F,-6.0F, 6.0F, 4.0F },
-            { 2.0F, 2.0F, 18.0F, 2.0F },
+            { 6, 2,-16,-6 },
+            {-14,-6, 6, 4 },
+            { 2, 2, 18, 2 },
         }
     };
 
@@ -284,21 +284,21 @@ void test_block_sum_z_axis()
 
     dahl_fp a[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
     dahl_fp expect[3][4] = {
-        { 1.0F, 2.0F,-6.0F,-4.0F },
-        {-4.0F,-2.0F, 0.0F, 3.0F },
-        { 5.0F, 0.0F,13.0F, 0.0F },
+        { 1, 2,-6,-4 },
+        {-4,-2, 0, 3 },
+        { 5, 0,13, 0 },
     };
 
     dahl_block* a_block = block_init_from(testing_arena, a_shape, (dahl_fp*)&a);
@@ -344,12 +344,12 @@ void test_matrix_sum_y_axis()
     size_t expect_len = 4;
 
     dahl_fp a[3][4] = {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     };
 
-    dahl_fp expect[4] = { 5.0F, 1.0F, 3.0F,-1.0F };
+    dahl_fp expect[4] = { 5, 1, 3,-1 };
 
     dahl_matrix* a_matrix = matrix_init_from(testing_arena, a_shape, (dahl_fp*)&a);
     dahl_vector* expect_vector = vector_init_from(testing_arena, expect_len, (dahl_fp*)&expect);
@@ -368,27 +368,27 @@ void test_scal()
 
     dahl_fp a[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
     dahl_fp expect[2][3][4] = {
         {
-            {-4.0F, 2.0F, 4.0F,-2.0F },
-            { 6.0F, 2.0F,-6.0F, 2.0F },
-            { 8.0F,-2.0F, 8.0F,-2.0F },
+            {-4, 2, 4,-2 },
+            { 6, 2,-6, 2 },
+            { 8,-2, 8,-2 },
         },
         {
-            { 6.0F, 2.0F,-16.0F,-6.0F },
-            {-14.0F,-6.0F, 6.0F, 4.0F },
-            { 2.0F, 2.0F, 18.0F, 2.0F },
+            { 6, 2,-16,-6 },
+            {-14,-6, 6, 4 },
+            { 2, 2, 18, 2 },
         },
     };
 
@@ -424,26 +424,26 @@ void test_divide()
 
     dahl_fp a[2][3][4] = {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     };
 
     dahl_fp expect[2][3][4] = {
         {
-            {-1.0F, 0.5F, 1.0F,-0.5F },
+            {-1, 0.5F, 1,-0.5F },
             { 1.5F, 0.5F,-1.5F, 0.5F },
-            { 2.0F,-0.5F, 2.0F,-0.5F },
+            { 2,-0.5F, 2,-0.5F },
         },
         {
-            { 1.5F, 0.5F,-4.0F,-1.5F },
-            {-3.5F,-1.5F, 1.5F, 1.0F },
+            { 1.5F, 0.5F,-4,-1.5F },
+            {-3.5F,-1.5F, 1.5F, 1 },
             { 0.5F, 0.5F, 4.5F, 0.5F },
         },
     };
@@ -465,34 +465,34 @@ void test_sub()
 
     dahl_fp a[2][2][2] = {
         {
-            {-2.0F, 1.0F },
-            { 3.0F, 1.0F },
+            {-2, 1 },
+            { 3, 1 },
         },
         {
-            { 3.0F, 1.0F },
-            {-7.0F,-3.0F },
+            { 3, 1 },
+            {-7,-3 },
         },
     };
 
     dahl_fp b[2][2][2] = {
         {
-            { 9.0F, 9.0F },
-            {-7.0F, 3.0F },
+            { 9, 9 },
+            {-7, 3 },
         },
         {
-            {-2.0F, 4.0F },
-            {-6.0F, 0.0F },
+            {-2, 4 },
+            {-6, 0 },
         },
     };
 
     dahl_fp expect[2][2][2] = {
         {
-            {-11.0F,-8.0F },
-            { 10.0F,-2.0F },
+            {-11,-8 },
+            { 10,-2 },
         },
         {
-            { 5.0F,-3.0F },
-            {-1.0F,-3.0F },
+            { 5,-3 },
+            {-1,-3 },
         },
     };
 
@@ -520,34 +520,34 @@ void test_add()
 
     dahl_fp a[2][2][2] = {
         {
-            {-2.0F, 1.0F },
-            { 3.0F, 1.0F },
+            {-2, 1 },
+            { 3, 1 },
         },
         {
-            { 3.0F, 1.0F },
-            {-7.0F,-3.0F },
+            { 3, 1 },
+            {-7,-3 },
         },
     };
 
     dahl_fp b[2][2][2] = {
         {
-            { 9.0F, 9.0F },
-            {-7.0F, 3.0F },
+            { 9, 9 },
+            {-7, 3 },
         },
         {
-            {-2.0F, 4.0F },
-            {-6.0F, 0.0F },
+            {-2, 4 },
+            {-6, 0 },
         },
     };
 
     dahl_fp expect[2][2][2] = {
         {
-            { 7.0F, 10.0F },
-            {-4.0F, 4.0F },
+            { 7, 10 },
+            {-4, 4 },
         },
         {
-            { 1.0F, 5.0F },
-            {-13.0F,-3.0F },
+            { 1, 5 },
+            {-13,-3 },
         },
     };
 
@@ -570,7 +570,7 @@ void test_add()
 void test_vector_softmax()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
+    dahl_fp data[len] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     dahl_vector* in = vector_init_from(testing_arena, len, (dahl_fp*)&data);
     dahl_vector* out = vector_init(testing_arena, len);
 
@@ -582,7 +582,7 @@ void test_vector_softmax()
     // Note that values are rounded up in order to compare
     ASSERT_VECTOR_EQUALS_ROUND(expect_vec, out, 6);
 
-    dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6.0F, 3.7F, 6.1F, 3.2F };
+    dahl_fp data_2[len] = { 1.8F, 3.8F, 8.7F, 6.9F, 3.9F, 12.9F, 6, 3.7F, 6.1F, 3.2F };
     dahl_vector* in_2 = vector_init_from(testing_arena, len, (dahl_fp*)&data_2);
 
     dahl_fp expect_2[len] = { 0.000015F, 0.000109F, 0.014701F, 0.002430F, 0.000121F, 
@@ -599,19 +599,19 @@ void test_vector_softmax()
 void test_vector_dot_product()
 {
     size_t constexpr len = 10;
-    dahl_fp data_1[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_fp data_1[len] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     dahl_vector* a = vector_init_from(testing_arena, len, (dahl_fp*)&data_1);
 
-    dahl_fp expect = 285.0F;
+    dahl_fp expect = 285;
 
     dahl_scalar* result = task_vector_dot_product_init(testing_arena, a, a);
 
     ASSERT_FP_EQUALS(expect, scalar_get_value(result));
 
-    dahl_fp data_2[len] = { 9.0F, 8.0F, 7.0F, 6.0F, 5.0F, 4.0F, 3.0F, 2.0F, 1.0F, 0.0F };
+    dahl_fp data_2[len] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
     dahl_vector* b = vector_init_from(testing_arena, len, (dahl_fp*)&data_2);
 
-    dahl_fp expect_2 = 120.0F;
+    dahl_fp expect_2 = 120;
 
     result = task_vector_dot_product_init(testing_arena, a, b);
 
@@ -623,21 +623,21 @@ void test_vector_dot_product()
 void test_vector_diag()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_fp data[len] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     dahl_vector* a = vector_init_from(testing_arena, len, (dahl_fp*)&data);
 
     dahl_shape2d expect_shape = {.x=len, .y=len};
     dahl_fp expect[len][len] = { 
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 2.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 3.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 4.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 5.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 6.0F, 0.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 7.0F, 0.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 8.0F, 0.0F },
-        { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 9.0F }
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 0, 0, 3, 0, 0, 0, 0, 0, 0 },
+        { 0, 0, 0, 0, 4, 0, 0, 0, 0, 0 },
+        { 0, 0, 0, 0, 0, 5, 0, 0, 0, 0 },
+        { 0, 0, 0, 0, 0, 0, 6, 0, 0, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 7, 0, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 8, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 9 }
     };
     dahl_matrix* expect_matrix = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect);
 
@@ -651,20 +651,20 @@ void test_vector_diag()
 void test_add_value()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_fp data[len] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     dahl_vector* in = vector_init_from(testing_arena, len, (dahl_fp*)&data);
 
     dahl_vector* out = vector_init(testing_arena, len);
 
-    dahl_fp expect[len] = { 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F, 10.0F, 11.0F, 12.0F, 13.0F };
+    dahl_fp expect[len] = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
     dahl_vector* expect_vec = vector_init_from(testing_arena, len, (dahl_fp*)&expect);
 
-    TASK_ADD_VALUE(in, out, 4.0F);
+    TASK_ADD_VALUE(in, out, 4);
 
     ASSERT_VECTOR_EQUALS(expect_vec, out);
 
     // Directly modifies in
-    TASK_ADD_VALUE_SELF(in, 4.0F);
+    TASK_ADD_VALUE_SELF(in, 4);
 
     ASSERT_VECTOR_EQUALS(expect_vec, in);
 
@@ -674,20 +674,20 @@ void test_add_value()
 void test_sub_value()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_fp data[len] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     dahl_vector* in = vector_init_from(testing_arena, len, (dahl_fp*)&data);
 
     dahl_vector* out = vector_init(testing_arena, len);
 
-    dahl_fp expect[len] = { -4.0F, -3.0F, -2.0F, -1.0F, 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F };
+    dahl_fp expect[len] = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
     dahl_vector* expect_vec = vector_init_from(testing_arena, len, (dahl_fp*)&expect);
 
-    TASK_SUB_VALUE(in, out, 4.0F);
+    TASK_SUB_VALUE(in, out, 4);
 
     ASSERT_VECTOR_EQUALS(expect_vec, out);
 
     // Directly modifies in
-    TASK_SUB_VALUE_SELF(in, 4.0F);
+    TASK_SUB_VALUE_SELF(in, 4);
 
     ASSERT_VECTOR_EQUALS(expect_vec, in);
 
@@ -698,17 +698,17 @@ void test_matrix_vector_product()
 {
     dahl_shape2d constexpr mat_shape = { .x = 3, .y = 2 };
     dahl_fp mat[mat_shape.y][mat_shape.x] = {
-        { 1.0F, -1.0F, 2.0F },
-        { 0.0F, -3.0F, 1.0F }
+        { 1, -1, 2 },
+        { 0, -3, 1 }
     };
     dahl_matrix* in_mat = matrix_init_from(testing_arena, mat_shape, (dahl_fp*)&mat); 
 
     size_t constexpr in_vec_len = mat_shape.x;
-    dahl_fp vec[in_vec_len] = { 2.0F, 1.0F, 0.0F };
+    dahl_fp vec[in_vec_len] = { 2, 1, 0 };
     dahl_vector* in_vec = vector_init_from(testing_arena, in_vec_len, (dahl_fp*)&vec);
 
     size_t constexpr expect_vec_len = mat_shape.y;
-    dahl_fp expect[expect_vec_len] = { 1.0F, -3.0F };
+    dahl_fp expect[expect_vec_len] = { 1, -3 };
     dahl_vector* expect_vec = vector_init_from(testing_arena, expect_vec_len, (dahl_fp*)&expect);
 
     dahl_vector* out_vec = task_matrix_vector_product_init(testing_arena, in_mat, in_vec);
@@ -716,11 +716,11 @@ void test_matrix_vector_product()
     ASSERT_VECTOR_EQUALS(expect_vec, out_vec);
 
     size_t constexpr in_vec_len_2 = mat_shape.y;
-    dahl_fp vec_2[in_vec_len_2] = { 2.0F, 4.0F };
+    dahl_fp vec_2[in_vec_len_2] = { 2, 4 };
     dahl_vector* in_vec_2 = vector_init_from(testing_arena, in_vec_len_2, (dahl_fp*)&vec_2);
 
     size_t constexpr expect_vec_len_2 = mat_shape.x;
-    dahl_fp expect_2[expect_vec_len_2] = { 2.0F, -14.0F, 8.0F };
+    dahl_fp expect_2[expect_vec_len_2] = { 2, -14, 8 };
     dahl_vector* expect_vec_2 = vector_init_from(testing_arena, expect_vec_len_2, (dahl_fp*)&expect_2);
 
     // Here we need to transpose our matrix
@@ -735,12 +735,12 @@ void test_matrix_vector_product()
 void test_clip()
 {
     size_t constexpr len = 10;
-    dahl_fp data[len] = { 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F };
+    dahl_fp data[len] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     dahl_vector* in = vector_init_from(testing_arena, len, (dahl_fp*)&data);
 
     dahl_vector* out = vector_init(testing_arena, len);
 
-    dahl_fp expect[len] = { 2.0F, 2.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 7.0F, 7.0F };
+    dahl_fp expect[len] = { 2, 2, 2, 3, 4, 5, 6, 7, 7, 7 };
     dahl_vector* expect_vec = vector_init_from(testing_arena, len, (dahl_fp*)&expect);
 
     TASK_CLIP(in, out, 2, 7);
@@ -770,7 +770,7 @@ void test_cross_entropy_loss_batch()
 
     dahl_matrix* pred_mat = matrix_init_from(testing_arena, pred_shape, (dahl_fp*)&pred);
 
-    dahl_fp targets[1][10] = {{ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F }};
+    dahl_fp targets[1][10] = {{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }};
 
     dahl_matrix* target_mat = matrix_init_from(testing_arena, pred_shape, (dahl_fp*)&targets);
 
@@ -782,21 +782,21 @@ void test_matrix_matrix_product()
 {
     dahl_shape2d constexpr a_shape = { .x = 3, .y = 2 };
     dahl_fp a[a_shape.y][a_shape.x] = {
-        { 1.0F, -1.0F, 2.0F },
-        { 0.0F, -3.0F, 1.0F }
+        { 1, -1, 2 },
+        { 0, -3, 1 }
     };
 
     dahl_shape2d constexpr b_shape = { .x = 2, .y = 3 };
     dahl_fp b[b_shape.y][b_shape.x] = {
-        { 1.0F,  4.0F },
-        { 2.0F, -5.0F },
-        { 0.0F, -3.0F }
+        { 1,  4 },
+        { 2, -5 },
+        { 0, -3 }
     };
 
     dahl_shape2d constexpr expect_shape = { .x = 2, .y = 2 };
     dahl_fp expect[expect_shape.y][expect_shape.x] = {
-        {-1.0F,  3.0F },
-        {-6.0F, 12.0F }
+        {-1,  3 },
+        {-6, 12 }
     };
 
     dahl_matrix* a_vec = matrix_init_from(testing_arena, a_shape, (dahl_fp*)&a);
@@ -815,7 +815,7 @@ void test_cross_entropy_loss_gradient_batch()
 {
     size_t constexpr num_classes = 10;
     size_t constexpr batch_size = 1;
-    dahl_fp targets[batch_size][num_classes] = {{ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F }};
+    dahl_fp targets[batch_size][num_classes] = {{ 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 }};
     dahl_fp predictions[num_classes] = {
         9.84501704e-1F, 3.43327192e-6F, 4.29544630e-4F, 3.57638159e-6F, 5.04458589e-9F, 
         3.90385373e-5F, 9.91704419e-3F, 3.92555643e-6F, 3.66346782e-7F, 5.10136218e-3F 
@@ -838,14 +838,14 @@ void test_sum()
 {
     dahl_block* block = BLOCK(testing_arena, 2, 3, 4, {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     });
 
@@ -854,16 +854,16 @@ void test_sum()
     ASSERT_FP_EQUALS(8, scalar_get_value(result));
 
     dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
-        {-2.0F, 1.0F, 2.0F,-1.0F },
-        { 3.0F, 1.0F,-3.0F, 1.0F },
-        { 4.0F,-1.0F, 4.0F,-1.0F },
+        {-2, 1, 2,-1 },
+        { 3, 1,-3, 1 },
+        { 4,-1, 4,-1 },
     });
 
     result = TASK_SUM_INIT(testing_arena, matrix);
 
     ASSERT_FP_EQUALS(8, scalar_get_value(result));
 
-    dahl_vector* vector = VECTOR(testing_arena, 4, { -2.0F, 1.0F, 2.0F,-3.0F });
+    dahl_vector* vector = VECTOR(testing_arena, 4, { -2, 1, 2,-3 });
     result = TASK_SUM_INIT(testing_arena, vector);
 
     ASSERT_FP_EQUALS(-2, scalar_get_value(result));
@@ -895,38 +895,38 @@ void test_convolution_2d_1()
 
     dahl_fp a[2][5][5] = {
         {
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
         },
         {
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
         }
     };
 
     dahl_fp b[2][3][3] = {
         {
-            { 1.0F, 0.0F, 1.0F },
-            { 0.0F, 1.0F, 0.0F },
-            { 1.0F, 0.0F, 1.0F },
+            { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         },
         {
-            { 1.0F, 0.0F, 1.0F },
-            { 0.0F, 1.0F, 0.0F },
-            { 1.0F, 0.0F, 1.0F },
+            { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         }
     }; 
 
     dahl_fp expect[3][3] = {
-        { 10.0F, 10.0F, 10.0F },
-        { 10.0F, 10.0F, 10.0F },
-        { 10.0F, 10.0F, 10.0F },
+        { 10, 10, 10 },
+        { 10, 10, 10 },
+        { 10, 10, 10 },
     };
 
     assert_convolution_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
@@ -940,38 +940,38 @@ void test_convolution_2d_2()
 
     dahl_fp a[2][5][5] = {
         {
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
-            { 1.0F, 1.0F, 1.0F, 1.0F, 1.0F },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1 },
         },
         {
-            { 2.0F, 2.0F, 2.0F, 2.0F, 2.0F },
-            { 2.0F, 2.0F, 2.0F, 2.0F, 2.0F },
-            { 2.0F, 2.0F, 2.0F, 2.0F, 2.0F },
-            { 2.0F, 2.0F, 2.0F, 2.0F, 2.0F },
-            { 2.0F, 2.0F, 2.0F, 2.0F, 2.0F },
+            { 2, 2, 2, 2, 2 },
+            { 2, 2, 2, 2, 2 },
+            { 2, 2, 2, 2, 2 },
+            { 2, 2, 2, 2, 2 },
+            { 2, 2, 2, 2, 2 },
         }
     };
 
     dahl_fp b[2][3][3] = {
         {
-            { 1.0F, 0.0F, 1.0F },
-            { 0.0F, 1.0F, 0.0F },
-            { 1.0F, 0.0F, 1.0F },
+            { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         },
         {
-            { -1.0F, 0.0F, -1.0F },
-            {  0.0F,-1.0F,  0.0F },
-            { -1.0F, 0.0F, -1.0F },
+            { -1, 0, -1 },
+            {  0,-1,  0 },
+            { -1, 0, -1 },
         }
     };
 
     dahl_fp expect[3][3] = {
-        { -5.0F, -5.0F, -5.0F },
-        { -5.0F, -5.0F, -5.0F },
-        { -5.0F, -5.0F, -5.0F },
+        { -5, -5, -5 },
+        { -5, -5, -5 },
+        { -5, -5, -5 },
     };
 
     assert_convolution_2d((dahl_fp*)&a, a_shape, (dahl_fp*)&b, b_shape, (dahl_fp*)&expect, expect_shape);
@@ -1103,35 +1103,35 @@ void test_block_sum_xy_axes()
 {
     dahl_block* block = BLOCK(testing_arena, 2, 3, 4, {
         {
-            {-2.0F, 1.0F, 2.0F,-1.0F },
-            { 3.0F, 1.0F,-3.0F, 1.0F },
-            { 4.0F,-1.0F, 4.0F,-1.0F },
+            {-2, 1, 2,-1 },
+            { 3, 1,-3, 1 },
+            { 4,-1, 4,-1 },
         },
         {
-            { 3.0F, 1.0F,-8.0F,-3.0F },
-            {-7.0F,-3.0F, 3.0F, 2.0F },
-            { 1.0F, 1.0F, 9.0F, 1.0F },
+            { 3, 1,-8,-3 },
+            {-7,-3, 3, 2 },
+            { 1, 1, 9, 1 },
         },
     });
 
-    dahl_vector* expect = VECTOR(testing_arena, 2, { 8.0F, 0.0F });
+    dahl_vector* expect = VECTOR(testing_arena, 2, { 8, 0 });
     dahl_vector* out = task_block_sum_xy_axes_init(testing_arena, block);
     ASSERT_VECTOR_EQUALS(expect, out);
 }
 
 void test_fill()
 {
-    dahl_vector* vector = VECTOR(testing_arena, 5, { 8.0F, 0.0F, 5.0F, -1.0F, -42.0F });
-    dahl_vector* expect = VECTOR(testing_arena, 5, { -667.0F, -667.0F, -667.0F, -667.0F, -667.0F });
-    TASK_FILL(vector, -667.0F);
+    dahl_vector* vector = VECTOR(testing_arena, 5, { 8, 0, 5, -1, -42 });
+    dahl_vector* expect = VECTOR(testing_arena, 5, { -667, -667, -667, -667, -667 });
+    TASK_FILL(vector, -667);
     ASSERT_VECTOR_EQUALS(expect, vector);
 }
 
 void test_copy()
 {
     dahl_matrix* matrix = MATRIX(testing_arena, 2, 5, {
-        { 8.0F, 0.0F, 5.0F, -1.0F, -42.0F },
-        { 8.0F, 0.0F, 5.0F, -1.0F, -42.0F },
+        { 8, 0, 5, -1, -42 },
+        { 8, 0, 5, -1, -42 },
     });
 
     dahl_matrix* out = matrix_init(testing_arena, (dahl_shape2d){ .x = 5, .y = 2 });
@@ -1147,14 +1147,14 @@ void test_copy()
 // 
 //     dahl_fp data[2][3][4] = {
 //         {
-//             {-2.0F, 1.0F, 2.0F,-1.0F },
-//             { 3.0F, 1.0F,-3.0F, 1.0F },
-//             { 4.0F,-1.0F, 4.0F,-1.0F },
+//             {-2, 1, 2,-1 },
+//             { 3, 1,-3, 1 },
+//             { 4,-1, 4,-1 },
 //         },
 //         {
-//             { 3.0F, 1.0F,-8.0F,-3.0F },
-//             {-7.0F,-3.0F, 3.0F, 2.0F },
-//             { 1.0F, 1.0F, 9.0F, 1.0F },
+//             { 3, 1,-8,-3 },
+//             {-7,-3, 3, 2 },
+//             { 1, 1, 9, 1 },
 //         },
 //     };
 // 
@@ -1232,15 +1232,15 @@ void test_copy()
 void test_matrix_rotate_180()
 {
     dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
-        { 3.0F, 1.0F,-8.0F,-3.0F },
-        {-7.0F,-3.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1,-8,-3 },
+        {-7,-3, 3, 2 },
+        { 1, 1, 9, 1 },
     });
 
     dahl_matrix* expect = MATRIX(testing_arena, 3, 4, {
-        { 1.0F, 9.0F, 1.0F, 1.0F },
-        { 2.0F, 3.0F,-3.0F,-7.0F },
-        {-3.0F,-8.0F, 1.0F, 3.0F },
+        { 1, 9, 1, 1 },
+        { 2, 3,-3,-7 },
+        {-3,-8, 1, 3 },
     });
 
     dahl_matrix* out = task_matrix_rotate_180_init(testing_arena, matrix);
@@ -1255,9 +1255,9 @@ void test_vector_outer_product()
     dahl_vector* b = VECTOR(testing_arena, 3, { 1, -2, 3 });
 
     dahl_matrix* expect = MATRIX(testing_arena, 3, 4, {
-        {-4.0F, 5.0F, 6.0F,-7.0F },
-        { 8.0F,-10.0F, -12.0F, 14.0F },
-        { -12.0F, 15.0F, 18.0F, -21.0F },
+        {-4, 5, 6,-7 },
+        { 8,-10, -12, 14 },
+        { -12, 15, 18, -21 },
     });
 
     dahl_matrix* out = task_vector_outer_product_init(testing_arena, a, b);
@@ -1306,37 +1306,37 @@ void test_convolution_2d_backward_filters()
 {
     dahl_block* a = BLOCK(testing_arena, 2, 5, 5, {
         {
-            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-            { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+            { 6, 5, 4, 3, 2 },
+            { 6, 5, 4, 3, 2 },
+            { 6, 5, 4, 3, 2 },
+            { 6, 5, 4, 3, 2 },
+            { 6, 5, 4, 3, 2 },
         },
         {
-            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-            { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+            { 2, 3, 4, 5, 6 },
+            { 2, 3, 4, 5, 6 },
+            { 2, 3, 4, 5, 6 },
+            { 2, 3, 4, 5, 6 },
+            { 2, 3, 4, 5, 6 },
         }
     });
 
     dahl_matrix* b = MATRIX(testing_arena, 3, 3, {
-        { 1.0F, 0.0F, 1.0F },
-        { 0.0F, 1.0F, 0.0F },
-        { 1.0F, 0.0F, 1.0F },
+        { 1, 0, 1 },
+        { 0, 1, 0 },
+        { 1, 0, 1 },
     }); 
 
     dahl_block* expect = BLOCK(testing_arena, 2, 3, 3, {
         {
-            { 25.0F, 20.0F, 15.0F },
-            { 25.0F, 20.0F, 15.0F },
-            { 25.0F, 20.0F, 15.0F },
+            { 25, 20, 15 },
+            { 25, 20, 15 },
+            { 25, 20, 15 },
         },
         {
-            { 15.0F, 20.0F, 25.0F },
-            { 15.0F, 20.0F, 25.0F },
-            { 15.0F, 20.0F, 25.0F },
+            { 15, 20, 25 },
+            { 15, 20, 25 },
+            { 15, 20, 25 },
         },
     });
 
@@ -1418,7 +1418,7 @@ void test_round()
     dahl_matrix* mat = MATRIX(testing_arena, 3, 3, {
         { 1.5F, 198.9087988F, 989.29831F },
         { 0.3897F, 1.8F, 0.89F },
-        { 1.0F, 0.0F, -1.123947F },
+        { 1, 0, -1.123947F },
     });
 
     TASK_ROUND_SELF(mat, 4);
@@ -1426,7 +1426,7 @@ void test_round()
     dahl_matrix* expect_mat = MATRIX(testing_arena, 3, 3, {
         { 1.5F, 198.9088F, 989.2983F },
         { 0.3897F, 1.8F, 0.89F },
-        { 1.0F, 0.0F, -1.1239F },
+        { 1, 0, -1.1239F },
     });
 
     ASSERT_MATRIX_EQUALS_ROUND(expect_mat, mat, 4);
@@ -1529,74 +1529,74 @@ void test_redux_convolution_2d_backward_filters()
     dahl_tensor* a = TENSOR(testing_arena, n_samples, 2, 5, 5, {
         {
             {
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
             },
             {
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
             }
         },
         {
             {
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
-                { 6.0F, 5.0F, 4.0F, 3.0F, 2.0F },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
+                { 6, 5, 4, 3, 2 },
             },
             {
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
-                { 2.0F, 3.0F, 4.0F, 5.0F, 6.0F },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
+                { 2, 3, 4, 5, 6 },
             }
         },
     });
 
     dahl_block* b = BLOCK(testing_arena, n_samples, 3, 3, {
         {
-            { 1.0F, 0.0F, 1.0F },
-            { 0.0F, 1.0F, 0.0F },
-            { 1.0F, 0.0F, 1.0F },
+            { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         },
         {
-            { 1.0F, 0.0F, 1.0F },
-            { 0.0F, 1.0F, 0.0F },
-            { 1.0F, 0.0F, 1.0F },
+            { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         },
     });
 
     dahl_tensor* expect_conv = TENSOR(testing_arena, n_samples, 2, 3, 3, {
         {
             {
-                { 50.0F, 40.0F, 30.0F },
-                { 50.0F, 40.0F, 30.0F },
-                { 50.0F, 40.0F, 30.0F },
+                { 50, 40, 30 },
+                { 50, 40, 30 },
+                { 50, 40, 30 },
             },
             {
-                { 30.0F, 40.0F, 50.0F },
-                { 30.0F, 40.0F, 50.0F },
-                { 30.0F, 40.0F, 50.0F },
+                { 30, 40, 50 },
+                { 30, 40, 50 },
+                { 30, 40, 50 },
             },
         },
         {
             {
-                { 50.0F, 40.0F, 30.0F },
-                { 50.0F, 40.0F, 30.0F },
-                { 50.0F, 40.0F, 30.0F },
+                { 50, 40, 30 },
+                { 50, 40, 30 },
+                { 50, 40, 30 },
             },
             {
-                { 30.0F, 40.0F, 50.0F },
-                { 30.0F, 40.0F, 50.0F },
-                { 30.0F, 40.0F, 50.0F },
+                { 30, 40, 50 },
+                { 30, 40, 50 },
+                { 30, 40, 50 },
             },
         },
     });
@@ -1739,9 +1739,9 @@ void test_vector_matrix_product()
     dahl_vector* vector = VECTOR(testing_arena, 3, { 1, 2, 3 });
 
     dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
-        { 3.0F, 1.0F,-8.0F,-3.0F },
-        {-7.0F,-3.0F, 3.0F, 2.0F },
-        { 1.0F, 1.0F, 9.0F, 1.0F },
+        { 3, 1,-8,-3 },
+        {-7,-3, 3, 2 },
+        { 1, 1, 9, 1 },
     });
 
     dahl_vector* expect = VECTOR(testing_arena, 4, { -8, -2, 25, 4 });
