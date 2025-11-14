@@ -39,7 +39,6 @@ Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to suppor
 │   ├── datasets/    Datasets directory with download scripts
 │   ├── examples/    Examples of machine leraning models
 │   ├── include/     DAHL public headers
-│   ├── kernels/     CUDA kernels
 │   ├── src/         DAHL sources
 │   └── tests/       Unit testing
 ├── nix/
