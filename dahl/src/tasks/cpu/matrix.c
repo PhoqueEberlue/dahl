@@ -12,46 +12,40 @@
 void matrix_cross_correlation(void* buffers[3], void* cl_arg)
 {
     // Input matrix
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
     // Kernel matrix
-    size_t const kernel_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const kernel_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const kernel_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp const* kernel = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto ker = STARPU_MATRIX_GET(buffers[1]);
+    auto ker_p = (dahl_fp const*)ker.ptr;
 
     // Output matrix
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+    auto out = STARPU_MATRIX_GET(buffers[2]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(out_nx == in_nx - kernel_nx + 1);
-    assert(out_ny == in_ny - kernel_ny + 1);
+    assert(out.nx == in.nx - ker.nx + 1);
+    assert(out.ny == in.ny - ker.ny + 1);
 
     // loop through i,j on axes x,y of the output matrix
-    for (size_t j = 0; j < out_ny; j++)
+    for (size_t j = 0; j < out.ny; j++)
     {
-        for (size_t i = 0; i < out_nx; i++)
+        for (size_t i = 0; i < out.nx; i++)
         {
             dahl_fp cell_res = 0.0F;
 
             // loop through k,l on axes x,y of the kernel
-            for (size_t l = 0; l < kernel_ny; l++)
+            for (size_t l = 0; l < ker.ny; l++)
             {
-                for (size_t k = 0; k < kernel_nx; k++)
+                for (size_t k = 0; k < ker.nx; k++)
                 {
-                    dahl_fp in_value = in[((l + j) * in_ld) + k + i];
-                    dahl_fp kernel_value = kernel[(l * kernel_ld) + k];
+                    dahl_fp in_value = in_p[((l + j) * in.ld) + k + i];
+                    dahl_fp kernel_value = ker_p[(l * ker.ld) + k];
                     
                     cell_res += in_value * kernel_value;
                 }
             }
 
-            out[(j * out_ld) + i] = cell_res;
+            out_p[(j * out.ld) + i] = cell_res;
         }
     }
 }
@@ -61,31 +55,25 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
 
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
-    size_t const mask_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const mask_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const mask_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp* mask = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto mask = STARPU_MATRIX_GET(buffers[1]);
+    auto mask_p = (dahl_fp*)mask.ptr;
 
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+    auto out = STARPU_MATRIX_GET(buffers[2]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(out_nx == in_nx / pool_size);
-    assert(out_ny == in_ny / pool_size);
+    assert(out.nx == in.nx / pool_size);
+    assert(out.ny == in.ny / pool_size);
 
-    assert(in_nx == mask_nx);
-    assert(in_ny == mask_ny);
+    assert(in.nx == mask.nx);
+    assert(in.ny == mask.ny);
 
     // Loop through i,j on axes x,y of matrix `out`
-    for (size_t j = 0; j < out_ny; j++)
+    for (size_t j = 0; j < out.ny; j++)
     {
-        for (size_t i = 0; i < out_nx; i++)
+        for (size_t i = 0; i < out.nx; i++)
         {
             // Compute pooling window bounds
             size_t start_l = j * pool_size;
@@ -94,7 +82,7 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
             size_t end_k = start_k + pool_size;
 
             // Set max value and index to first element to handle cases with negative numbers
-            dahl_fp current_max = in[(start_l * in_ld) + start_k];
+            dahl_fp current_max = in_p[(start_l * in.ld) + start_k];
             size_t current_max_y = start_l;
             size_t current_max_x = start_k;
 
@@ -103,7 +91,7 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
             {
                 for (size_t k = start_k; k < end_k; k++)
                 {
-                    dahl_fp in_value = in[(l * in_ld) + k];
+                    dahl_fp in_value = in_p[(l * in.ld) + k];
 
                     if (in_value > current_max)
                     {
@@ -114,8 +102,8 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
                 }
             }
 
-            out[(j * out_ld) + i] = current_max;
-            mask[(current_max_y * mask_ld) + current_max_x] = 1.0F;
+            out_p[(j * out.ld) + i] = current_max;
+            mask_p[(current_max_y * mask.ld) + current_max_x] = 1.0F;
         }
     }
 }
@@ -125,31 +113,25 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
     size_t pool_size;
     starpu_codelet_unpack_args(cl_arg, &pool_size);
 
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
-    size_t const mask_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const mask_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const mask_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp const* mask = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto mask = STARPU_MATRIX_GET(buffers[1]);
+    auto mask_p = (dahl_fp const*)mask.ptr;
 
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[2]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[2]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+    auto out = STARPU_MATRIX_GET(buffers[2]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(in_nx == out_nx / pool_size);
-    assert(in_ny == out_ny / pool_size);
+    assert(in.nx == out.nx / pool_size);
+    assert(in.ny == out.ny / pool_size);
 
-    assert(out_nx == mask_nx);
-    assert(out_ny == mask_ny);
+    assert(out.nx == mask.nx);
+    assert(out.ny == mask.ny);
 
     // Loop through i,j on axes x,y of matrix `in`
-    for (size_t j = 0; j < in_ny; j++)
+    for (size_t j = 0; j < in.ny; j++)
     {
-        for (size_t i = 0; i < in_nx; i++)
+        for (size_t i = 0; i < in.nx; i++)
         {
             size_t start_l = j * pool_size;
             size_t start_k = i * pool_size;
@@ -161,12 +143,12 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
             {
                 for (size_t k = start_k; k < end_k; k++)
                 {
-                    dahl_fp in_value = in[(j * in_ld) + i];
-                    dahl_fp mask_value = mask[(l * mask_ld) + k];
+                    dahl_fp in_value = in_p[(j * in.ld) + i];
+                    dahl_fp mask_value = mask_p[(l * mask.ld) + k];
 
                     // If the current value of the mask mask is 0, the result is ignored.
                     // I'm not sure if its better to check that conditionnaly, or to always write a result.
-                    out[(l * out_ld) + k] = in_value * mask_value;
+                    out_p[(l * out.ld) + k] = in_value * mask_value;
                 }
             }
         }
@@ -175,36 +157,30 @@ void matrix_backward_max_pooling(void *buffers[3], void *cl_arg)
 
 void matrix_matrix_product(void* buffers[3], void* cl_arg)
 {
-    size_t const a_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const a_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const a_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* a = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto a = STARPU_MATRIX_GET(buffers[0]);
+    auto a_p = (dahl_fp const*)a.ptr;
 
-    size_t const b_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const b_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const b_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp const* b = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto b = STARPU_MATRIX_GET(buffers[1]);
+    auto b_p = (dahl_fp const*)b.ptr;
 
-    size_t const c_nx = STARPU_MATRIX_GET_NX(buffers[2]);
-    size_t const c_ny = STARPU_MATRIX_GET_NY(buffers[2]);
-    size_t const c_ld = STARPU_MATRIX_GET_LD(buffers[2]);
-    dahl_fp* c = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[2]);
+    auto c = STARPU_MATRIX_GET(buffers[2]);
+    auto c_p = (dahl_fp*)c.ptr;
 
-    assert(a_nx == b_ny);
-    assert(c_ny == a_ny);
-    assert(c_nx == b_nx);
+    assert(a.nx == b.ny);
+    assert(c.ny == a.ny);
+    assert(c.nx == b.nx);
 
     // Loop through (x,y) of c
-    for (size_t y = 0; y < c_ny; y++)
+    for (size_t y = 0; y < c.ny; y++)
     {
-        for (size_t x = 0; x < c_nx; x++)
+        for (size_t x = 0; x < c.nx; x++)
         {
-            for (size_t i = 0; i < a_nx; i++)
+            for (size_t i = 0; i < a.nx; i++)
             {
-                dahl_fp val_a = a[(y * a_ld) + i];
-                dahl_fp val_b = b[(i * b_ld) + x];
+                dahl_fp val_a = a_p[(y * a.ld) + i];
+                dahl_fp val_b = b_p[(i * b.ld) + x];
 
-                c[(y * c_ld) + x] += val_a * val_b;
+                c_p[(y * c.ld) + x] += val_a * val_b;
             }
         }
     }
@@ -213,22 +189,20 @@ void matrix_matrix_product(void* buffers[3], void* cl_arg)
 void matrix_sum_y_axis(void* buffers[2], void* cl_arg)
 {
     // input matrix
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
     // output vector
-    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+    auto out = STARPU_VECTOR_GET(buffers[1]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(in_nx == out_len);
+    assert(in.nx == out.nx);
 
-    for (int x = 0; x < in_nx; x++)
+    for (int x = 0; x < in.nx; x++)
     {
-        for (int y = 0; y < in_ny; y++)
+        for (int y = 0; y < in.ny; y++)
         {
-            out[x] += in[(y * in_ld) + x];
+            out_p[x] += in_p[(y * in.ld) + x];
         }
     }
 }
@@ -236,28 +210,26 @@ void matrix_sum_y_axis(void* buffers[2], void* cl_arg)
 void matrix_vector_product(void* buffers[3], void* cl_arg)
 {
     // Input matrix
-    size_t const mat_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const mat_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const mat_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* mat = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto mat = STARPU_MATRIX_GET(buffers[0]);
+    auto mat_p = (dahl_fp const*)mat.ptr;
 
     // Input vector
-    size_t const vec_len = STARPU_VECTOR_GET_NX(buffers[1]);
-    dahl_fp const* vec = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[1]);
+    auto vec = STARPU_VECTOR_GET(buffers[1]);
+    auto vec_p = (dahl_fp const*)vec.ptr;
 
     // Output vector
-    size_t const out_len = STARPU_VECTOR_GET_NX(buffers[2]);
-    dahl_fp* out = (dahl_fp*)STARPU_VECTOR_GET_PTR(buffers[2]);
+    auto out = STARPU_VECTOR_GET(buffers[2]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(vec_len == mat_nx);
-    assert(out_len == mat_ny);
+    assert(vec.nx == mat.nx);
+    assert(out.nx == mat.ny);
 
     // Loop through x,y of the matrix
-    for (size_t y = 0; y < mat_ny; y++)
+    for (size_t y = 0; y < mat.ny; y++)
     {
-        for (size_t x = 0; x < mat_nx; x++)
+        for (size_t x = 0; x < mat.nx; x++)
         {
-            out[y] += vec[x] * mat[(y * mat_ld) + x];
+            out_p[y] += vec_p[x] * mat_p[(y * mat.ld) + x];
         }
     }
 }
@@ -265,25 +237,21 @@ void matrix_vector_product(void* buffers[3], void* cl_arg)
 void matrix_transpose(void* buffers[2], void* cl_arg)
 {
     // Input matrix
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
     // Output matrix
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto out = STARPU_MATRIX_GET(buffers[1]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(in_nx == out_ny);
-    assert(in_ny == out_nx);
+    assert(in.nx == out.ny);
+    assert(in.ny == out.nx);
 
-    for (size_t y = 0; y < in_ny; y++)
+    for (size_t y = 0; y < in.ny; y++)
     {
-        for (size_t x = 0; x < in_nx; x++)
+        for (size_t x = 0; x < in.nx; x++)
         {
-            out[(x * out_ld) + y] = in[(y * in_ld) + x];
+            out_p[(x * out.ld) + y] = in_p[(y * in.ld) + x];
         }
     }
 }
@@ -303,27 +271,23 @@ void matrix_resize(void* buffers[1], void* cl_arg)
 void matrix_rotate_180(void* buffers[2], void* cl_arg)
 {
     // Input matrix
-    size_t const in_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const in_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const in_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp const* in = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto in = STARPU_MATRIX_GET(buffers[0]);
+    auto in_p = (dahl_fp const*)in.ptr;
 
     // Output matrix
-    size_t const out_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const out_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const out_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp* out = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto out = STARPU_MATRIX_GET(buffers[1]);
+    auto out_p = (dahl_fp*)out.ptr;
 
-    assert(in_nx == out_nx);
-    assert(in_ny == out_ny);
+    assert(in.nx == out.nx);
+    assert(in.ny == out.ny);
 
-    for (size_t y = 0; y < in_ny; y++)
+    for (size_t y = 0; y < in.ny; y++)
     {
-        for (size_t x = 0; x < in_nx; x++)
+        for (size_t x = 0; x < in.nx; x++)
         {
-            size_t y_rot = (out_ny - 1 - y);
-            size_t x_rot = (out_nx - 1 - x);
-            out[(y_rot * out_ld) + x_rot] = in[(y * in_ld) + x];
+            size_t y_rot = (out.ny - 1 - y);
+            size_t x_rot = (out.nx - 1 - x);
+            out_p[(y_rot * out.ld) + x_rot] = in_p[(y * in.ld) + x];
         }
     }
 }
@@ -331,16 +295,14 @@ void matrix_rotate_180(void* buffers[2], void* cl_arg)
 void matrix_zero(void *buffers[1], void *cl_arg)
 {
 	// Matrix
-    size_t const nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp* data = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto mat = STARPU_MATRIX_GET(buffers[0]);
+    auto mat_p = (dahl_fp*)mat.ptr;
 
-    for (int y = 0; y < ny; y++)
+    for (int y = 0; y < mat.ny; y++)
     {
-        for (int x = 0; x < nx; x++)
+        for (int x = 0; x < mat.nx; x++)
         {
-            data[(y * ld) + x] = 0;
+            mat_p[(y * mat.ld) + x] = 0;
         }
     }
 }
@@ -348,26 +310,22 @@ void matrix_zero(void *buffers[1], void *cl_arg)
 void matrix_accumulate(void *buffers[2], void *cl_arg)
 {
 	// dst matrix accumulator
-    size_t const dst_nx = STARPU_MATRIX_GET_NX(buffers[0]);
-    size_t const dst_ny = STARPU_MATRIX_GET_NY(buffers[0]);
-    size_t const dst_ld = STARPU_MATRIX_GET_LD(buffers[0]);
-    dahl_fp* dst = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[0]);
+    auto dst = STARPU_MATRIX_GET(buffers[0]);
+    auto dst_p = (dahl_fp*)dst.ptr;
 
     // source matrix
-    size_t const src_nx = STARPU_MATRIX_GET_NX(buffers[1]);
-    size_t const src_ny = STARPU_MATRIX_GET_NY(buffers[1]);
-    size_t const src_ld = STARPU_MATRIX_GET_LD(buffers[1]);
-    dahl_fp const* src = (dahl_fp*)STARPU_MATRIX_GET_PTR(buffers[1]);
+    auto src = STARPU_MATRIX_GET(buffers[1]);
+    auto src_p = (dahl_fp const*)src.ptr;
 
-    assert(dst_nx == src_nx);
-    assert(dst_ny == src_ny);
-    assert(dst_ld == src_ld);
+    assert(dst.nx == src.nx);
+    assert(dst.ny == src.ny);
+    assert(dst.ld == src.ld);
 
-    for (size_t y = 0; y < dst_ny; y++)
+    for (size_t y = 0; y < dst.ny; y++)
     {
-        for (size_t x = 0; x < dst_nx; x++)
+        for (size_t x = 0; x < dst.nx; x++)
         {
-            dst[(y * dst_ld) + x] += src[(y * src_ld) + x];
+            dst_p[(y * dst.ld) + x] += src_p[(y * src.ld) + x];
         }
     }
 }
