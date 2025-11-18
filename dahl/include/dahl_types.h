@@ -13,6 +13,12 @@ typedef enum {
     DAHL_SCALAR,
 } dahl_type;
 
+typedef enum {
+    DAHL_READ,
+    DAHL_MUT,
+    DAHL_REDUX,
+} dahl_access;
+
 typedef double dahl_fp;
 
 typedef struct

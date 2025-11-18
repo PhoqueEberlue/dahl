@@ -1460,7 +1460,7 @@ void test_redux_sum()
 
     dahl_scalar* redux = scalar_init_redux(testing_arena);
 
-    matrix_partition_along_y(mat);
+    matrix_partition_along_y(mat, DAHL_READ);
 
     for (size_t y = 0; y < ny; y++)
     {
@@ -1473,7 +1473,7 @@ void test_redux_sum()
     ASSERT_SCALAR_EQUALS(expect, redux);
 
     // Of course reusing the same redux variable still accumulates the results
-    matrix_partition_along_y(mat);
+    matrix_partition_along_y(mat, DAHL_READ);
 
     for (size_t y = 0; y < ny; y++)
     {
@@ -1605,16 +1605,15 @@ void test_redux_convolution_2d_backward_filters()
     dahl_shape4d shape = { .x = 3, .y = 3, .z = 2, .t = n_samples };
     dahl_tensor* out = tensor_init(testing_arena, shape);
 
-    tensor_partition_along_t(a);
-    block_partition_along_z(b);
-    tensor_partition_along_t_mut(out);
+    tensor_partition_along_t(a, DAHL_READ);
+    block_partition_along_z(b, DAHL_READ);
+    tensor_partition_along_t(out, DAHL_REDUX);
 
     for (size_t i = 0; i < n_samples; i++)
     {
         dahl_block const* a_block = GET_SUB_BLOCK(a, i);
         dahl_matrix const* b_mat = GET_SUB_MATRIX(b, i);
         dahl_block* out_block_redux = GET_SUB_BLOCK_MUT(out, i);
-        block_enable_redux(out_block_redux);
 
         // Pretend we do mulitple backward, the two functions results should accumulate correctly
         task_convolution_2d_backward_filters(a_block, b_mat, out_block_redux);

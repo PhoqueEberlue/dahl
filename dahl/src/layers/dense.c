@@ -41,8 +41,8 @@ dahl_matrix* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix con
 {
     dahl_matrix* output_batch = matrix_init(arena, dense->output_shape);
 
-    matrix_partition_along_y(input_batch);
-    matrix_partition_along_y_mut(output_batch);
+    matrix_partition_along_y(input_batch, DAHL_READ);
+    matrix_partition_along_y(output_batch, DAHL_MUT);
 
     size_t const batch_size = GET_NB_CHILDREN(input_batch);
 
@@ -88,9 +88,9 @@ dahl_matrix* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix co
     dahl_matrix* dl_dw_redux = matrix_init_redux(dense->scratch_arena, dense->weights_shape);
 
     // Partition by batch
-    matrix_partition_along_y(dl_dout_batch);
-    matrix_partition_along_y(input_batch);
-    matrix_partition_along_y_mut(dl_dinput_batch);
+    matrix_partition_along_y(dl_dout_batch, DAHL_READ);
+    matrix_partition_along_y(input_batch, DAHL_READ);
+    matrix_partition_along_y(dl_dinput_batch, DAHL_MUT);
 
     size_t const batch_size = GET_NB_CHILDREN(input_batch);
     

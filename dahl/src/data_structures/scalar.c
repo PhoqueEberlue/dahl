@@ -34,17 +34,7 @@ dahl_scalar* scalar_init_redux(dahl_arena* arena)
     starpu_data_handle_t handle = nullptr;
     starpu_variable_data_register(&handle, STARPU_MAIN_RAM, (uintptr_t)&scalar->data, sizeof(dahl_fp));
 
-    size_t nb_elem = 1;
-    dahl_fp value = 0;
-
-    char *fill_args;
-    size_t arg_buffer_size;
-    starpu_codelet_pack_args((void**)&fill_args, &arg_buffer_size,
-                         STARPU_VALUE, &nb_elem, sizeof(size_t),
-                         STARPU_VALUE, &value, sizeof(dahl_fp), 0);
-
-    // Attach the reduction methods
-    starpu_data_set_reduction_methods_with_args(handle, &cl_scalar_accumulate, nullptr, &cl_any_fill, fill_args);
+    _scalar_enable_redux(scalar); 
     scalar->handle = handle;
 
     return scalar;
@@ -56,6 +46,13 @@ dahl_scalar* scalar_init_from(dahl_arena* arena, dahl_fp const value)
     res->data = value;
     res->is_redux = false;
     return res;
+}
+
+void _scalar_enable_redux(void* scalar)
+{
+    ((dahl_scalar*)scalar)->is_redux = true;
+    starpu_data_set_reduction_methods(
+            ((dahl_scalar*)scalar)->handle, &cl_scalar_accumulate, &cl_scalar_zero);
 }
 
 bool _scalar_get_is_redux(void const* scalar)

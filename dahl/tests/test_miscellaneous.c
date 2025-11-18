@@ -87,7 +87,7 @@ void test_what_acquire_and_what_dont_acquire()
         {
             task_convolution_2d(img, kernel, out);
 
-            block_partition_along_z(img);
+            block_partition_along_z(img, DAHL_READ);
             TASK_SUM_INIT(testing_arena, GET_SUB_MATRIX(img, 0));
             block_unpartition(img);
 

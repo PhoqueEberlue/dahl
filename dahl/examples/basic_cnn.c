@@ -13,8 +13,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
     dahl_arena* epoch_arena = dahl_arena_new();
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
 
-    tensor_partition_along_t_batch(dataset->train_images, batch_size);
-    matrix_partition_along_y_batch(dataset->train_labels, batch_size);
+    tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
+    matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
 
     num_samples = 640; // Only use first 1k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size

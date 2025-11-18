@@ -29,9 +29,9 @@ void _pooling_forward_sample(dahl_block const* input,
                              size_t pool_size)
 {
     //partition along channel axis
-    block_partition_along_z(input);
-    block_partition_along_z_mut(mask);
-    block_partition_along_z_mut(output);
+    block_partition_along_z(input, DAHL_READ);
+    block_partition_along_z(mask, DAHL_MUT);
+    block_partition_along_z(output, DAHL_MUT);
 
     size_t const n_filters = GET_NB_CHILDREN(input);
 
@@ -54,9 +54,9 @@ dahl_tensor* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor 
     dahl_tensor* output_batch = tensor_init(arena, pool->output_shape);
 
     // partition along batch axis
-    tensor_partition_along_t(input_batch);
-    tensor_partition_along_t_mut(pool->mask_batch);
-    tensor_partition_along_t_mut(output_batch);
+    tensor_partition_along_t(input_batch, DAHL_READ);
+    tensor_partition_along_t(pool->mask_batch, DAHL_MUT);
+    tensor_partition_along_t(output_batch, DAHL_MUT);
 
     size_t const batch_size = GET_NB_CHILDREN(input_batch);
 
@@ -81,9 +81,9 @@ void _pooling_backward_sample(dahl_block* dl_dinput, dahl_block const* mask,
                               dahl_block const* dl_dout, size_t pool_size)
 {
     // Partition by channel dimension
-    block_partition_along_z_mut(dl_dinput);
-    block_partition_along_z(mask);
-    block_partition_along_z(dl_dout);
+    block_partition_along_z(dl_dinput, DAHL_MUT);
+    block_partition_along_z(mask, DAHL_READ);
+    block_partition_along_z(dl_dout, DAHL_READ);
 
     size_t const n_filters = GET_NB_CHILDREN(mask);
 
@@ -107,9 +107,9 @@ dahl_tensor* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor
     dahl_tensor* dl_dinput_batch = tensor_init(arena, pool->input_shape);
 
     // Partition by batch dimension
-    tensor_partition_along_t_mut(dl_dinput_batch);
-    tensor_partition_along_t(pool->mask_batch);
-    tensor_partition_along_t(dl_dout_batch);
+    tensor_partition_along_t(dl_dinput_batch, DAHL_MUT);
+    tensor_partition_along_t(pool->mask_batch, DAHL_READ);
+    tensor_partition_along_t(dl_dout_batch, DAHL_READ);
 
     size_t const batch_size = GET_NB_CHILDREN(dl_dinput_batch);
 

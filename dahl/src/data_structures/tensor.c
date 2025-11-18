@@ -77,7 +77,7 @@ dahl_tensor* tensor_init_redux(dahl_arena* arena, dahl_shape4d const shape)
 {
     dahl_tensor* tensor = tensor_init(arena, shape);
     // Enable redux mode
-    tensor_enable_redux(tensor);
+    _tensor_enable_redux(tensor);
     return tensor;
 }
 
@@ -142,10 +142,11 @@ void tensor_set_from(dahl_tensor* tensor, dahl_fp const* data)
     tensor_release(tensor);
 }
 
-void tensor_enable_redux(dahl_tensor* tensor)
+void _tensor_enable_redux(void* tensor)
 {
-    tensor->is_redux = true;
-    starpu_data_set_reduction_methods(tensor->handle, &cl_tensor_accumulate, &cl_tensor_zero);
+    ((dahl_tensor*)tensor)->is_redux = true;
+    starpu_data_set_reduction_methods(
+            ((dahl_tensor*)tensor)->handle, &cl_tensor_accumulate, &cl_tensor_zero);
 }
 
 bool _tensor_get_is_redux(void const* tensor)
@@ -281,7 +282,7 @@ RELEASE:
     return res;
 }
 
-void _tensor_partition_along_t(dahl_tensor const* tensor, bool is_mut)
+void tensor_partition_along_t(dahl_tensor const* tensor, dahl_access access)
 {
     assert(tensor->meta->current_partition == -1);
     tensor_partition_type t = TENSOR_PARTITION_ALONG_T;
@@ -300,24 +301,15 @@ void _tensor_partition_along_t(dahl_tensor const* tensor, bool is_mut)
 	};
 
     // Create and set the partition
-    tensor->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_block,
+    tensor->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_block,
                                         &f, tensor->handle, tensor->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(tensor->meta, t, is_mut, tensor->handle);
+    _partition_submit_if_needed(tensor->meta, t, access, tensor->handle);
 }
 
-void tensor_partition_along_t_mut(dahl_tensor* tensor)
-{
-    _tensor_partition_along_t(tensor, true);
-}
-
-void tensor_partition_along_t(dahl_tensor const* tensor)
-{
-    _tensor_partition_along_t(tensor, false);
-}
-
-void _tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size, bool is_mut)
+void tensor_partition_along_t_batch(
+        dahl_tensor const* tensor, dahl_access access, size_t batch_size)
 {
     assert(tensor->meta->current_partition == -1);
     tensor_partition_type t = TENSOR_PARTITION_ALONG_T_BATCH;
@@ -338,21 +330,11 @@ void _tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_siz
 	};
 
     // Create and set the partition
-    tensor->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_tensor,
+    tensor->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_tensor,
                                         &f, tensor->handle, tensor->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(tensor->meta, t, is_mut, tensor->handle);
-}
-
-void tensor_partition_along_t_batch_mut(dahl_tensor* tensor, size_t batch_size)
-{
-    _tensor_partition_along_t_batch(tensor, batch_size, true);
-}
-
-void tensor_partition_along_t_batch(dahl_tensor const* tensor, size_t batch_size)
-{
-    _tensor_partition_along_t_batch(tensor, batch_size, false);
+    _partition_submit_if_needed(tensor->meta, t, access, tensor->handle);
 }
 
 void tensor_unpartition(dahl_tensor const* tensor)

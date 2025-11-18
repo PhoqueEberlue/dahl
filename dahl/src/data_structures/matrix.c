@@ -67,7 +67,7 @@ dahl_matrix* matrix_init(dahl_arena* arena, dahl_shape2d const shape)
 dahl_matrix* matrix_init_redux(dahl_arena* arena, dahl_shape2d const shape)
 {
     dahl_matrix* matrix = matrix_init(arena, shape);
-    matrix_enable_redux(matrix);
+    _matrix_enable_redux(matrix);
     return matrix;
 }
 
@@ -122,10 +122,11 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d co
     return res;
 }
 
-void matrix_enable_redux(dahl_matrix* matrix)
+void _matrix_enable_redux(void* matrix)
 {
-    matrix->is_redux = true;
-    starpu_data_set_reduction_methods(matrix->handle, &cl_matrix_accumulate, &cl_matrix_zero);
+    ((dahl_matrix*)matrix)->is_redux = true;
+    starpu_data_set_reduction_methods(
+            ((dahl_matrix*)matrix)->handle, &cl_matrix_accumulate, &cl_matrix_zero);
 }
 
 bool _matrix_get_is_redux(void const* matrix)
@@ -271,7 +272,7 @@ void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const*
     matrix_release(matrix);
 }
 
-void _matrix_partition_along_y(dahl_matrix const* matrix, bool is_mut)
+void matrix_partition_along_y(dahl_matrix const* matrix, dahl_access access)
 {
     assert(matrix->meta->current_partition == -1);
     matrix_partition_type t = MATRIX_PARTITION_ALONG_Y;
@@ -290,24 +291,14 @@ void _matrix_partition_along_y(dahl_matrix const* matrix, bool is_mut)
 	};
 
     // Create and set the partition
-    matrix->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_vector,
+    matrix->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, matrix->handle, matrix->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(matrix->meta, t, is_mut, matrix->handle);
+    _partition_submit_if_needed(matrix->meta, t, access, matrix->handle);
 }
 
-void matrix_partition_along_y_mut(dahl_matrix* matrix)
-{
-    _matrix_partition_along_y(matrix, true);
-}
-
-void matrix_partition_along_y(dahl_matrix const* matrix)
-{
-    _matrix_partition_along_y(matrix, false);
-}
-
-void _matrix_partition_along_y_batch(dahl_matrix const* matrix, size_t batch_size, bool is_mut)
+void matrix_partition_along_y_batch(dahl_matrix const* matrix, dahl_access access, size_t batch_size)
 {
     assert(matrix->meta->current_partition == -1);
     matrix_partition_type t = MATRIX_PARTITION_ALONG_Y_BATCH;
@@ -327,23 +318,12 @@ void _matrix_partition_along_y_batch(dahl_matrix const* matrix, size_t batch_siz
 	};
 
     // Create and set the partition
-    matrix->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_matrix,
+    matrix->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, matrix->handle, matrix->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(matrix->meta, t, is_mut, matrix->handle);
+    _partition_submit_if_needed(matrix->meta, t, access, matrix->handle);
 }
-
-void matrix_partition_along_y_batch_mut(dahl_matrix* matrix, size_t batch_size)
-{
-    _matrix_partition_along_y_batch(matrix, batch_size, true);
-}
-
-void matrix_partition_along_y_batch(dahl_matrix const* matrix, size_t batch_size)
-{
-    _matrix_partition_along_y_batch(matrix, batch_size, false);
-}
-
 
 void matrix_unpartition(dahl_matrix const* matrix)
 {

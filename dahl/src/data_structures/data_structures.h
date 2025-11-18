@@ -24,14 +24,15 @@ typedef const struct _dahl_traits
     size_t (*get_nb_elem)(void const*);
     void (*print_file)(void const*, FILE*, int8_t const);
     bool (*get_is_redux)(void const*);
+    void (*enable_redux)(void*);
     dahl_type type;
 } dahl_traits;
 
 // Partitionning data
 typedef struct _dahl_partition
 {
-    dahl_type type;
-    bool is_mut;
+    dahl_traits* trait;
+    dahl_access access;
     starpu_data_handle_t* handles;
     size_t nb_children;
 
@@ -114,12 +115,12 @@ typedef struct _dahl_tensor
 } dahl_tensor;
 
 // Init a new partition object in the same arena as the parent
-dahl_partition* _partition_init(size_t nb_children, bool is_mut, dahl_traits* trait, 
+dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_traits* trait,
                                 struct starpu_data_filter* f, starpu_data_handle_t main_handle,
                                 dahl_arena* origin_arena);
 
 void _partition_submit_if_needed(
-        metadata* meta, int8_t index, bool should_be_mut, starpu_data_handle_t main_handle);
+        metadata* meta, int8_t index, dahl_access new_access, starpu_data_handle_t main_handle);
 
 void* _tensor_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
 void* _block_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
@@ -152,6 +153,12 @@ bool _block_get_is_redux(void const* block);
 bool _matrix_get_is_redux(void const* matrix);
 bool _vector_get_is_redux(void const* vector);
 bool _scalar_get_is_redux(void const* scalar);
+
+void _tensor_enable_redux(void* tensor);
+void _block_enable_redux(void* block);
+void _matrix_enable_redux(void* matrix);
+void _vector_enable_redux(void* vector);
+void _scalar_enable_redux(void* scalar);
 
 void _tensor_print_file(void const*, FILE*, int8_t const precision);
 void _block_print_file(void const*, FILE*, int8_t const precision);

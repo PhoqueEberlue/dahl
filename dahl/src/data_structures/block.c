@@ -75,7 +75,7 @@ dahl_block* block_init_redux(dahl_arena* arena, dahl_shape3d const shape)
 {
     dahl_block* block = block_init(arena, shape);
     // Enable redux mode
-    block_enable_redux(block);
+    _block_enable_redux(block);
     return block;
 }
 
@@ -110,10 +110,11 @@ dahl_block* block_init_random(dahl_arena* arena, dahl_shape3d const shape, dahl_
     return _block_init_from_ptr(arena, handle, block_data);
 }
 
-void block_enable_redux(dahl_block* block)
+void _block_enable_redux(void* block)
 {
-    block->is_redux = true;
-    starpu_data_set_reduction_methods(block->handle, &cl_block_accumulate, &cl_block_zero);
+    ((dahl_block*)block)->is_redux = true;
+    starpu_data_set_reduction_methods(
+            ((dahl_block*)block)->handle, &cl_block_accumulate, &cl_block_zero);
 }
 
 bool _block_get_is_redux(void const* block)
@@ -241,7 +242,7 @@ RELEASE:
     return res;
 }
 
-void _block_partition_along_z(dahl_block const* block, bool is_mut)
+void block_partition_along_z(dahl_block const* block, dahl_access access)
 {
     assert(block->meta->current_partition == -1);
     block_partition_type t = BLOCK_PARTITION_ALONG_Z;
@@ -260,24 +261,14 @@ void _block_partition_along_z(dahl_block const* block, bool is_mut)
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_matrix,
+    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, block->handle, block->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(block->meta, t, is_mut, block->handle);
+    _partition_submit_if_needed(block->meta, t, access, block->handle);
 }
 
-void block_partition_along_z_mut(dahl_block* block)
-{
-    _block_partition_along_z(block, true);
-}
-
-void block_partition_along_z(dahl_block const* block)
-{
-    _block_partition_along_z(block, false);
-}
-
-void _block_partition_along_z_flat_matrices(dahl_block const* block, bool is_mut, bool is_row)
+void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access access, bool is_row)
 {
     assert(block->meta->current_partition == -1);
     block_partition_type t = BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES;
@@ -290,30 +281,21 @@ void _block_partition_along_z_flat_matrices(dahl_block const* block, bool is_mut
 
     struct starpu_data_filter f =
 	{
-		.filter_func = is_row ? starpu_block_filter_pick_matrix_z_as_row_matrix : starpu_block_filter_pick_matrix_z_as_col_matrix,
+		.filter_func = is_row? starpu_block_filter_pick_matrix_z_as_row_matrix 
+                             : starpu_block_filter_pick_matrix_z_as_col_matrix,
 		.nchildren = nparts,
 		.get_child_ops = starpu_block_filter_pick_matrix_child_ops
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_matrix,
+    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, block->handle, block->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(block->meta, t, is_mut, block->handle);
+    _partition_submit_if_needed(block->meta, t, access, block->handle);
 }
 
-void block_partition_along_z_flat_matrices_mut(dahl_block* block, bool is_row)
-{
-    _block_partition_along_z_flat_matrices(block, true, is_row);
-}
-
-void block_partition_along_z_flat_matrices(dahl_block const* block, bool is_row)
-{
-    _block_partition_along_z_flat_matrices(block, false, is_row);
-}
-
-void _block_partition_along_z_flat_vectors(dahl_block const* block, bool is_mut)
+void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access access)
 {
     assert(block->meta->current_partition == -1);
     block_partition_type t = BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS;
@@ -332,24 +314,14 @@ void _block_partition_along_z_flat_vectors(dahl_block const* block, bool is_mut)
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_vector,
+    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, block->handle, block->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(block->meta, t, is_mut, block->handle);
+    _partition_submit_if_needed(block->meta, t, access, block->handle);
 }
 
-void block_partition_along_z_flat_vectors_mut(dahl_block* block)
-{
-    _block_partition_along_z_flat_vectors(block, true);
-}
-
-void block_partition_along_z_flat_vectors(dahl_block const* block)
-{
-    _block_partition_along_z_flat_vectors(block, false);
-}
-
-void _block_partition_flatten_to_vector(dahl_block const* block, bool is_mut)
+void block_partition_flatten_to_vector(dahl_block const* block, dahl_access access)
 {
     assert(block->meta->current_partition == -1);
     block_partition_type t = BLOCK_PARTITION_FLATTEN_TO_VECTOR;
@@ -369,25 +341,15 @@ void _block_partition_flatten_to_vector(dahl_block const* block, bool is_mut)
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_vector,
+    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, block->handle, block->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(block->meta, t, is_mut, block->handle);
+    _partition_submit_if_needed(block->meta, t, access, block->handle);
 
 }
 
-void block_partition_flatten_to_vector_mut(dahl_block* block)
-{
-    _block_partition_flatten_to_vector(block, true);
-}
-
-void block_partition_flatten_to_vector(dahl_block const* block)
-{
-    _block_partition_flatten_to_vector(block, false);
-}
-
-void _block_partition_along_z_batch(dahl_block const* block, size_t batch_size, bool is_mut)
+void block_partition_along_z_batch(dahl_block const* block, dahl_access access, size_t batch_size)
 {
     assert(block->meta->current_partition == -1);
     block_partition_type t = BLOCK_PARTITION_ALONG_Z_BATCH;
@@ -407,21 +369,11 @@ void _block_partition_along_z_batch(dahl_block const* block, size_t batch_size, 
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, is_mut, &dahl_traits_block,
+    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_block,
                                         &f, block->handle, block->meta->origin_arena);
 
 submit:
-    _partition_submit_if_needed(block->meta, t, is_mut, block->handle);
-}
-
-void block_partition_along_z_batch_mut(dahl_block* block, size_t batch_size)
-{
-    _block_partition_along_z_batch(block, batch_size, true);
-}
-
-void block_partition_along_z_batch(dahl_block const* block, size_t batch_size)
-{
-    _block_partition_along_z_batch(block, batch_size, false);
+    _partition_submit_if_needed(block->meta, t, access, block->handle);
 }
 
 void block_unpartition(dahl_block const* block)

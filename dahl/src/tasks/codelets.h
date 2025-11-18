@@ -78,6 +78,7 @@ DEFINE_STARPU_CODELET(vector_zero, 1, true, STARPU_W); // not available as a tas
 DEFINE_STARPU_CODELET(vector_accumulate, 2, true, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- SCALAR ----------------------------------------
+DEFINE_STARPU_CODELET(scalar_zero, 1, false, STARPU_W); // not available as a task, only for STARPU_REDUX
 DEFINE_STARPU_CODELET(scalar_accumulate, 2, false, STARPU_RW|STARPU_COMMUTE, STARPU_R); // not available as a task, only for STARPU_REDUX
 
 // ---------------------------------------- ANY ----------------------------------------

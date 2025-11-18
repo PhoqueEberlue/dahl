@@ -41,10 +41,10 @@
 		(*(struct starpu_variable_interface const*)(interface)); \
 	})
 #else
-#define STARPU_TENSOR_GET(interface) (*(struct starpu_tensor_interface const*)(interface))
-#define STARPU_BLOCK_GET (interface) (*(struct starpu_block_interface  const*)(interface))
-#define STARPU_MATRIX_GET(interface) (*(struct starpu_matrix_interface const*)(interface))
-#define STARPU_VECTOR_GET(interface) (*(struct starpu_vector_interface const*)(interface))
+#define STARPU_TENSOR_GET(interface)   (*(struct starpu_tensor_interface   const*)(interface))
+#define STARPU_BLOCK_GET(interface)    (*(struct starpu_block_interface    const*)(interface))
+#define STARPU_MATRIX_GET(interface)   (*(struct starpu_matrix_interface   const*)(interface))
+#define STARPU_VECTOR_GET(interface)   (*(struct starpu_vector_interface   const*)(interface))
 #define STARPU_VARIABLE_GET(interface) (*(struct starpu_variable_interface const*)(interface))
 #endif
 // -------------------------------------------------------------------------------------------------

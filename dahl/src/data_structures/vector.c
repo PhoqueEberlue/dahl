@@ -53,7 +53,7 @@ dahl_vector* vector_init_redux(dahl_arena* arena, size_t const len)
 {
     dahl_vector* vector = vector_init(arena, len);
     // Enable redux mode
-    vector_enable_redux(vector);
+    _vector_enable_redux(vector);
     return vector;
 }
 
@@ -89,10 +89,11 @@ starpu_data_handle_t _vector_get_handle(void const* vector)
     return ((dahl_vector*)vector)->handle;
 }
 
-void vector_enable_redux(dahl_vector* vector)
+void _vector_enable_redux(void* vector)
 {
-    vector->is_redux = true;
-    starpu_data_set_reduction_methods(vector->handle, &cl_vector_accumulate, &cl_vector_zero);
+    ((dahl_vector*)vector)->is_redux = true;
+    starpu_data_set_reduction_methods(
+            ((dahl_vector*)vector)->handle, &cl_vector_accumulate, &cl_vector_zero);
 }
 
 bool _vector_get_is_redux(void const* vector)

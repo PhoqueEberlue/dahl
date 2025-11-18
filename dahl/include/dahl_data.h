@@ -63,8 +63,6 @@ dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape, dahl_fp min, da
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* data);
 
-void tensor_enable_redux(dahl_tensor*);
-
 // Set values of the `tensor` from an array `data` that should be of the same size.
 // This is a blocking function.
 void tensor_set_from(dahl_tensor*, dahl_fp const* data);
@@ -99,11 +97,9 @@ void tensor_release(dahl_tensor const*);
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the tensor itself cannot be used as long as it is partitioned.
-void tensor_partition_along_t(dahl_tensor const*);
-void tensor_partition_along_t_mut(dahl_tensor*);
+void tensor_partition_along_t(dahl_tensor const*, dahl_access);
 
-void tensor_partition_along_t_batch(dahl_tensor const*, size_t batch_size);
-void tensor_partition_along_t_batch_mut(dahl_tensor*, size_t batch_size);
+void tensor_partition_along_t_batch(dahl_tensor const*, dahl_access, size_t batch_size);
 
 // Unpartition a tensor
 void tensor_unpartition(dahl_tensor const*);
@@ -138,8 +134,6 @@ dahl_block* block_init_random(dahl_arena*, dahl_shape3d shape, dahl_fp min, dahl
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_block* block_init_from(dahl_arena*, dahl_shape3d shape, dahl_fp const* data);
 
-void block_enable_redux(dahl_block*);
-
 // Set values of the `block` from an array `data` that should be of the same size.
 // This is a blocking function.
 void block_set_from(dahl_block*, dahl_fp const* data);
@@ -169,27 +163,22 @@ void block_release(dahl_block const*);
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned.
-void block_partition_along_z(dahl_block const*);
-void block_partition_along_z_mut(dahl_block*);
+void block_partition_along_z(dahl_block const*, dahl_access);
 
 // Same that `block_partition_along_z` but actually produces flattened matrices of the matrices on x,y.
 // Chose wether the flattened matrices are row matrices or column matrices with `is_row`.
 // Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
-void block_partition_along_z_flat_matrices(dahl_block const*, bool is_row);
-void block_partition_along_z_flat_matrices_mut(dahl_block*, bool is_row);
+void block_partition_along_z_flat_matrices(dahl_block const*, dahl_access, bool is_row);
 
 // Same that `block_partition_along_z` but actually produces flattened vectors of the matrices on x,y.
 // Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
-void block_partition_along_z_flat_vectors(dahl_block const*);
-void block_partition_along_z_flat_vectors_mut(dahl_block*);
+void block_partition_along_z_flat_vectors(dahl_block const*, dahl_access);
 
-void block_partition_flatten_to_vector(dahl_block const*);
-void block_partition_flatten_to_vector_mut(dahl_block*);
+void block_partition_flatten_to_vector(dahl_block const*, dahl_access);
 
 // Partition along z but by batch, so it creates sub blocks.
 // TODO: support or return an error if the batch size does not divide properly the block
-void block_partition_along_z_batch(dahl_block const*, size_t batch_size);
-void block_partition_along_z_batch_mut(dahl_block*, size_t batch_size);
+void block_partition_along_z_batch(dahl_block const*, dahl_access, size_t batch_size);
 
 // Unpartition a block
 void block_unpartition(dahl_block const*);
@@ -225,8 +214,6 @@ dahl_matrix* matrix_init_random(dahl_arena*, dahl_shape2d shape, dahl_fp min, da
 // - shape: dahl_shape2d object describing the dimensions of the matrix
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_matrix* matrix_init_from(dahl_arena*, dahl_shape2d shape, dahl_fp const* data);
-
-void matrix_enable_redux(dahl_matrix*);
 
 // Get the value at index x,y. Requires to have acquired the matrix, either with `matrix_acquire()` or `matrix_acquire_mut()`.
 dahl_fp matrix_get_value(dahl_matrix const*, size_t x, size_t y);
@@ -266,19 +253,13 @@ void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const*
 // Partition data along y axis, the sub vectors can then be accesed with `GET_SUB_VECTOR`.
 // Exactly creates y sub vectors, so `GET_NB_CHILDREN` should be equal to y.
 // Note the the vector itself cannot be used as long as it is partitioned.
-void matrix_partition_along_y(dahl_matrix const*);
-
-// Same as `matrix_partition_along_y` but mutably acquires the data.
-void matrix_partition_along_y_mut(dahl_matrix*);
+void matrix_partition_along_y(dahl_matrix const*, dahl_access);
 
 // Partition data along y axis, and produces sub matrices of shape (x, y / batch_size).
 // Exactly creates y / batch_size sub matrices that can be accessed with `GET_SUB_MATRIX`.
 // Note the the vector itself cannot be used as long as it is partitioned.
 // TODO: support or return an error if the batch size does not divide properly the matrix
-void matrix_partition_along_y_batch(dahl_matrix const*, size_t batch_size);
-
-// Same as `matrix_partition_along_y_batch` but mutably acquires the data.
-void matrix_partition_along_y_batch_mut(dahl_matrix*, size_t batch_size);
+void matrix_partition_along_y_batch(dahl_matrix const*, dahl_access, size_t batch_size);
 
 // Unpartition a matrix
 void matrix_unpartition(dahl_matrix const*);
@@ -317,8 +298,6 @@ dahl_vector* vector_init_random(dahl_arena*, size_t len, dahl_fp min, dahl_fp ma
 // - shape: dahl_shape2d object describing the dimensions of the vector
 // - data: pointer to contiguous allocated dahl_fp array with x*y number of elements
 dahl_vector* vector_init_from(dahl_arena*, size_t len, dahl_fp const* data);
-
-void vector_enable_redux(dahl_vector*);
 
 // Returns the vector len
 size_t vector_get_len(dahl_vector const*);

@@ -12,7 +12,7 @@ void print_predictions_batch(dahl_matrix const* predictions_batch, dahl_matrix c
     size_t const num_classes = matrix_get_shape(predictions_batch).x;
     size_t const num_channels = tensor_get_shape(image_batch).z;
 
-    tensor_partition_along_t(image_batch);
+    tensor_partition_along_t(image_batch, DAHL_READ);
 
     for (size_t y = 0; y < batch_size; y++)
     {
@@ -44,7 +44,7 @@ void print_predictions_batch(dahl_matrix const* predictions_batch, dahl_matrix c
         // Display using ImageMagick
         if (num_channels == 1)
         {
-            block_partition_along_z(image);
+            block_partition_along_z(image, DAHL_READ);
             dahl_matrix const* image_single_channel = GET_SUB_MATRIX(image, 0);
             matrix_image_display(image_single_channel, 10);
 

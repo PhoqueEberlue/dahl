@@ -8,6 +8,7 @@ dahl_traits dahl_traits_tensor = {
     .get_nb_elem = _tensor_get_nb_elem,
     .print_file = _tensor_print_file,
     .get_is_redux = _tensor_get_is_redux,
+    .enable_redux = _tensor_enable_redux,
     .type = DAHL_TENSOR,
 };
 
@@ -18,6 +19,7 @@ dahl_traits dahl_traits_block = {
     .get_nb_elem = _block_get_nb_elem,
     .print_file = _block_print_file,
     .get_is_redux = _block_get_is_redux,
+    .enable_redux = _block_enable_redux,
     .type = DAHL_BLOCK,
 };
 
@@ -28,6 +30,7 @@ dahl_traits dahl_traits_matrix = {
     .get_nb_elem = _matrix_get_nb_elem,
     .print_file = _matrix_print_file,
     .get_is_redux = _matrix_get_is_redux,
+    .enable_redux = _matrix_enable_redux,
     .type = DAHL_MATRIX,
 };
 
@@ -38,6 +41,7 @@ dahl_traits dahl_traits_vector = {
     .get_nb_elem = _vector_get_nb_elem,
     .print_file = _vector_print_file,
     .get_is_redux = _vector_get_is_redux,
+    .enable_redux = _vector_enable_redux,
     .type = DAHL_VECTOR,
 };
 
@@ -49,5 +53,6 @@ dahl_traits dahl_traits_scalar = {
     .get_nb_elem = _scalar_get_nb_elem, // Always 1
     .print_file = _scalar_print_file,
     .get_is_redux = _scalar_get_is_redux,
+    .enable_redux = _scalar_enable_redux,
     .type = DAHL_SCALAR,
 };

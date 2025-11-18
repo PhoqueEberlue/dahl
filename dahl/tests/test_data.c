@@ -66,7 +66,7 @@ void test_tensor_partition_along_t()
     dahl_block const* expect_block_0 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
     dahl_block const* expect_block_1 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
-    tensor_partition_along_t(tensor);
+    tensor_partition_along_t(tensor, DAHL_READ);
 
     dahl_block const* sub_block_0 = GET_SUB_BLOCK(tensor, 0);
     dahl_shape3d shape_0 = block_get_shape(sub_block_0);
@@ -112,7 +112,7 @@ void test_tensor_partition_along_t_batch()
     dahl_tensor const* expect_tensor_1 = tensor_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
     size_t const batch_size = 2;
-    tensor_partition_along_t_batch(tensor, batch_size);
+    tensor_partition_along_t_batch(tensor, DAHL_READ, batch_size);
 
     dahl_tensor const* sub_tensor_0 = GET_SUB_TENSOR(tensor, 0);
     dahl_shape4d shape_0 = tensor_get_shape(sub_tensor_0);
@@ -165,7 +165,7 @@ void test_block_partition_along_z()
     dahl_matrix const* expect_matrix_0 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
     dahl_matrix const* expect_matrix_1 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
-    block_partition_along_z(block);
+    block_partition_along_z(block, DAHL_READ);
 
     dahl_matrix const* sub_matrix_0 = GET_SUB_MATRIX(block, 0);
     dahl_shape2d shape_0 = matrix_get_shape(sub_matrix_0);
@@ -212,7 +212,7 @@ void test_block_partition_flatten_to_vector()
 
     dahl_vector const* expect_vector = vector_init_from(testing_arena, 24, (dahl_fp*)&expect);
 
-    block_partition_flatten_to_vector(block);
+    block_partition_flatten_to_vector(block, DAHL_READ);
 
     dahl_vector const* flat_vector = GET_SUB_VECTOR(block, 0);
     ASSERT_SIZE_T_EQUALS(24, vector_get_len(flat_vector));
@@ -239,7 +239,7 @@ void test_matrix_partition_along_y()
 
     size_t expect_len = 4;
 
-    matrix_partition_along_y(matrix);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
     for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
@@ -281,7 +281,7 @@ void test_matrix_partition_along_y_batch()
         { 4,-1, 9,-2 },
     });
 
-    matrix_partition_along_y_batch(matrix, 2);
+    matrix_partition_along_y_batch(matrix, DAHL_READ, 2);
 
     for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
@@ -351,13 +351,13 @@ void test_recursive_partitioning()
         }
     };
 
-    block_partition_along_z(block);
+    block_partition_along_z(block, DAHL_READ);
 
     for (size_t i = 0; i < GET_NB_CHILDREN(block); i++)
     {
         dahl_matrix const* matrix = GET_SUB_MATRIX(block, i);
 
-        matrix_partition_along_y(matrix);
+        matrix_partition_along_y(matrix, DAHL_READ);
 
         for (size_t j = 0; j < GET_NB_CHILDREN(matrix); j++)
         {
@@ -386,14 +386,14 @@ void test_mut_partitioning()
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
     dahl_matrix* another_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
-    matrix_partition_along_y(matrix);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
     // Here I can still read from matrix because the partitionning is read only
     TASK_ADD_SELF(another_matrix, matrix);
 
     matrix_unpartition(matrix);
 
-    matrix_partition_along_y_mut(matrix);
+    matrix_partition_along_y(matrix, DAHL_MUT);
     // Here I cannot read the matrix handle because it is mutably partioned
     // TASK_ADD_SELF(another_matrix, matrix);
     // TODO: I should be able to test something that should fail
@@ -422,14 +422,14 @@ void test_partition_reuse()
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
     dahl_matrix* expect_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&expect);
 
-    matrix_partition_along_y_mut(matrix);
+    matrix_partition_along_y(matrix, DAHL_MUT);
 
     dahl_vector* vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);
 
     matrix_unpartition(matrix);
 
-    matrix_partition_along_y_mut(matrix);
+    matrix_partition_along_y(matrix, DAHL_MUT);
 
     vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);

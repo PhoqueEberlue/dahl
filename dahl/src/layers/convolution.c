@@ -1,4 +1,5 @@
 #include "../../include/dahl_convolution.h"
+#include "starpu.h"
 #include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
@@ -36,7 +37,7 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
                          dahl_tensor const* filters, dahl_vector const* biases)
 {
     // Partition by the filter dimension, each iteration will tackle a feature map
-    block_partition_along_z_mut(output);
+    block_partition_along_z(output, DAHL_MUT);
 
     size_t const n_filters = GET_NB_CHILDREN(filters);
 
@@ -65,11 +66,11 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     dahl_tensor* output_batch = tensor_init(arena, conv->output_shape);
     
     // Partition by batch dimension
-    tensor_partition_along_t_mut(output_batch);
-    tensor_partition_along_t(input_batch);
+    tensor_partition_along_t(output_batch, DAHL_MUT);
+    tensor_partition_along_t(input_batch, DAHL_READ);
 
     // Partition the filters already here to prevent synchronization in the sample functions
-    tensor_partition_along_t(conv->filters);
+    tensor_partition_along_t(conv->filters, DAHL_READ);
 
     size_t const batch_size = GET_NB_CHILDREN(input_batch);
 
@@ -89,26 +90,25 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
     return output_batch;
 }
 
-void _convolution_backward_sample(dahl_arena* arena,
-                                  dahl_block const* dl_dout, dahl_block const* input, 
+void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* input, 
                                   dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters,
-                                  size_t filter_size, dahl_tensor const* filters)
+                                  dahl_tensor const* filters, bool first_sample)
 {
     dahl_shape4d filters_shape = tensor_get_shape(filters);
 
     // Partition by channel dimension
-    block_partition_along_z(input);
-    block_partition_along_z(dl_dout);
+    block_partition_along_z(input, DAHL_READ);
+    block_partition_along_z(dl_dout, DAHL_READ);
 
     size_t const num_filters = filters_shape.t; // Output channels
 
-    for (int f = 0; f < num_filters; f++)
+    for (size_t f = 0; f < num_filters; f++)
     {
         dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
         dahl_block* dl_df_redux = GET_SUB_BLOCK_MUT(dl_dfilters, f);
         // Enable redux for sub blocks of dl_dfilters so that results gets accumulated between each
-        // batch.
-        block_enable_redux(dl_df_redux);
+        // batch. Only required of the first sample, cause others will fill the same buffers.
+        // if (first_sample) { block_enable_redux(dl_df_redux); }
 
         task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df_redux);
 
@@ -140,27 +140,25 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     dahl_tensor* dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
 
     // Partition by batch dimension
-    tensor_partition_along_t(dl_dout_batch);
-    tensor_partition_along_t(input_batch);
-    tensor_partition_along_t_mut(dl_dinput_batch_redux);
+    tensor_partition_along_t(dl_dout_batch, DAHL_READ);
+    tensor_partition_along_t(input_batch, DAHL_READ);
+    tensor_partition_along_t(dl_dinput_batch_redux, DAHL_REDUX);
 
     // Already partition the filters (over feature maps: num_filters) because they will be accessed in every batches
-    tensor_partition_along_t(conv->filters);
-    tensor_partition_along_t_mut(dl_dfilters);
+    tensor_partition_along_t(conv->filters, DAHL_READ);
+    tensor_partition_along_t(dl_dfilters, DAHL_MUT);
 
-    size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch); 
-
+    size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);  
 
     for (size_t i = 0; i < batch_size; i++)
     {
         _convolution_backward_sample(
-            conv->scratch_arena,
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
             GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
             dl_dfilters,
-            conv->filter_size, 
-            conv->filters);
+            conv->filters,
+            i==0);
     }
 
     tensor_unpartition(dl_dout_batch);
