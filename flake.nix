@@ -91,6 +91,7 @@
               flamegraph 
               vite
               fxt
+              graphviz
 
               # StarPU itself with runtime dependencies
               starpu-master
@@ -98,6 +99,7 @@
 
               # DAHL misc
               clang
+              libjpeg
               scc
               gzip
               gnuplot
