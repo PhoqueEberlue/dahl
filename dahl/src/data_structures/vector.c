@@ -106,12 +106,12 @@ size_t _vector_get_nb_elem(void const* vector)
     return vector_get_len((dahl_vector*)vector);
 }
 
-dahl_fp vector_get_value(dahl_vector const* vector, size_t index)
+inline dahl_fp vector_get_value(dahl_vector const* vector, size_t index)
 {
     return vector->data[index];
 }
 
-void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value)
+inline void vector_set_value(dahl_vector* vector, size_t index, dahl_fp value)
 {
     vector->data[index] = value;
 }

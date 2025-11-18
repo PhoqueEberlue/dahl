@@ -161,13 +161,13 @@ dahl_shape2d matrix_get_shape(dahl_matrix const* matrix)
     return res;
 }
 
-dahl_fp matrix_get_value(dahl_matrix const* matrix, size_t x, size_t y)
+inline dahl_fp matrix_get_value(dahl_matrix const* matrix, size_t x, size_t y)
 {
     size_t ld = starpu_matrix_get_local_ld(matrix->handle);
     return matrix->data[(y * ld) + x];
 }
 
-void matrix_set_value(dahl_matrix* matrix, size_t x, size_t y, dahl_fp value)
+inline void matrix_set_value(dahl_matrix* matrix, size_t x, size_t y, dahl_fp value)
 {
     size_t ld = starpu_matrix_get_local_ld(matrix->handle);
     matrix->data[(y * ld) + x] = value;

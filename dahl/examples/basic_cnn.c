@@ -16,7 +16,7 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
     tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
     matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
 
-    num_samples = 640; // Only use first 1k samples for now
+    num_samples = 600; // Only use first 1k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     // Store accuracy and loss here
@@ -95,12 +95,13 @@ int main(int argc, char **argv)
 
     // dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
     // dahl_dataset* dataset = dataset_load_cifar_10(network_arena, argv[1]);
-    dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 640);
+    dahl_dataset* dataset = dataset_load_big_fashion(network_arena, "../datasets/big-fashion/styles.csv", "../datasets/big-fashion/processed_images/");
+    //dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 640);
 
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
 
     // FIXME: support batch size that do not divide the dataset size
-    size_t const batch_size = 64;
+    size_t const batch_size = 60;
     size_t const num_samples = images_shape.t;
     size_t const num_channels = images_shape.z;
     size_t const num_filters = 4;
@@ -108,7 +109,7 @@ int main(int argc, char **argv)
         .x = images_shape.x, .y = images_shape.y,
         .z = num_channels, .t = batch_size 
     };
-    size_t const num_classes = 10;
+    size_t num_classes = dataset->num_classes;
     size_t const filter_size = 3;
     size_t const pool_size = 2;
 

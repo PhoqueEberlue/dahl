@@ -181,19 +181,19 @@ void block_read_jpeg(dahl_block* block, char const* filename)
     );
 
     // Iterate rows
-    for (size_t y = 0; y < height; y++) {
-
+    for (size_t y = 0; y < height; y++)
+    {
         jpeg_read_scanlines(&cinfo, buffer, 1); // reads one row
 
         unsigned char *row = buffer[0];
 
         // Iterate pixels and channels
-        for (size_t x = 0; x < width; x++) {
-            for (size_t z = 0; z < channels; z++) {
-
+        for (size_t x = 0; x < width; x++)
+        {
+            for (size_t z = 0; z < channels; z++)
+            {
                 unsigned char tmp = row[(x * channels) + z];
 
-                // Normalize to 0..1 like your example
                 dahl_fp value = (dahl_fp)tmp / 255.0F;
 
                 block_set_value(block, x, y, z, value);
@@ -206,14 +206,14 @@ void block_read_jpeg(dahl_block* block, char const* filename)
     fclose(fp);
 }
 
-dahl_fp block_get_value(dahl_block const* block, size_t x, size_t y, size_t z)
+inline dahl_fp block_get_value(dahl_block const* block, size_t x, size_t y, size_t z)
 {
     size_t ldy = starpu_block_get_local_ldy(block->handle);
     size_t ldz = starpu_block_get_local_ldz(block->handle);
     return block->data[(z * ldz) + (y * ldy) + x];
 }
 
-void block_set_value(dahl_block* block, size_t x, size_t y, size_t z, dahl_fp value)
+inline void block_set_value(dahl_block* block, size_t x, size_t y, size_t z, dahl_fp value)
 {
     size_t ldy = starpu_block_get_local_ldy(block->handle);
     size_t ldz = starpu_block_get_local_ldz(block->handle);

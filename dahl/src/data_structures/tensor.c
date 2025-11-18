@@ -154,7 +154,7 @@ bool _tensor_get_is_redux(void const* tensor)
     return ((dahl_tensor const*)tensor)->is_redux;
 }
 
-dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z, size_t t)
+inline dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z, size_t t)
 {
     size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
     size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
@@ -162,7 +162,7 @@ dahl_fp tensor_get_value(dahl_tensor const* tensor, size_t x, size_t y, size_t z
     return tensor->data[(t * ldt) + (z * ldz) + (y * ldy) + x];
 }
 
-void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t t, dahl_fp value)
+inline void tensor_set_value(dahl_tensor* tensor, size_t x, size_t y, size_t z, size_t t, dahl_fp value)
 {
     size_t ldy = starpu_tensor_get_local_ldy(tensor->handle);
     size_t ldz = starpu_tensor_get_local_ldz(tensor->handle);
