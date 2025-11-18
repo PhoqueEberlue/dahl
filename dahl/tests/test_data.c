@@ -497,6 +497,14 @@ void test_matrix_to_tensor_no_copy()
     dahl_arena_reset(testing_arena);
 }
 
+void test_block_read_jpeg()
+{
+    dahl_block* a = block_init(testing_arena, (dahl_shape3d){ .x = 1080, .y = 1440, .z = 3});
+    block_read_jpeg(a, "../datasets/big-fashion/images/1163.jpg"); 
+
+    block_image_display(a, 1);
+}
+
 void test_data()
 {
     test_tensor_partition_along_t();
@@ -511,4 +519,5 @@ void test_data()
     test_partition_reuse();
     test_tensor_flatten_along_t_no_copy();
     test_matrix_to_tensor_no_copy();
+    test_block_read_jpeg();
 }

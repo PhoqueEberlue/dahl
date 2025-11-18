@@ -23,6 +23,7 @@ set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
 
+find_package(JPEG REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(STARPU REQUIRED starpu-1.4)
 if (STARPU_FOUND)
@@ -58,6 +59,6 @@ add_executable(basic_cnn
     "./examples/basic_cnn.c"
 )
 
-target_link_libraries(dahl PRIVATE dahl_cuda_codelets -fsanitize=undefined)
+target_link_libraries(dahl PRIVATE dahl_cuda_codelets JPEG::JPEG -fsanitize=undefined)
 target_link_libraries(tests PUBLIC dahl -fsanitize=undefined)
 target_link_libraries(basic_cnn PUBLIC dahl -fsanitize=undefined)

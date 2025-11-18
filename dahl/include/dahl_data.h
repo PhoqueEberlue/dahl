@@ -63,6 +63,8 @@ dahl_tensor* tensor_init_random(dahl_arena*, dahl_shape4d shape, dahl_fp min, da
 // - data: pointer to contiguous allocated dahl_fp array with x*y*z number of elements
 dahl_tensor* tensor_init_from(dahl_arena*, dahl_shape4d shape, dahl_fp const* data);
 
+void block_read_jpeg(dahl_block* block, char const* filename);
+
 // Set values of the `tensor` from an array `data` that should be of the same size.
 // This is a blocking function.
 void tensor_set_from(dahl_tensor*, dahl_fp const* data);

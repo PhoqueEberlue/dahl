@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../tasks/codelets.h"
+#include <jpeglib.h>
 
 // Allocate a dahl_block structure from a handle, and a pointer to data.
 void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
@@ -142,6 +143,67 @@ void block_set_from(dahl_block* block, dahl_fp const* data)
     }
 
     block_release(block);
+}
+
+void block_read_jpeg(dahl_block* block, char const* filename)
+{
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+
+    FILE *fp = fopen(filename, "rb");
+    if (!fp)
+    {
+        fprintf(stderr, "Could not open %s\n", filename);
+        return;
+    }
+
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_decompress(&cinfo);
+
+    jpeg_stdio_src(&cinfo, fp);
+    jpeg_read_header(&cinfo, TRUE);
+    jpeg_start_decompress(&cinfo);
+
+    size_t width    = cinfo.output_width;
+    size_t height   = cinfo.output_height;
+    size_t channels = cinfo.output_components;
+
+    dahl_shape3d shape = block_get_shape(block);
+    assert(width == shape.x);
+    assert(height == shape.y);
+    assert(channels == shape.z);
+
+    size_t row_stride = width * channels;
+
+    // Allocate buffer for a single scanline
+    JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)(
+        (j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1
+    );
+
+    // Iterate rows
+    for (size_t y = 0; y < height; y++) {
+
+        jpeg_read_scanlines(&cinfo, buffer, 1); // reads one row
+
+        unsigned char *row = buffer[0];
+
+        // Iterate pixels and channels
+        for (size_t x = 0; x < width; x++) {
+            for (size_t z = 0; z < channels; z++) {
+
+                unsigned char tmp = row[(x * channels) + z];
+
+                // Normalize to 0..1 like your example
+                dahl_fp value = (dahl_fp)tmp / 255.0F;
+
+                block_set_value(block, x, y, z, value);
+            }
+        }
+    }
+
+    jpeg_finish_decompress(&cinfo);
+    jpeg_destroy_decompress(&cinfo);
+    fclose(fp);
 }
 
 dahl_fp block_get_value(dahl_block const* block, size_t x, size_t y, size_t z)
