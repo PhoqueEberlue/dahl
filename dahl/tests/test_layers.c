@@ -1,5 +1,4 @@
 #include "test_layers_data.h"
-#include "../include/dahl_convolution.h"
 #include "tests.h"
 #include <stdio.h>
 
@@ -9,6 +8,7 @@ void test_convolution()
 
     // ----------- Forward -----------
     dahl_convolution* conv = convolution_init(testing_arena, scratch_arena, conv_input_shape, filter_size, num_filters);
+    dahl_relu* relu = relu_init(testing_arena, conv->output_shape);
 
     tensor_set_from(conv->filters, (dahl_fp*)&init_conv_filters);
     vector_set_from(conv->biases, (dahl_fp*)&init_conv_biases);
@@ -23,16 +23,16 @@ void test_convolution()
     ASSERT_TENSOR_EQUALS_ROUND(expect_forward, conv_forward_out, 11);
 
     dahl_tensor const* expect_relu = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_relu_forward);
-    TASK_RELU_SELF(conv_forward_out);
+
+    relu_forward(relu, conv_forward_out);
     ASSERT_TENSOR_EQUALS_ROUND(expect_relu, conv_forward_out, 12);
 
     // ----------- Backward -----------
-    dahl_tensor const* pool_backward = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_pool_backward);
+    dahl_tensor* pool_backward = tensor_init_from(testing_arena, conv_output_shape, (dahl_fp*)&expect_pool_backward);
 
-    dahl_tensor* relu_backward = tensor_init(testing_arena, conv_output_shape);
-    TASK_RELU_BACKWARD(conv_forward_out, pool_backward, relu_backward);
+    relu_backward(relu, pool_backward);
 
-    dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, relu_backward, learning_rate, img_batch);
+    dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, pool_backward, learning_rate, img_batch);
 
     dahl_tensor const* expect_backward = tensor_init_from(testing_arena, conv_input_shape, (dahl_fp*)&expect_conv_backward);
 
@@ -152,6 +152,7 @@ void test_flow()
     dahl_convolution* conv = convolution_init(testing_arena, scratch_arena, conv_input_shape, filter_size, num_filters);
     tensor_set_from(conv->filters, (dahl_fp*)&init_conv_filters);
     vector_set_from(conv->biases, (dahl_fp*)&init_conv_biases);
+    dahl_relu* relu = relu_init(testing_arena, conv->output_shape);
 
     dahl_pooling* pool = pooling_init(testing_arena, pool_size, conv_output_shape);
 
@@ -219,7 +220,7 @@ void test_flow()
         dahl_tensor* conv_forward_out = convolution_forward(testing_arena, conv, img_batches[i]);
         ASSERT_TENSOR_EQUALS_ROUND(expect_conv_forward_batch[i], conv_forward_out, 11);
 
-        TASK_RELU_SELF(conv_forward_out);
+        relu_forward(relu, conv_forward_out);
         ASSERT_TENSOR_EQUALS_ROUND(expect_relu_forward_batch[i], conv_forward_out, 12);
 
         dahl_tensor* pool_forward_out = pooling_forward(testing_arena, pool, conv_forward_out);
@@ -248,10 +249,9 @@ void test_flow()
         dahl_tensor* pool_backward_out = pooling_backward(testing_arena, pool, dense_back_unflattened); 
         ASSERT_TENSOR_EQUALS_ROUND(expect_pool_backward_batch[i], pool_backward_out, 12);
 
-        dahl_tensor* relu_backward = tensor_init(testing_arena, conv_output_shape);
-        TASK_RELU_BACKWARD(conv_forward_out, pool_backward_out, relu_backward);
+        relu_backward(relu, pool_backward_out);
 
-        dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, relu_backward, learning_rate, img_batches[i]); 
+        dahl_tensor* conv_backward_out = convolution_backward(testing_arena, conv, pool_backward_out, learning_rate, img_batches[i]); 
         ASSERT_TENSOR_EQUALS_ROUND(expect_conv_weights_batch[i], conv->filters, 12);
         ASSERT_VECTOR_EQUALS_ROUND(expect_conv_biases_batch[i], conv->biases, 14);
     }

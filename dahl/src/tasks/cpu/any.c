@@ -11,22 +11,67 @@
 #include <stdlib.h>
 #include <threads.h>
 
-void any_relu(void* buffers[2], void* cl_arg)
+// Define execution functions for ANY type for a given operation that takes 3 arguments, A, B being
+// read only, and C with write permisions.
+#define DEFINE_ANY_OPERATION_ABC(func_name, operation)               \
+    void func_name(void* buffers[3], void* cl_arg)                   \
+    {                                                                \
+        size_t nb_elem;                                              \
+        starpu_codelet_unpack_args(cl_arg, &nb_elem);                \
+                                                                     \
+        dahl_fp const* a = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]); \
+        dahl_fp const* b = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]); \
+        dahl_fp* c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);       \
+                                                                     \
+        for (size_t i = 0; i < nb_elem; i++)                         \
+        {                                                            \
+            operation(a[i], b[i], c[i]);                             \
+        }                                                            \
+    }
+
+DEFINE_ANY_OPERATION_ABC(any_add, OPERATION_ADD);
+DEFINE_ANY_OPERATION_ABC(any_sub, OPERATION_SUB);
+DEFINE_ANY_OPERATION_ABC(any_mul, OPERATION_MUL);
+DEFINE_ANY_OPERATION_ABC(any_div, OPERATION_DIV);
+
+// Define execution functions for ANY type for a given operation that takes 2 arguments, in and out.
+#define DEFINE_ANY_OPERATION_IN_OUT(func_name, operation)             \
+    void func_name(void* buffers[2], void* cl_arg)                    \
+    {                                                                 \
+        size_t nb_elem;                                               \
+        starpu_codelet_unpack_args(cl_arg, &nb_elem);                 \
+                                                                      \
+        dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]); \
+        dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);      \
+                                                                      \
+        for (size_t i = 0; i < nb_elem; i++)                          \
+        {                                                             \
+            operation(in[i], out[i]);                                 \
+        }                                                             \
+    }
+
+DEFINE_ANY_OPERATION_IN_OUT(any_add_self, OPERATION_ADD_SELF);
+DEFINE_ANY_OPERATION_IN_OUT(any_sub_self, OPERATION_SUB_SELF);
+
+void any_relu(void* buffers[3], void* cl_arg)
 {
     size_t nb_elem;
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
     dahl_fp const* in = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+    dahl_fp* mask = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
 
     for (size_t i = 0; i < nb_elem; i++)
     {
         if (in[i] < 0.0F)
         {
-            out[i] = 0.0F;
+            mask[i] = 0;
+            out[i] = 0;
         }
         else 
         {
+            mask[i] = 1;
             out[i] = in[i];
         }
     }
@@ -81,64 +126,6 @@ void any_power(void* buffers[2], void* cl_arg)
     for (size_t i = 0; i < nb_elem; i++)
     {
         out[i] = pow(in[i], power);
-    }
-}
-
-void any_sub(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    dahl_fp const* a = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    dahl_fp const* b = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
-    dahl_fp* c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
-
-    for (size_t i = 0; i < nb_elem; i++)
-    {
-        c[i] += a[i] - b[i];
-    }
-}
-
-void any_sub_self(void* buffers[2], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    dahl_fp* self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    dahl_fp const* other = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
-
-    for (size_t i = 0; i < nb_elem; i++)
-    {
-        self[i] -= other[i];
-    }
-}
-
-void any_add(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    dahl_fp const* a = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    dahl_fp const* b = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
-    dahl_fp* c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
-
-    for (size_t i = 0; i < nb_elem; i++)
-    {
-        c[i] += a[i] + b[i];
-    }
-}
-
-void any_add_self(void* buffers[2], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    dahl_fp* self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    dahl_fp const* other = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
-
-    for (size_t i = 0; i < nb_elem; i++)
-    {
-        self[i] += other[i];
     }
 }
 

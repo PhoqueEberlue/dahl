@@ -9,15 +9,78 @@
 #include "../../macros.h"
 #include "common.cuh"
 
-static __global__ void any_relu(size_t nb_elem, dahl_fp const* in, dahl_fp* out)
+#define DEFINE_ANY_OPERATION_ABC(func_name, operation)                    \
+    static __global__ void func_name(                                     \
+            size_t n, const dahl_fp* a, const dahl_fp* b, dahl_fp* c)     \
+    {                                                                     \
+        size_t i = blockIdx.x * blockDim.x + threadIdx.x;                 \
+        if (i < n) operation(a[i], b[i], c[i]);                           \
+    }                                                                     \
+                                                                          \
+    extern "C" void cuda_##func_name(void* buffers[3], void* cl_arg)      \
+    {                                                                     \
+        size_t nb_elem;                                                   \
+        starpu_codelet_unpack_args(cl_arg, &nb_elem);                     \
+                                                                          \
+        auto a = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);          \
+        auto b = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);          \
+        auto c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);                \
+                                                                          \
+        int threads = 256;                                                \
+        int blocks  = (nb_elem + threads - 1) / threads;                  \
+                                                                          \
+        func_name<<<blocks, threads, 0, starpu_cuda_get_local_stream()>>> \
+            (nb_elem, a, b, c);                                           \
+        dahl_cuda_check_error_and_sync();                                 \
+    }
+
+DEFINE_ANY_OPERATION_ABC(any_add, OPERATION_ADD);
+DEFINE_ANY_OPERATION_ABC(any_sub, OPERATION_SUB);
+DEFINE_ANY_OPERATION_ABC(any_mul, OPERATION_MUL);
+DEFINE_ANY_OPERATION_ABC(any_div, OPERATION_DIV);
+
+// Define execution functions for ANY type for a given operation that takes 2 arguments, in and out.
+#define DEFINE_ANY_OPERATION_IN_OUT(func_name, operation)                             \
+    static __global__ void func_name(size_t nb_elem, dahl_fp const* in, dahl_fp* out) \
+    {                                                                                 \
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;                         \
+        if (index < nb_elem) operation(in[index], out[index]);                        \
+    }                                                                                 \
+                                                                                      \
+    extern "C" void cuda_##func_name(void* buffers[2], void* cl_arg)                  \
+    {                                                                                 \
+        size_t nb_elem;                                                               \
+        starpu_codelet_unpack_args(cl_arg, &nb_elem);                                 \
+                                                                                      \
+        auto in = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);                     \
+        auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);                          \
+                                                                                      \
+        int threadsPerBlock = 256;                                                    \
+        int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;            \
+                                                                                      \
+        func_name<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>  \
+            (nb_elem, in, out);                                                       \
+        dahl_cuda_check_error_and_sync();                                             \
+    }
+
+DEFINE_ANY_OPERATION_IN_OUT(any_add_self, OPERATION_ADD_SELF);
+DEFINE_ANY_OPERATION_IN_OUT(any_sub_self, OPERATION_SUB_SELF);
+
+static __global__ void any_relu(size_t nb_elem, dahl_fp const* in, dahl_fp* mask, dahl_fp* out)
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
 
     if (in[index] < 0.0F)
-        out[index] = 0.0F;
-    else 
+    {
+        mask[index] = 0;
+        out[index] = 0;
+    }
+    else
+    {
+        mask[index] = 1;
         out[index] = in[index];
+    }
 }
 
 extern "C" void cuda_any_relu(void* buffers[2], void* cl_arg)
@@ -26,12 +89,13 @@ extern "C" void cuda_any_relu(void* buffers[2], void* cl_arg)
     starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
     auto in = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
-    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+    auto mask = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[1]);
+    auto out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
     
     int threadsPerBlock = 256;
     int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
 
-    any_relu<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out);
+    any_relu<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, mask, out);
     dahl_cuda_check_error_and_sync();
 }
 
@@ -111,99 +175,6 @@ extern "C" void cuda_any_power(void* buffers[2], void* cl_arg)
 
     any_power<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(
             nb_elem, in, out, power);
-    dahl_cuda_check_error_and_sync();
-
-}
-
-static __global__ void any_sub(
-        size_t nb_elem,
-        dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
-{
-    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= nb_elem) return;
-    c[index] += a[index] - b[index];
-}
-
-extern "C" void cuda_any_sub(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    auto a = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
-    auto b = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
-    auto c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
-
-    int threadsPerBlock = 256;
-    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
-
-    any_sub<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
-    dahl_cuda_check_error_and_sync();
-}
-
-static __global__ void any_sub_self(size_t nb_elem, dahl_fp* self, dahl_fp const* other)
-{
-    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= nb_elem) return;
-    self[index] -= other[index];
-}
-
-extern "C" void cuda_any_sub_self(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    auto self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    auto other = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
-
-    int threadsPerBlock = 256;
-    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
-
-    any_sub_self<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, self, other);
-    dahl_cuda_check_error_and_sync();
-}
-
-static __global__ void any_add(size_t nb_elem, dahl_fp const* a, dahl_fp const* b, dahl_fp* c)
-{
-    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= nb_elem) return;
-        c[index] += a[index] + b[index];
-}
-
-extern "C" void cuda_any_add(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    auto a = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[0]);
-    auto b = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
-    auto c = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[2]);
-
-    int threadsPerBlock = 256;
-    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
-
-    any_add<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, a, b, c);
-    dahl_cuda_check_error_and_sync();
-}
-
-static __global__ void any_add_self(size_t nb_elem, dahl_fp* self, dahl_fp const* other)
-{
-    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= nb_elem) return;
-    self[index] += other[index];
-}
-
-extern "C" void cuda_any_add_self(void* buffers[3], void* cl_arg)
-{
-    size_t nb_elem;
-    starpu_codelet_unpack_args(cl_arg, &nb_elem);
-
-    auto self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
-    auto other = (dahl_fp const*)STARPU_ANY_GET_PTR(buffers[1]);
-
-    int threadsPerBlock = 256;
-    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
-
-    any_add_self<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, self, other);
     dahl_cuda_check_error_and_sync();
 }
 

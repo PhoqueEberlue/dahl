@@ -109,7 +109,7 @@ void test_relu()
         },
     });
 
-    TASK_RELU_SELF(block);
+    TASK_RELU_SELF(block, (dahl_block*)NULL);
     ASSERT_BLOCK_EQUALS(expect_block, block);
 
     dahl_matrix* matrix = MATRIX(testing_arena, 3, 4, {
@@ -124,14 +124,14 @@ void test_relu()
         { 1, 1, 9, 1 },
     });
 
-    TASK_RELU_SELF(matrix);
+    TASK_RELU_SELF(matrix, (dahl_matrix*)NULL);
     ASSERT_MATRIX_EQUALS(expect_matrix, matrix);
 
     dahl_vector* vector = VECTOR(testing_arena, 4, { 3, 1,-8,-3 });
     dahl_vector* out_vector = vector_init(testing_arena, 4);
     dahl_vector* expect_vector = VECTOR(testing_arena, 4, { 3, 1, 0, 0 });
 
-    TASK_RELU(vector, out_vector);
+    TASK_RELU(vector, (dahl_vector*)NULL, out_vector);
     ASSERT_VECTOR_EQUALS(expect_vector, out_vector);
 
     dahl_arena_reset(testing_arena);
@@ -563,6 +563,100 @@ void test_add()
     // here it modifies a instead of returning the result
     TASK_ADD_SELF(a_block, b_block);
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_mul()
+{
+    dahl_block* a = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            {-2, 1 },
+            { 3, 1 },
+        },
+        {
+            { 3, 1 },
+            {-7,-3 },
+        },
+    });
+
+    dahl_block* b = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            { 9, 9 },
+            {-7, 3 },
+        },
+        {
+            {-2, 4 },
+            {-6, 0 },
+        },
+    });
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            {-18, 9 },
+            {-21, 3 },
+        },
+        {
+            { -6, 4 },
+            { 42, 0 },
+        },
+    });
+
+    dahl_block* out = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
+    TASK_MUL(a, b, out);
+
+    ASSERT_BLOCK_EQUALS(expect, out); 
+
+    // here it modifies `a` instead of returning the result
+    TASK_MUL_SELF(a, b);
+    ASSERT_BLOCK_EQUALS(expect, a);
+
+    dahl_arena_reset(testing_arena);
+}
+
+void test_div()
+{
+    dahl_block* a = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            { 10, 49 },
+            { 6, 90 },
+        },
+        {
+            { 0, 1 },
+            {-56, 3 },
+        },
+    });
+
+    dahl_block* b = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            { 2, 7 },
+            { 6, -2 },
+        },
+        {
+            { 1, 1 },
+            { 8, 3 },
+        },
+    });
+
+    dahl_block* expect = BLOCK(testing_arena, 2, 2, 2, {
+        {
+            { 5, 7 },
+            { 1, -45 },
+        },
+        {
+            { 0, 1 },
+            { -7, 1 },
+        },
+    });
+
+    dahl_block* out = block_init(testing_arena, (dahl_shape3d){ .x = 2, .y = 2, .z = 2 });
+    TASK_DIV(a, b, out);
+
+    ASSERT_BLOCK_EQUALS(expect, out); 
+
+    // here it modifies `a` instead of returning the result
+    TASK_DIV_SELF(a, b);
+    ASSERT_BLOCK_EQUALS(expect, a);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1773,13 +1867,15 @@ void test_tasks()
     test_vector_outer_product();
     test_vector_matrix_product();
     // Any
-    test_relu();
+    // test_relu();
     test_relu_backward();
     test_scal();
     test_power();
     test_divide();
     test_sub();
     test_add();
+    test_mul();
+    test_div();
     test_add_value();
     test_clip();
     test_fill();

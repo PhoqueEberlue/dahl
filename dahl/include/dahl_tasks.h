@@ -154,7 +154,7 @@ dahl_vector* task_vector_matrix_product_init(dahl_arena*, dahl_vector const* vec
 void task_cuda_vector_print(dahl_vector const* vec);
 
 // ---------------------------- TASKS FOR ANY TYPES ----------------------------
-void task_relu(void const* in, void* out, dahl_traits* traits);
+void task_relu(void const* in, void* mask, void* out, dahl_traits* traits);
 void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits);
@@ -163,6 +163,8 @@ void task_sub_self(void* self, void const* other, dahl_traits* traits);
 void task_add(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_add_self(void* self, void const* other, dahl_traits* traits);
 void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* traits);
+void task_mul(void const* a, void const* b, void* c, dahl_traits* traits);
+void task_div(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits);
 void task_sum(void const* in, dahl_scalar* out, dahl_traits* traits);
 dahl_scalar* task_sum_init(dahl_arena*, void const* object, dahl_traits* traits);
@@ -178,15 +180,19 @@ dahl_scalar* task_max_init(dahl_arena*, void const* object, dahl_traits* traits)
 void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits);
 
 // Apply a relu function to every value of `in` and store the result in `out`.
-#define TASK_RELU(IN, OUT)                                     \
-    do {                                                       \
-        _Static_assert(TYPES_MATCH((IN), (OUT)),               \
-                       "IN and OUT must be of the same type"); \
-        task_relu(IN, OUT, GET_TRAITS(OUT));                   \
+// Also stores the index of positive values in `mask`, so that we can use them in the backward.
+#define TASK_RELU(IN, MASK, OUT)                                \
+    do {                                                        \
+        _Static_assert(TYPES_MATCH((IN), (OUT)),                \
+                       "IN and OUT must be of the same type");  \
+        _Static_assert(TYPES_MATCH((IN), (MASK)),               \
+                       "IN and MASK must be of the same type"); \
+        task_relu(IN, MASK, OUT, GET_TRAITS(OUT));              \
     } while (0)
 
 // Update every value of `self` by applying a relu function.
-#define TASK_RELU_SELF(SELF) TASK_RELU(SELF, SELF)
+// Also stores the index of positive values in `mask`, so that we can use them in the backward.
+#define TASK_RELU_SELF(SELF, MASK) TASK_RELU(SELF, MASK, SELF)
 
 // Apply backward relu function to every value of `in` and store the result in `out`.
 #define TASK_RELU_BACKWARD(INPUT, GRADIENTS, OUT)                   \
@@ -294,6 +300,42 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 
 // Substract `value` to every elements of `in` writing directly in the same buffer
 #define TASK_SUB_VALUE_SELF(SELF, VALUE) TASK_SUB_VALUE(SELF, SELF, VALUE)
+
+// Performs `c` = `a` * `b`, where:
+// - `+` is the value by value mulition
+// - `a`, `b` and `c` are dahl_any objects of the same shape
+#define TASK_MUL(A, B, C)                               \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((A), (B)),           \
+                   "A and B must be of the same type"); \
+        _Static_assert(TYPES_MATCH((A), (C)),           \
+                   "A and C must be of the same type"); \
+        task_mul(A, B, C, GET_TRAITS(C));               \
+    } while (0)
+
+// Performs `self` *= `other`, where:
+// - `*` is the value by value mulition
+// - `self` and `other` are dahl_any objects of the same shape
+// - `self` is modified by the function with the mulition result
+#define TASK_MUL_SELF(SELF, OTHER) TASK_MUL(SELF, OTHER, SELF)
+
+// Performs `c` = `a` / `b`, where:
+// - `/` is the value by value divition
+// - `a`, `b` and `c` are dahl_any objects of the same shape
+#define TASK_DIV(A, B, C)                               \
+    do {                                                \
+        _Static_assert(TYPES_MATCH((A), (B)),           \
+                   "A and B must be of the same type"); \
+        _Static_assert(TYPES_MATCH((A), (C)),           \
+                   "A and C must be of the same type"); \
+        task_div(A, B, C, GET_TRAITS(C));               \
+    } while (0)
+
+// Performs `self` /= `other`, where:
+// - `/` is the value by value divition
+// - `self` and `other` are dahl_any objects of the same shape
+// - `self` is modified by the function with the divition result
+#define TASK_DIV_SELF(SELF, OTHER) TASK_DIV(SELF, OTHER, SELF)
 
 // Clip every elements of `in` between `min` and `max` and store to `out`.
 #define TASK_CLIP(IN, OUT, MIN, MAX)                    \

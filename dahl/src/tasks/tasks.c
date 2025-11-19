@@ -490,7 +490,7 @@ void task_cuda_vector_print(dahl_vector const* vec)
 }
 
 // ---------------------------------------- TRAITS ----------------------------------------
-void task_relu(void const* in, void* out, dahl_traits* traits)
+void task_relu(void const* in, void* mask, void* out, dahl_traits* traits)
 {
     // Handle case where function got called with `_self` variant. Required when using CUDA
     enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
@@ -499,7 +499,8 @@ void task_relu(void const* in, void* out, dahl_traits* traits)
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_relu,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 in_mode, traits->get_handle(in), 
+                                 in_mode, traits->get_handle(in),
+                                 STARPU_W, traits->get_handle(mask),
                                  STARPU_W, traits->get_handle(out), 0);
 	STARPU_CHECK_RETURN_VALUE(ret, "task_relu");
 }
@@ -563,8 +564,8 @@ void task_sub_self(void* self, void const* other, dahl_traits* traits)
     size_t nb_elem = traits->get_nb_elem(self);
     int ret = starpu_task_insert(&cl_any_sub_self,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 STARPU_RW, traits->get_handle(self),
-                                 STARPU_R, traits->get_handle(other), 0);
+                                 STARPU_R, traits->get_handle(other),
+                                 STARPU_RW, traits->get_handle(self), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_sub_self");
 }
 
@@ -588,8 +589,8 @@ void task_add_self(void* self, void const* other, dahl_traits* traits)
     size_t nb_elem = traits->get_nb_elem(self);
     int ret = starpu_task_insert(&cl_any_add_self,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
-                                 STARPU_RW, traits->get_handle(self),
-                                 STARPU_R, traits->get_handle(other), 0);
+                                 STARPU_R, traits->get_handle(other),
+                                 STARPU_RW, traits->get_handle(self), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_add_self");
 }
 
@@ -606,6 +607,28 @@ void task_add_value(void const* in, void* out, dahl_fp value, dahl_traits* trait
                                  in_mode, traits->get_handle(in),
                                  STARPU_W, traits->get_handle(out), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_add_value");
+}
+
+void task_mul(void const* a, void const* b, void* c, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(c);
+    int ret = starpu_task_insert(&cl_any_mul,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_R, traits->get_handle(a),
+                                 STARPU_R, traits->get_handle(b),
+                                 STARPU_RW, traits->get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "task_mul");
+}
+
+void task_div(void const* a, void const* b, void* c, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(c);
+    int ret = starpu_task_insert(&cl_any_div,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_R, traits->get_handle(a),
+                                 STARPU_R, traits->get_handle(b),
+                                 STARPU_RW, traits->get_handle(c), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "task_div");
 }
 
 void task_clip(void const* in, void* out, dahl_fp min, dahl_fp max, dahl_traits* traits)

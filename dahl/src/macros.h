@@ -7,6 +7,14 @@
 #define WRITE_IF_true(content) content
 #define WRITE_IF_false(content)
 
+#define OPERATION_ADD(a,b,c) ((c) += (a) + (b))
+#define OPERATION_SUB(a,b,c) ((c) += (a) - (b))
+#define OPERATION_MUL(a,b,c) ((c)  = (a) * (b))
+#define OPERATION_DIV(a,b,c) ((c)  = (a) / (b))
+
+#define OPERATION_ADD_SELF(in,out) ((out) += (in))
+#define OPERATION_SUB_SELF(in,out) ((out) -= (in))
+
 // ------------------------------- StarPU data related custom macros -------------------------------
 // Get the ptr of any StarPU data type. Does not perform any check. This works because ptr is always
 // the second field in the struct for vector, matrix, block and tensor, so it does not matter what

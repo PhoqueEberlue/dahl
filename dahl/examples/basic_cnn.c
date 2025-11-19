@@ -4,10 +4,10 @@
 #include <stdio.h>
 
 #define LEARNING_RATE 0.001F
-#define N_EPOCHS 20
+#define N_EPOCHS 5
 
-void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_dataset* dataset, 
-                   dahl_convolution* conv, dahl_pooling* pool, dahl_dense* dense, 
+void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_dataset* dataset,
+                   dahl_convolution* conv, dahl_relu* relu, dahl_pooling* pool, dahl_dense* dense,
                    size_t batch_size, size_t num_samples)
 {
     dahl_arena* epoch_arena = dahl_arena_new();
@@ -34,7 +34,7 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
 
             dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
-            TASK_RELU_SELF(conv_out);
+            relu_forward(relu, conv_out);
 
             dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
             dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
@@ -51,10 +51,9 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, LEARNING_RATE);
             dahl_tensor* dense_back_unflattened = matrix_to_tensor_no_copy(dense_back, pool->output_shape);
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back_unflattened);
-            dahl_tensor* pool_back_relu = tensor_init(batch_arena, pool->input_shape);
-            TASK_RELU_BACKWARD(conv_out, pool_back, pool_back_relu);
+            relu_backward(relu, pool_back);
 
-            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back_relu, LEARNING_RATE, image_batch);
+            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
             dahl_arena_reset(scratch_arena);
             dahl_arena_reset(batch_arena);
             dahl_shutdown();exit(0);
@@ -95,7 +94,7 @@ int main(int argc, char **argv)
 
     // dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
     // dahl_dataset* dataset = dataset_load_cifar_10(network_arena, argv[1]);
-    dahl_dataset* dataset = dataset_load_big_fashion(network_arena, "../datasets/big-fashion/styles.csv", "../datasets/big-fashion/processed_images/");
+    dahl_dataset* dataset = dataset_load_big_fashion(network_arena, "../datasets/big-fashion/styles.csv", "../datasets/big-fashion/images_270_360/");
     //dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 640);
 
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
@@ -117,6 +116,7 @@ int main(int argc, char **argv)
     dahl_arena* scratch_arena = dahl_arena_new();
 
     dahl_convolution* conv = convolution_init(network_arena, scratch_arena, input_shape, filter_size, num_filters);
+    dahl_relu* relu = relu_init(network_arena, conv->output_shape);
     dahl_pooling* pool = pooling_init(network_arena, pool_size, conv->output_shape);
 
     dahl_shape2d const dense_input_shape = {
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
     dahl_dense* dense = dense_init(network_arena, scratch_arena, dense_input_shape, num_classes);
 
-    train_network(scratch_arena, network_arena, dataset, conv, pool, dense, batch_size, num_samples);
+    train_network(scratch_arena, network_arena, dataset, conv, relu, pool, dense, batch_size, num_samples);
 
     dahl_arena_delete(network_arena);
     dahl_arena_delete(scratch_arena);
