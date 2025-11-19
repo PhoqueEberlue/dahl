@@ -43,8 +43,6 @@ build/
 *.dtmp
 
 # DAHL folder
-dahl/datasets/mushroom-species/
-dahl/datasets/fashion-mnist/
-dahl/datasets/cifar-10/
+dahl/datasets/*/
 dahl/build/
 dahl/sandbox/build/
