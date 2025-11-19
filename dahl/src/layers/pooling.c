@@ -1,5 +1,4 @@
-#include "../../include/dahl_pooling.h"
-#include "../../include/dahl_tasks.h"
+#include "../../include/dahl_layers.h"
 #include <stdio.h>
 #include <stdlib.h>
 

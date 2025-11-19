@@ -1,4 +1,4 @@
-#include "../../include/dahl_dense.h"
+#include "../../include/dahl_layers.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

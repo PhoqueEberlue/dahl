@@ -1,5 +1,4 @@
-#include "../../include/dahl_convolution.h"
-#include "starpu.h"
+#include "../../include/dahl_layers.h"
 #include <stdio.h>
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
