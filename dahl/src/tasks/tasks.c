@@ -161,7 +161,7 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
-                             STARPU_RW, mask->handle, 
+                             STARPU_W, mask->handle, 
                              STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_max_pooling");
 }

@@ -53,10 +53,7 @@ DEFINE_STARPU_CODELET(block_accumulate, 2, true, STARPU_RW|STARPU_COMMUTE, STARP
 
 // ---------------------------------------- MATRIX ----------------------------------------
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, false, STARPU_R, STARPU_R, STARPU_W);
-// Here, STARPU_RW is required for the mask, even though we don't read data.
-// Using STARPU_W only lets STARPU assume that EVERYTHING will be replaced, however we simply mark
-// max indexes with 1, the rest being untouched.
-DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_RW, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_matrix_product, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, true, STARPU_R, STARPU_W);

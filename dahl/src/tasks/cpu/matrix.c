@@ -99,6 +99,11 @@ void matrix_max_pooling(void* buffers[3], void* cl_arg)
                         current_max_y = l;
                         current_max_x = k;
                     }
+
+                    // Set all values of mask to 0 so the caller doesn't need to empty the mask when
+                    // calling multiple time this function. Also prevent fetching mask value when
+                    // using CUDA because we can specify STARPU_W instead of STARPU_RW.
+                    mask_p[(l * mask.ld) + k] = 0;
                 }
             }
 
