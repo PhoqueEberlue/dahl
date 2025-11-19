@@ -212,7 +212,7 @@ starpu_data_handle_t _tensor_get_handle(void const* tensor)
 dahl_partition* _tensor_get_current_partition(void const* tensor)
 {
     metadata* m = ((dahl_tensor const*)tensor)->meta;
-    assert(m-> current_partition >= 0 && 
+    assert(m->current_partition >= 0 && 
            m->current_partition < TENSOR_NB_PARTITION_TYPE);
 
     assert(m->partitions[m->current_partition] != nullptr);

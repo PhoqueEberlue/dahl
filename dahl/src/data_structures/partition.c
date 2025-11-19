@@ -100,7 +100,7 @@ dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits* traits)
 dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits)
 {
     dahl_partition* p = traits->get_partition(object);
-    assert(p->access == DAHL_READ);
+    assert(p->access == DAHL_READ || p->access == DAHL_MUT);
     return _get_sub_tensor(p, index);
 }
 
@@ -123,7 +123,7 @@ dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits* traits)
 dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits* traits)
 {
     dahl_partition* p = traits->get_partition(object);
-    assert(p->access == DAHL_READ);
+    assert(p->access == DAHL_READ || p->access == DAHL_MUT);
     return _get_sub_block(p, index);
 }
 
@@ -145,7 +145,7 @@ dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits* traits)
 dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits* traits)
 {
     dahl_partition* p = traits->get_partition(object);
-    assert(p->access == DAHL_READ);
+    assert(p->access == DAHL_READ || p->access == DAHL_MUT);
     return _get_sub_matrix(p, index);
 }
 
@@ -168,6 +168,6 @@ dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits)
 dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits* traits)
 {
     dahl_partition* p = traits->get_partition(object);
-    assert(p->access == DAHL_READ);
+    assert(p->access == DAHL_READ || p->access == DAHL_MUT);
     return _get_sub_vector(p, index);
 }
