@@ -82,7 +82,7 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
             conv->filters, conv->biases); 
     }
     
-    tensor_unpartition(output_batch);
+    // tensor_unpartition(output_batch);
     tensor_unpartition(input_batch);
     tensor_unpartition(conv->filters);
 
@@ -91,9 +91,10 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
 
 void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* input, 
                                   dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters,
-                                  dahl_tensor const* filters, bool first_sample)
+                                  dahl_tensor const* filters, dahl_vector* dl_dbiases_redux)
 {
     dahl_shape4d filters_shape = tensor_get_shape(filters);
+    task_block_sum_xy_axes(dl_dout, dl_dbiases_redux);
 
     // Partition by channel dimension
     block_partition_along_z(input, DAHL_READ);
@@ -128,10 +129,9 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
                                  dahl_tensor const* dl_dout_batch, double const learning_rate,
                                  dahl_tensor const* input_batch)
 {
-    // Can already compute dl_dbiases by summing over axes (x,y,t) to update the biases.
-    dahl_vector* dl_dbiases = task_tensor_sum_xyt_axes_init(conv->scratch_arena, dl_dout_batch);
-    TASK_SCAL_SELF(dl_dbiases, learning_rate);
-    TASK_SUB_SELF(conv->biases, dl_dbiases);
+    // dl_dbiases is computed by summing over axes (x,y,t) to update the biases.
+    dahl_vector* dl_dbiases_redux = vector_init_redux(conv->scratch_arena, 
+            tensor_get_shape(dl_dout_batch).z);
 
     // Initialize the result buffer, which is the derivative of the input we got from the forward pass
     dahl_tensor* dl_dinput_batch_redux = tensor_init_redux(arena, conv->input_shape);
@@ -139,7 +139,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
     dahl_tensor* dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
 
     // Partition by batch dimension
-    tensor_partition_along_t(dl_dout_batch, DAHL_READ);
+    // tensor_partition_along_t(dl_dout_batch, DAHL_READ);
     tensor_partition_along_t(input_batch, DAHL_READ);
     tensor_partition_along_t(dl_dinput_batch_redux, DAHL_REDUX);
 
@@ -157,7 +157,7 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
             GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
             dl_dfilters,
             conv->filters,
-            i==0);
+            dl_dbiases_redux);
     }
 
     tensor_unpartition(dl_dout_batch);
@@ -168,6 +168,9 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
 
     TASK_SCAL_SELF(dl_dfilters, learning_rate);
     TASK_SUB_SELF(conv->filters, dl_dfilters);
+
+    TASK_SCAL_SELF(dl_dbiases_redux, learning_rate);
+    TASK_SUB_SELF(conv->biases, dl_dbiases_redux);
 
     return dl_dinput_batch_redux;
 }

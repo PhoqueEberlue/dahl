@@ -1,4 +1,5 @@
 #include "../../include/dahl_layers.h"
+#include "starpu.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,6 +29,7 @@ void _pooling_forward_sample(dahl_block const* input,
                              size_t pool_size)
 {
     //partition along channel axis
+    TASK_WAIT(input, 0);
     block_partition_along_z(input, DAHL_READ);
     block_partition_along_z(mask, DAHL_MUT);
     block_partition_along_z(output, DAHL_MUT);
@@ -53,7 +55,7 @@ dahl_tensor* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor 
     dahl_tensor* output_batch = tensor_init(arena, pool->output_shape);
 
     // partition along batch axis
-    tensor_partition_along_t(input_batch, DAHL_READ);
+    // tensor_partition_along_t(input_batch, DAHL_READ);
     tensor_partition_along_t(pool->mask_batch, DAHL_MUT);
     tensor_partition_along_t(output_batch, DAHL_MUT);
 
@@ -69,7 +71,7 @@ dahl_tensor* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor 
         );
     }
 
-    tensor_unpartition(input_batch);
+    // tensor_unpartition(input_batch);
     tensor_unpartition(pool->mask_batch);
     tensor_unpartition(output_batch);
 
@@ -122,12 +124,9 @@ dahl_tensor* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor
         );
     }
 
-    tensor_unpartition(dl_dinput_batch);
+    // tensor_unpartition(dl_dinput_batch);
     tensor_unpartition(pool->mask_batch);
     tensor_unpartition(dl_dout_batch);
-
-    // Reset the mask for the next forward pass
-    TASK_FILL(pool->mask_batch, 0.0F);
 
     return dl_dinput_batch;
 }

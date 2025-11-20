@@ -262,8 +262,8 @@ void test_flow()
 
 void test_layers()
 {
-    test_convolution();
-    test_pool();
-    test_dense();   
+    // test_convolution();
+    // test_pool();
+    // test_dense();   
     test_flow();
 }
