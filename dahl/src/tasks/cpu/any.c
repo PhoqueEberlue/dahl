@@ -110,7 +110,21 @@ void any_scal(void* buffers[2], void* cl_arg)
 
     for (size_t i = 0; i < nb_elem; i++)
     {
-        out[i] = in[i] * factor;
+        out[i] += in[i] * factor;
+    }
+}
+
+void any_scal_self(void* buffers[2], void* cl_arg)
+{
+    size_t nb_elem;
+    dahl_fp factor;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &factor);
+
+    dahl_fp* out = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+
+    for (size_t i = 0; i < nb_elem; i++)
+    {
+        out[i] *= factor;
     }
 }
 

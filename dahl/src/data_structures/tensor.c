@@ -193,6 +193,57 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
     return res;
 }
 
+dahl_matrix* tensor_flatten_along_t_no_copy_partition(dahl_tensor const* tensor)
+{
+    // Initialize a matrix, just to hold the childrens
+    dahl_shape4d shape = tensor_get_shape(tensor);
+    dahl_shape2d new_shape = { .x = shape.x * shape.y * shape.z, .y = shape.t };
+
+    // Registers our tensor data as a matrix (with new shape), handle will be attached to the
+    // tensor's origin arena.
+    starpu_data_handle_t handle = _matrix_data_register(
+            tensor->meta->origin_arena, new_shape, tensor->data);
+    
+    dahl_matrix* res = _matrix_init_from_ptr(tensor->meta->origin_arena, handle, tensor->data);
+
+    size_t const batch_size = GET_NB_CHILDREN(tensor);
+
+    // Create a fake partition to hold our flat children
+    dahl_partition* p = dahl_arena_alloc(
+        tensor->meta->origin_arena,
+        // The partition object itself
+        sizeof(dahl_partition) + 
+        // + the children array with enough space to store their pointers
+        (batch_size * sizeof(void*))
+    );
+
+    p->handles = (starpu_data_handle_t*)dahl_arena_alloc(
+        tensor->meta->origin_arena,
+        batch_size * sizeof(starpu_data_handle_t));
+    p->access = DAHL_READ;
+    p->nb_children = batch_size;
+    p->trait = &dahl_traits_vector;
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+        dahl_block const* block = GET_SUB_BLOCK(tensor, i);
+        dahl_vector* flat_child = block_flatten_no_copy(block);
+        p->children[i] = flat_child;
+        p->handles[i] = flat_child->handle;
+
+        // Invalidate each children of the origin tensor
+        starpu_data_invalidate_submit(block->handle);
+    }
+
+    // Pretend the matrix is partitioned
+    res->meta->current_partition = MATRIX_PARTITION_ALONG_Y;
+    res->meta->partitions[MATRIX_PARTITION_ALONG_Y] = p;
+    
+    // tensor_unpartition(tensor);
+
+    return res;
+}
+
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
 {
     size_t nx = starpu_tensor_get_nx(tensor->handle);

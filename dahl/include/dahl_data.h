@@ -80,6 +80,14 @@ void tensor_set_value(dahl_tensor*, size_t x, size_t y, size_t z, size_t t, dahl
 // You should stop using the tensor after calling this function because it's internal data is pointing to the same place as the matrix (that's why there is no copy) and the coherency is not managed.
 dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor);
 
+// Does essentially the same thing as `tensor_flatten_along_t_no_copy` but:
+// 1. does not ensure the coherency of the matrix result. This means no synchronization is required
+// with the tensor.
+// 2. however the matrix comes already partitioned on Y axis with vector objects (flattened) that
+// follows the coherency of tensor childrens.
+// 3. no need to unpartition the matrix, it is fake.
+dahl_matrix* tensor_flatten_along_t_no_copy_partition(dahl_tensor const* tensor);
+
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
 
@@ -145,6 +153,8 @@ dahl_fp block_get_value(dahl_block const*, size_t x, size_t y, size_t z);
 
 // Set `value` at index x,y,z. Requires to have mutably acquired the block with `block_acquire_mut()`.
 void block_set_value(dahl_block*, size_t x, size_t y, size_t z, dahl_fp value);
+
+dahl_vector* block_flatten_no_copy(dahl_block const*);
 
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const*);
@@ -232,6 +242,8 @@ void matrix_set_from(dahl_matrix*, dahl_fp const* data);
 // You should stop using the matrix after calling this function because no coherency/synchronization is guaranteed.
 dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const*, dahl_shape4d new_shape);
 
+dahl_tensor* matrix_to_tensor_no_copy_partition(dahl_matrix const* matrix, dahl_shape4d new_shape);
+
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
 
@@ -309,6 +321,8 @@ dahl_fp vector_get_value(dahl_vector const*, size_t index);
 
 // Set `value` at `index`. Requires to have mutably acquired the vector with `vector_acquire_mut()`.
 void vector_set_value(dahl_vector*, size_t index, dahl_fp value);
+
+dahl_block* vector_to_block_no_copy(dahl_vector const* vector, dahl_shape3d const new_shape);
 
 // Set values of the `vector` from an array `data` that should be of the same size.
 // This is a blocking function.

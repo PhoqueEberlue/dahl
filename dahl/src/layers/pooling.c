@@ -71,9 +71,9 @@ dahl_tensor* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor 
         );
     }
 
-    // tensor_unpartition(input_batch);
+    tensor_unpartition(input_batch);
     tensor_unpartition(pool->mask_batch);
-    tensor_unpartition(output_batch);
+    // tensor_unpartition(output_batch);
 
     return output_batch;
 }
@@ -110,7 +110,7 @@ dahl_tensor* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor
     // Partition by batch dimension
     tensor_partition_along_t(dl_dinput_batch, DAHL_MUT);
     tensor_partition_along_t(pool->mask_batch, DAHL_READ);
-    tensor_partition_along_t(dl_dout_batch, DAHL_READ);
+    // tensor_partition_along_t(dl_dout_batch, DAHL_READ);
 
     size_t const batch_size = GET_NB_CHILDREN(dl_dinput_batch);
 
@@ -126,7 +126,7 @@ dahl_tensor* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor
 
     // tensor_unpartition(dl_dinput_batch);
     tensor_unpartition(pool->mask_batch);
-    tensor_unpartition(dl_dout_batch);
+    // tensor_unpartition(dl_dout_batch);
 
     return dl_dinput_batch;
 }

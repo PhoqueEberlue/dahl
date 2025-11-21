@@ -23,13 +23,13 @@ void relu_forward(dahl_relu* relu, dahl_tensor* input_batch)
     }
     
     // tensor_unpartition(input_batch);
-    tensor_unpartition(relu->mask_batch);
+    // tensor_unpartition(relu->mask_batch);
 }
 
 void relu_backward(dahl_relu* relu, dahl_tensor* dl_dout_batch)
 {
     // tensor_partition_along_t(dl_dout_batch, DAHL_MUT);
-    tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
+    // tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);
 
     for (size_t i = 0; i < batch_size; i++)

@@ -266,6 +266,29 @@ void block_release(dahl_block const* block)
     starpu_data_release(block->handle);
 }
 
+dahl_vector* block_flatten_no_copy(dahl_block const* block)
+{
+    dahl_shape3d shape = block_get_shape(block);
+    size_t new_len = shape.x * shape.y * shape.z;
+
+    // Registers our block data as a vector (with new shape), handle will be attached to the
+    // block's origin arena.
+    starpu_data_handle_t handle = _vector_data_register(
+            block->meta->origin_arena, new_len, block->data);
+    
+    dahl_vector* res = _vector_init_from_ptr(block->meta->origin_arena, handle, block->data);
+
+    // Here we use the same trick when doing manual partitioning:
+    // Use cl_switch to force data refresh in our new handle from the block handle
+	int ret = starpu_task_insert(&cl_switch, STARPU_RW, block->handle, STARPU_W, handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "block_flatten_along_t_no_copy");
+
+    // Then deactivate the block handle
+    starpu_data_invalidate_submit(block->handle);
+
+    return res;
+}
+
 bool block_equals(dahl_block const* a, dahl_block const* b, bool const rounding, int8_t const precision)
 {
     dahl_shape3d shape_a = block_get_shape(a);

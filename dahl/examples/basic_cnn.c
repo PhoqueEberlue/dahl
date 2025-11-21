@@ -37,25 +37,27 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             relu_forward(relu, conv_out);
 
             dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
-            dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy(pool_out);
-            dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
-            
-            dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
-            TASK_ADD_SELF(total_loss, loss);
+            dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy_partition(pool_out);
 
-            dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
-            TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
+            dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
+            // dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
+            // TASK_ADD_SELF(total_loss, loss);
+
+            // dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
+            // TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
 
             dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
 
             dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, LEARNING_RATE);
-            dahl_tensor* dense_back_unflattened = matrix_to_tensor_no_copy(dense_back, pool->output_shape);
+
+            dahl_tensor* dense_back_unflattened = matrix_to_tensor_no_copy_partition(dense_back, pool->output_shape);
             dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back_unflattened);
             relu_backward(relu, pool_back);
 
             dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
-            dahl_arena_reset(scratch_arena);
+
             dahl_arena_reset(batch_arena);
+            dahl_arena_reset(scratch_arena);
             dahl_shutdown();exit(0);
         }
         

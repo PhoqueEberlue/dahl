@@ -122,6 +122,57 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d co
     return res;
 }
 
+dahl_tensor* matrix_to_tensor_no_copy_partition(
+        dahl_matrix const* matrix, dahl_shape4d const new_shape)
+{
+    // Initialize a tensor, just to hold the childrens
+    dahl_shape2d shape = matrix_get_shape(matrix);
+    assert(shape.x * shape.y == new_shape.x * new_shape.y * new_shape.z * new_shape.t);
+
+    // Registers our matrix data as a tensor (with new shape), handle will be attached to the
+    // matrix's origin arena.
+    starpu_data_handle_t handle = _tensor_data_register(
+            matrix->meta->origin_arena, new_shape, matrix->data);
+    
+    dahl_tensor* res = _tensor_init_from_ptr(matrix->meta->origin_arena, handle, matrix->data);
+
+    size_t const batch_size = GET_NB_CHILDREN(matrix);
+
+    // Create a fake partition to hold our flat children
+    dahl_partition* p = dahl_arena_alloc(
+        matrix->meta->origin_arena,
+        // The partition object itself
+        sizeof(dahl_partition) + 
+        // + the children array with enough space to store their pointers
+        (batch_size * sizeof(void*))
+    );
+
+    p->handles = (starpu_data_handle_t*)dahl_arena_alloc(
+        matrix->meta->origin_arena,
+        batch_size * sizeof(starpu_data_handle_t));
+    p->access = DAHL_READ;
+    p->nb_children = batch_size;
+    p->trait = &dahl_traits_block;
+
+    dahl_shape3d block_shape = { .x = new_shape.x, .y = new_shape.y, .z = new_shape.z };
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+        dahl_vector const* vector = GET_SUB_VECTOR(matrix, i);
+        dahl_block* flat_child = vector_to_block_no_copy(vector, block_shape);
+        p->children[i] = flat_child;
+        p->handles[i] = flat_child->handle;
+
+        // Invalidate each children of the origin matrix
+        starpu_data_invalidate_submit(vector->handle);
+    }
+
+    // Pretend the tensor is partitioned
+    res->meta->current_partition = TENSOR_PARTITION_ALONG_T;
+    res->meta->partitions[TENSOR_PARTITION_ALONG_T] = p;
+    return res;
+}
+
 void _matrix_enable_redux(void* matrix)
 {
     ((dahl_matrix*)matrix)->is_redux = true;
@@ -181,7 +232,7 @@ starpu_data_handle_t _matrix_get_handle(void const* matrix)
 dahl_partition* _matrix_get_current_partition(void const* matrix)
 {
     metadata* m = ((dahl_matrix const*)matrix)->meta;
-    assert(m-> current_partition >= 0 && 
+    assert(m->current_partition >= 0 &&
            m->current_partition < MATRIX_NB_PARTITION_TYPE);
 
     assert(m->partitions[m->current_partition] != nullptr);

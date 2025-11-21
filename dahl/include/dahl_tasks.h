@@ -157,6 +157,7 @@ void task_cuda_vector_print(dahl_vector const* vec);
 void task_relu(void const* in, void* mask, void* out, dahl_traits* traits);
 void task_relu_backward(void const* input, void const* gradients, void* out, dahl_traits* traits);
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits);
+void task_scal_self(void* self, dahl_fp factor, dahl_traits* traits);
 void task_power(void const* in, void* out, dahl_fp power, dahl_traits* traits);
 void task_sub(void const* a, void const* b, void* c, dahl_traits* traits);
 void task_sub_self(void* self, void const* other, dahl_traits* traits);
@@ -213,7 +214,7 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
     } while (0)
 
 // Update every value of `self`, multiplying by `divisor`.
-#define TASK_SCAL_SELF(SELF, FACTOR) TASK_SCAL(SELF, SELF, FACTOR)
+#define TASK_SCAL_SELF(SELF, FACTOR) task_scal_self(SELF, FACTOR, GET_TRAITS(SELF))
 
 // Power every value of `in` by `power` and store the result in `out`.
 #define TASK_POWER(IN, OUT, POWER)                             \
@@ -228,11 +229,11 @@ void task_round(void const* in, void* out, int8_t precision, dahl_traits* traits
 
 // Divide every value of `in` by `divisor` and store the result in `out`.
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two
-#define TASK_DIVIDE(IN, OUT, DIVISOR) TASK_SCAL(IN, OUT, 1/(DIVISOR))
+#define TASK_DIV_VALUE(IN, OUT, DIVISOR) TASK_SCAL(IN, OUT, 1/(DIVISOR))
 
 // Update every value of `self`, dividing by `divisor`.
 // Please use scientific notation for the divisor, e.g. 2e0 to divide by two
-#define TASK_DIVIDE_SELF(SELF, DIVISOR) TASK_DIVIDE(SELF, SELF, DIVISOR)
+#define TASK_DIV_VALUE_SELF(SELF, DIVISOR) TASK_SCAL_SELF(SELF, 1/(DIVISOR))
 
 // Performs `c` += `a` - `b`, where:
 // - `-` is the value by value substraction
@@ -413,7 +414,9 @@ void task_cross_entropy_loss_batch(dahl_matrix const* prediction_batch, dahl_mat
 // Compute the cross entropy loss over the given batch and return the result into a new scalar.
 dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, dahl_matrix const* target_batch);
 
-void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients);
+void task_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
+
+void task_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
 
 dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
                                                                 dahl_matrix const* target_batch);
