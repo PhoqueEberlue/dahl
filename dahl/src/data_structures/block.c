@@ -9,27 +9,21 @@
 #include "../tasks/codelets.h"
 #include <jpeglib.h>
 
+dahl_block_p* _block_p_init(dahl_block* block, dahl_partition* p)
+{
+    dahl_block_p* res = dahl_arena_alloc(block->origin_arena, sizeof(dahl_block_p));
+    res->partition = p;
+    res->ptr = block;
+    return res;
+}
+
 // Allocate a dahl_block structure from a handle, and a pointer to data.
 void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
-    metadata* md = dahl_arena_alloc(
-        arena,
-        // Metadata struct itself
-        sizeof(metadata) + 
-        // + a flexible array big enough partition pointers to 
-        // store all kinds of block partioning
-        (BLOCK_NB_PARTITION_TYPE * sizeof(dahl_partition*)
-    ));
-
-    for (size_t i = 0; i < BLOCK_NB_PARTITION_TYPE; i++) { md->partitions[i] = nullptr; }
-
-    md->current_partition = -1;
-    md->origin_arena = arena; // Saves where the block have been allocated
-
     dahl_block* block = dahl_arena_alloc(arena, sizeof(dahl_block));
     block->handle = handle;
     block->data = data;
-    block->meta = md;
+    block->origin_arena = arena;
     block->is_redux = false;
 
     return block;
@@ -235,16 +229,6 @@ starpu_data_handle_t _block_get_handle(void const* block)
     return ((dahl_block*)block)->handle;
 }
 
-dahl_partition* _block_get_current_partition(void const* block)
-{
-    metadata* m = ((dahl_block const*)block)->meta;
-    assert(m-> current_partition >= 0 && 
-           m->current_partition < BLOCK_NB_PARTITION_TYPE);
-
-    assert(m->partitions[m->current_partition] != nullptr);
-    return m->partitions[m->current_partition];
-}
-
 size_t _block_get_nb_elem(void const* block)
 {
     dahl_shape3d shape = block_get_shape((dahl_block*)block);
@@ -274,9 +258,9 @@ dahl_vector* block_flatten_no_copy(dahl_block const* block)
     // Registers our block data as a vector (with new shape), handle will be attached to the
     // block's origin arena.
     starpu_data_handle_t handle = _vector_data_register(
-            block->meta->origin_arena, new_len, block->data);
+            block->origin_arena, new_len, block->data);
     
-    dahl_vector* res = _vector_init_from_ptr(block->meta->origin_arena, handle, block->data);
+    dahl_vector* res = _vector_init_from_ptr(block->origin_arena, handle, block->data);
 
     // Here we use the same trick when doing manual partitioning:
     // Use cl_switch to force data refresh in our new handle from the block handle
@@ -327,15 +311,13 @@ RELEASE:
     return res;
 }
 
-void block_partition_along_z(dahl_block const* block, dahl_access access)
+dahl_partition* _block_p_get_partition(void const* block_p)
 {
-    assert(block->meta->current_partition == -1);
-    block_partition_type t = BLOCK_PARTITION_ALONG_Z;
+    return ((dahl_block_p*)block_p)->partition;
+}
 
-    // If the partition already exists, no need to create it.
-    if (block->meta->partitions[t] != nullptr)
-        goto submit; 
-
+dahl_block_p* block_partition_along_z(dahl_block* block, dahl_access access)
+{
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -346,22 +328,16 @@ void block_partition_along_z(dahl_block const* block, dahl_access access)
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_matrix,
-                                        &f, block->handle, block->meta->origin_arena);
+    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_matrix,
+                                        &f, block->handle, block->origin_arena, 
+                                        BLOCK_PARTITION_ALONG_Z);
 
-submit:
-    _partition_submit_if_needed(block->meta, t, access, block->handle);
+    _partition_submit(p);
+    return _block_p_init(block, p);
 }
 
-void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access access, bool is_row)
+dahl_block_p* block_partition_along_z_flat_matrices(dahl_block* block, dahl_access access, bool is_row)
 {
-    assert(block->meta->current_partition == -1);
-    block_partition_type t = BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES;
-
-    // If the partition already exists, no need to create it.
-    if (block->meta->partitions[t] != nullptr)
-        goto submit;
-
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -373,22 +349,16 @@ void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access 
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_matrix,
-                                        &f, block->handle, block->meta->origin_arena);
+    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_matrix,
+                                        &f, block->handle, block->origin_arena,
+                                        BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES);
 
-submit:
-    _partition_submit_if_needed(block->meta, t, access, block->handle);
+    _partition_submit(p);
+    return _block_p_init(block, p);
 }
 
-void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access access)
+dahl_block_p* block_partition_along_z_flat_vectors(dahl_block* block, dahl_access access)
 {
-    assert(block->meta->current_partition == -1);
-    block_partition_type t = BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS;
-
-    // If the partition already exists, no need to create it.
-    if (block->meta->partitions[t] != nullptr)
-        goto submit;
-
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -399,22 +369,16 @@ void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access a
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_vector,
-                                        &f, block->handle, block->meta->origin_arena);
+    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_vector,
+                                        &f, block->handle, block->origin_arena,
+                                        BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS);
 
-submit:
-    _partition_submit_if_needed(block->meta, t, access, block->handle);
+    _partition_submit(p);
+    return _block_p_init(block, p);
 }
 
-void block_partition_flatten_to_vector(dahl_block const* block, dahl_access access)
+dahl_block_p* block_partition_flatten_to_vector(dahl_block* block, dahl_access access)
 {
-    assert(block->meta->current_partition == -1);
-    block_partition_type t = BLOCK_PARTITION_FLATTEN_TO_VECTOR;
-
-    // If the partition already exists, no need to create it.
-    if (block->meta->partitions[t] != nullptr)
-        goto submit;
-
     // Only one vector here because we flatten the whole block into a vector
     size_t const nparts = 1;
 
@@ -426,26 +390,17 @@ void block_partition_flatten_to_vector(dahl_block const* block, dahl_access acce
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_vector,
-                                        &f, block->handle, block->meta->origin_arena);
+    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_vector,
+                                        &f, block->handle, block->origin_arena,
+                                        BLOCK_PARTITION_FLATTEN_TO_VECTOR);
 
-submit:
-    _partition_submit_if_needed(block->meta, t, access, block->handle);
-
+    _partition_submit(p);
+    return _block_p_init(block, p);
 }
 
-void block_partition_along_z_batch(dahl_block const* block, dahl_access access, size_t batch_size)
+dahl_block_p* block_partition_along_z_batch(dahl_block* block, dahl_access access, size_t batch_size)
 {
-    assert(block->meta->current_partition == -1);
-    block_partition_type t = BLOCK_PARTITION_ALONG_Z_BATCH;
-
     size_t const nparts = block_get_shape(block).z / batch_size;
-
-    dahl_partition* p = block->meta->partitions[t];
-    // If the partition already exists AND had the same batch size, no need to create it. 
-    // FIX Warning, here the memory is lost if we create many partitions with different batch size
-    if (p != nullptr && p->nb_children == nparts)
-        goto submit;
 
     struct starpu_data_filter f =
 	{
@@ -454,23 +409,21 @@ void block_partition_along_z_batch(dahl_block const* block, dahl_access access, 
 	};
 
     // Create and set the partition
-    block->meta->partitions[t] = _partition_init(nparts, access, &dahl_traits_block,
-                                        &f, block->handle, block->meta->origin_arena);
+    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_block,
+                                        &f, block->handle, block->origin_arena,
+                                        BLOCK_PARTITION_ALONG_Z_BATCH);
 
-submit:
-    _partition_submit_if_needed(block->meta, t, access, block->handle);
+    _partition_submit(p);
+    return _block_p_init(block, p);
 }
 
-void block_unpartition(dahl_block const* block)
+dahl_block* block_unpartition(dahl_block_p* block_p)
 {
-    dahl_partition* p = block->meta->partitions[block->meta->current_partition];
-    assert(p); // Shouldn't crash, an non-active partition is identified by the if bellow
-    assert(block->meta->current_partition >= 0 && 
-           block->meta->current_partition < BLOCK_NB_PARTITION_TYPE);
+    assert(block_p && block_p->ptr);
+    assert(block_p->partition->is_active);
 
-    block->meta->current_partition = -1;
-    starpu_data_unpartition_submit(block->handle, p->nb_children,
-                                   p->handles, STARPU_MAIN_RAM);
+    _unpartition_submit(block_p->partition);
+    return block_p->ptr;
 }
 
 void _block_print_file(void const* vblock, FILE* fp, int8_t const precision)

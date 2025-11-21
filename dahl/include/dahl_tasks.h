@@ -416,10 +416,10 @@ dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix c
 
 void task_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients);
 
-void task_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch);
+void task_cross_entropy_loss_gradient_batch(dahl_matrix_p const* prediction_batch_p, dahl_matrix_p const* target_batch_p, dahl_matrix_p* gradient_batch_p);
 
-dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
-                                                                dahl_matrix const* target_batch);
+dahl_matrix_p* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix_p const* prediction_batch_p, 
+                                                                dahl_matrix_p const* target_batch_p);
 // Performs `out` = `in` x `kernel`, where:
 // - x is the cross correlation operator over multiple channels
 // - `in`, `kernel` and `out` are dahl_block objects

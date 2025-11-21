@@ -5,7 +5,7 @@
 
 dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_traits* trait, 
                                 struct starpu_data_filter* f, starpu_data_handle_t main_handle,
-                                dahl_arena* origin_arena)
+                                dahl_arena* origin_arena, dahl_partition_type type)
 {
     dahl_partition* p = dahl_arena_alloc(
         origin_arena,
@@ -21,6 +21,8 @@ dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_tra
     p->nb_children = nb_children;
     p->trait = trait;
     p->access = access;
+    p->type = type;
+    p->main_handle = main_handle;
 
     // Publish the partition plan, required to run before getting the local ptrs
 	starpu_data_partition_plan(main_handle, f, p->handles);
@@ -49,33 +51,32 @@ void _partition_enable_redux(dahl_partition* p)
     }
 }
 
-void _partition_submit_if_needed(
-        metadata* meta, int8_t index, dahl_access new_access, starpu_data_handle_t main_handle)
+void _partition_submit(dahl_partition* p)
 {
-    dahl_partition* p = meta->partitions[index];
+    p->is_active = true;
 
-    // If requested partition is not active, or it changed access type
-    if (meta->current_partition != index || new_access != p->access)
-    { 
-        meta->current_partition = index; 
-        p->access = new_access;
-    
-        switch (p->access) {
-            case DAHL_READ:
-                starpu_data_partition_readonly_submit(main_handle, p->nb_children, p->handles);
-                break;
-            case DAHL_MUT:
-                starpu_data_partition_submit(main_handle, p->nb_children, p->handles);
-                break;
-            case DAHL_REDUX:
-                _partition_enable_redux(p);
-                starpu_data_partition_submit(main_handle, p->nb_children, p->handles);
-                break;
-        }
+    switch (p->access)
+    {
+        case DAHL_READ:
+            starpu_data_partition_readonly_submit(p->main_handle, p->nb_children, p->handles);
+            break;
+        case DAHL_MUT:
+            starpu_data_partition_submit(p->main_handle, p->nb_children, p->handles);
+            break;
+        case DAHL_REDUX:
+            _partition_enable_redux(p);
+            starpu_data_partition_submit(p->main_handle, p->nb_children, p->handles);
+            break;
     }
 }
 
-size_t get_nb_children(void const* object, dahl_traits* traits)
+void _unpartition_submit(dahl_partition* p)
+{
+    p->is_active = false;
+    starpu_data_unpartition_submit(p->main_handle, p->nb_children, p->handles, STARPU_MAIN_RAM);
+}
+
+size_t get_nb_children(void const* object, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     return p->nb_children;
@@ -90,14 +91,14 @@ dahl_tensor* _get_sub_tensor(dahl_partition const* p, size_t index)
     return p->children[index];
 }
 
-dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits* traits)
+dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_MUT || p->access == DAHL_REDUX);
     return _get_sub_tensor(p, index);
 }
 
-dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits)
+dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_READ || p->access == DAHL_MUT);
@@ -113,14 +114,14 @@ dahl_block* _get_sub_block(dahl_partition const* p, size_t index)
     return p->children[index];
 }
 
-dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits* traits)
+dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_MUT || p->access == DAHL_REDUX);
     return _get_sub_block(p, index);
 }
 
-dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits* traits)
+dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_READ || p->access == DAHL_MUT);
@@ -135,14 +136,14 @@ dahl_matrix* _get_sub_matrix(dahl_partition const* p, size_t index)
     return p->children[index];
 }
 
-dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits* traits)
+dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_MUT || p->access == DAHL_REDUX);
     return _get_sub_matrix(p, index);
 }
 
-dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits* traits)
+dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_READ || p->access == DAHL_MUT);
@@ -158,16 +159,22 @@ dahl_vector* _get_sub_vector(dahl_partition const* p, size_t index)
     return p->children[index];
 }
 
-dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits)
+dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_MUT || p->access == DAHL_REDUX);
     return _get_sub_vector(p, index);
 }
 
-dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits* traits)
+dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits_p* traits)
 {
     dahl_partition* p = traits->get_partition(object);
     assert(p->access == DAHL_READ || p->access == DAHL_MUT);
     return _get_sub_vector(p, index);
+}
+
+void reactivate_partition(void* object, dahl_traits_p* traits)
+{
+    dahl_partition* p = traits->get_partition(object);
+    _partition_submit(p);
 }

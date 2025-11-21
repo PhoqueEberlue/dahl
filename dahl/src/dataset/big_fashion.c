@@ -50,7 +50,7 @@ dahl_dataset* dataset_load_big_fashion(
     };
 
     dahl_tensor* image_set = tensor_init(arena, shape_images);
-    tensor_partition_along_t(image_set, DAHL_MUT);
+    dahl_tensor_p* image_set_p = tensor_partition_along_t(image_set, DAHL_MUT);
 
     dahl_shape2d shape_label = { 
         .x = n_classes,
@@ -83,7 +83,7 @@ dahl_dataset* dataset_load_big_fashion(
         char* category = strtok(NULL, ",");
         if (!category) { fprintf(stderr, "Couldn't read category"); }
 
-        dahl_block* image = GET_SUB_BLOCK_MUT(image_set, index_sample);
+        dahl_block* image = GET_SUB_BLOCK_MUT(image_set_p, index_sample);
 
         char image_path[250];
         int ret = snprintf(image_path, sizeof(image_path), "%s%s.jpg", image_directory, id);
@@ -103,7 +103,7 @@ dahl_dataset* dataset_load_big_fashion(
         }
     }
 
-    tensor_unpartition(image_set);
+    tensor_unpartition(image_set_p);
     matrix_release(label_set);
     
     res->train_images = image_set;

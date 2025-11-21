@@ -13,8 +13,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
     dahl_arena* epoch_arena = dahl_arena_new();
     dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
 
-    tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
-    matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
+    dahl_tensor_p* train_images_p = tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
+    dahl_matrix_p* train_labels_p = matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
 
     num_samples = 600; // Only use first 1k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
@@ -30,32 +30,37 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
-            dahl_tensor const* image_batch = GET_SUB_TENSOR(dataset->train_images, i);
-            dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
+            dahl_tensor const* image_batch = GET_SUB_TENSOR(train_images_p, i);
+            dahl_matrix const* target_batch = GET_SUB_MATRIX(train_labels_p, i);
 
-            dahl_tensor* conv_out = convolution_forward(batch_arena, conv, image_batch);
-            relu_forward(relu, conv_out);
+            dahl_tensor_p* image_batch_p = tensor_partition_along_t(image_batch, DAHL_READ);
 
-            dahl_tensor* pool_out = pooling_forward(batch_arena, pool, conv_out);
-            dahl_matrix* pool_out_flattened = tensor_flatten_along_t_no_copy_partition(pool_out);
+            dahl_tensor_p* conv_out_p = convolution_forward(batch_arena, conv, image_batch_p);
+            relu_forward(relu, conv_out_p);
 
-            dahl_matrix* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
+            dahl_tensor_p* pool_out_p = pooling_forward(batch_arena, pool, conv_out_p);
+            dahl_matrix_p* pool_out_flattened_p = tensor_flatten_along_t_no_copy_partition(pool_out_p);
+
+            dahl_matrix_p* dense_out_p = dense_forward(batch_arena, dense, pool_out_flattened_p); // Returns the predictions for each batch 
             // dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
             // TASK_ADD_SELF(total_loss, loss);
 
             // dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
             // TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
 
-            dahl_matrix* gradients = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
+            dahl_matrix_p* target_batch_p = matrix_partition_along_y(target_batch, DAHL_READ);
+            dahl_matrix_p* gradient_batch_p = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out_p, target_batch_p); 
+            matrix_unpartition(target_batch_p);
 
-            dahl_matrix* dense_back = dense_backward(batch_arena, dense, gradients, pool_out_flattened, LEARNING_RATE);
+            dahl_matrix_p* dense_back_p = dense_backward(batch_arena, dense, gradient_batch_p, pool_out_flattened_p, LEARNING_RATE);
 
-            dahl_tensor* dense_back_unflattened = matrix_to_tensor_no_copy_partition(dense_back, pool->output_shape);
-            dahl_tensor* pool_back = pooling_backward(batch_arena, pool, dense_back_unflattened);
-            relu_backward(relu, pool_back);
+            dahl_tensor_p* dense_back_unflattened_p = matrix_to_tensor_no_copy_partition(dense_back_p, pool->output_shape);
+            dahl_tensor_p* pool_back_p = pooling_backward(batch_arena, pool, dense_back_unflattened_p);
+            relu_backward(relu, pool_back_p);
 
-            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
+            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back_p, LEARNING_RATE, image_batch_p);
 
+            tensor_unpartition(image_batch_p);
             dahl_arena_reset(batch_arena);
             dahl_arena_reset(scratch_arena);
             dahl_shutdown();exit(0);
@@ -79,8 +84,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
 
     matrix_to_csv(results, "dahl-training-outputs.csv", (char const*[2]){"accuracy", "loss"});
 
-    tensor_unpartition(dataset->train_images);
-    matrix_unpartition(dataset->train_labels);
+    tensor_unpartition(train_images_p);
+    matrix_unpartition(train_labels_p);
 }
 
 int main(int argc, char **argv)

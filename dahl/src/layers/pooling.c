@@ -30,103 +30,100 @@ void _pooling_forward_sample(dahl_block const* input,
 {
     //partition along channel axis
     TASK_WAIT(input, 0);
-    block_partition_along_z(input, DAHL_READ);
-    block_partition_along_z(mask, DAHL_MUT);
-    block_partition_along_z(output, DAHL_MUT);
+    dahl_block_p* input_p = block_partition_along_z(input, DAHL_READ);
+    dahl_block_p* mask_p = block_partition_along_z(mask, DAHL_MUT);
+    dahl_block_p* output_p = block_partition_along_z(output, DAHL_MUT);
 
-    size_t const n_filters = GET_NB_CHILDREN(input);
+    size_t const n_filters = GET_NB_CHILDREN(input_p);
 
     for (int c = 0; c < n_filters; c++)
     {
-        dahl_matrix const* feature_map = GET_SUB_MATRIX(input, c);
-        dahl_matrix* sub_mask = GET_SUB_MATRIX_MUT(mask, c);
-        dahl_matrix* sub_output = GET_SUB_MATRIX_MUT(output, c);
+        dahl_matrix const* feature_map = GET_SUB_MATRIX(input_p, c);
+        dahl_matrix* sub_mask = GET_SUB_MATRIX_MUT(mask_p, c);
+        dahl_matrix* sub_output = GET_SUB_MATRIX_MUT(output_p, c);
 
         task_matrix_max_pooling(feature_map, sub_mask, sub_output, pool_size);
     }
 
-    block_unpartition(input);
-    block_unpartition(mask);
-    block_unpartition(output);
+    block_unpartition(input_p);
+    block_unpartition(mask_p);
+    block_unpartition(output_p);
 }
 
-dahl_tensor* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor const* input_batch)
+dahl_tensor_p* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor_p const* input_batch_p)
 {
-    dahl_tensor* output_batch = tensor_init(arena, pool->output_shape);
-
     // partition along batch axis
-    // tensor_partition_along_t(input_batch, DAHL_READ);
-    tensor_partition_along_t(pool->mask_batch, DAHL_MUT);
-    tensor_partition_along_t(output_batch, DAHL_MUT);
+    dahl_tensor_p* output_batch_p = tensor_partition_along_t(
+            tensor_init(arena, pool->output_shape), 
+            DAHL_MUT);
 
-    size_t const batch_size = GET_NB_CHILDREN(input_batch);
+    dahl_tensor_p* mask_batch_p = tensor_partition_along_t(pool->mask_batch, DAHL_MUT);
+
+    size_t const batch_size = GET_NB_CHILDREN(input_batch_p);
 
     for (int i = 0; i < batch_size; i++)
     {
         _pooling_forward_sample(
-            GET_SUB_BLOCK(input_batch, i),
-            GET_SUB_BLOCK_MUT(pool->mask_batch, i),
-            GET_SUB_BLOCK_MUT(output_batch, i),
+            GET_SUB_BLOCK(input_batch_p, i),
+            GET_SUB_BLOCK_MUT(mask_batch_p, i),
+            GET_SUB_BLOCK_MUT(output_batch_p, i),
             pool->pool_size
         );
     }
 
-    tensor_unpartition(input_batch);
-    tensor_unpartition(pool->mask_batch);
-    // tensor_unpartition(output_batch);
+    tensor_unpartition(mask_batch_p);
 
-    return output_batch;
+    return output_batch_p;
 }
 
 void _pooling_backward_sample(dahl_block* dl_dinput, dahl_block const* mask, 
                               dahl_block const* dl_dout, size_t pool_size)
 {
     // Partition by channel dimension
-    block_partition_along_z(dl_dinput, DAHL_MUT);
-    block_partition_along_z(mask, DAHL_READ);
-    block_partition_along_z(dl_dout, DAHL_READ);
+    dahl_block_p* dl_dinput_p = block_partition_along_z(dl_dinput, DAHL_MUT);
+    dahl_block_p* mask_p = block_partition_along_z(mask, DAHL_READ);
+    dahl_block_p* dl_dout_p = block_partition_along_z(dl_dout, DAHL_READ);
 
-    size_t const n_filters = GET_NB_CHILDREN(mask);
+    size_t const n_filters = GET_NB_CHILDREN(mask_p);
 
     for (int c = 0; c < n_filters; c++)
     {
-        dahl_matrix* sub_dl_dinput = GET_SUB_MATRIX_MUT(dl_dinput, c);
-        dahl_matrix const* sub_mask = GET_SUB_MATRIX(mask, c);
-        dahl_matrix const* sub_dl_dout = GET_SUB_MATRIX(dl_dout, c);
+        dahl_matrix* sub_dl_dinput = GET_SUB_MATRIX_MUT(dl_dinput_p, c);
+        dahl_matrix const* sub_mask = GET_SUB_MATRIX(mask_p, c);
+        dahl_matrix const* sub_dl_dout = GET_SUB_MATRIX(dl_dout_p, c);
 
         task_matrix_backward_max_pooling(sub_dl_dout, sub_mask, sub_dl_dinput, pool_size);
     }
 
-    block_unpartition(dl_dinput);
-    block_unpartition(mask);
-    block_unpartition(dl_dout);
+    block_unpartition(dl_dinput_p);
+    block_unpartition(mask_p);
+    block_unpartition(dl_dout_p);
 }
 
-dahl_tensor* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor const* dl_dout_batch)
+dahl_tensor_p* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor_p const* dl_dout_batch_p)
 {
-    // Initialize the result buffer, which is the derivative of the input we got from the forward pass
-    dahl_tensor* dl_dinput_batch = tensor_init(arena, pool->input_shape);
 
-    // Partition by batch dimension
-    tensor_partition_along_t(dl_dinput_batch, DAHL_MUT);
-    tensor_partition_along_t(pool->mask_batch, DAHL_READ);
-    // tensor_partition_along_t(dl_dout_batch, DAHL_READ);
+    // Initialize the result buffer, which is the derivative of the input we got from the forward 
+    // pass and partition by batch dimension
+    dahl_tensor_p* dl_dinput_batch_p = tensor_partition_along_t(
+            tensor_init(arena, pool->input_shape),
+            DAHL_MUT);
 
-    size_t const batch_size = GET_NB_CHILDREN(dl_dinput_batch);
+    dahl_tensor_p* mask_batch_p = tensor_partition_along_t(pool->mask_batch, DAHL_READ);
+
+    size_t const batch_size = GET_NB_CHILDREN(dl_dinput_batch_p);
 
     for (size_t i = 0; i < batch_size; i++)
     {
         _pooling_backward_sample(
-            GET_SUB_BLOCK_MUT(dl_dinput_batch, i),
-            GET_SUB_BLOCK(pool->mask_batch, i),
-            GET_SUB_BLOCK(dl_dout_batch, i),
+            GET_SUB_BLOCK_MUT(dl_dinput_batch_p, i),
+            GET_SUB_BLOCK(mask_batch_p, i),
+            GET_SUB_BLOCK(dl_dout_batch_p, i),
             pool->pool_size
         );
     }
 
-    // tensor_unpartition(dl_dinput_batch);
-    tensor_unpartition(pool->mask_batch);
-    // tensor_unpartition(dl_dout_batch);
+    tensor_unpartition(mask_batch_p);
 
-    return dl_dinput_batch;
+    return dl_dinput_batch_p;
 }

@@ -16,11 +16,31 @@
 #define DAHL_MAX_RANDOM_VALUES 1
 #endif
 
+// Partitionning data
+typedef struct _dahl_partition
+{
+    dahl_traits* trait;
+    dahl_access access;
+    dahl_partition_type type;
+
+    // if the partition is active
+    bool is_active;
+
+    // Handle of the parent data structure
+    starpu_data_handle_t main_handle;
+
+    // Handles for each children
+    starpu_data_handle_t* handles;
+
+    size_t nb_children;
+    // Children list, can be any dahl data structure
+    void* children[];
+} dahl_partition;
+
 typedef const struct _dahl_traits
 {
     void* (*init_from_ptr)(dahl_arena*, starpu_data_handle_t, dahl_fp*);
     starpu_data_handle_t (*get_handle)(void const*);
-    dahl_partition* (*get_partition)(void const*);
     size_t (*get_nb_elem)(void const*);
     void (*print_file)(void const*, FILE*, int8_t const);
     bool (*get_is_redux)(void const*);
@@ -28,50 +48,11 @@ typedef const struct _dahl_traits
     dahl_type type;
 } dahl_traits;
 
-// Partitionning data
-typedef struct _dahl_partition
+// Traits for the partitioned data structures
+typedef const struct _dahl_traits_p
 {
-    dahl_traits* trait;
-    dahl_access access;
-    starpu_data_handle_t* handles;
-    size_t nb_children;
-
-    void* children[];
-} dahl_partition;
-
-typedef struct
-{
-    // Where the corresponding data was allocated
-    dahl_arena* origin_arena;
-    int8_t current_partition;
-    dahl_partition* partitions[];
-} metadata;
-
-// IMPORTANT: Don't forget to update these counters when updating the enums
-#define TENSOR_NB_PARTITION_TYPE 2
-#define BLOCK_NB_PARTITION_TYPE 5
-#define MATRIX_NB_PARTITION_TYPE 2
-
-typedef enum 
-{
-    TENSOR_PARTITION_ALONG_T,
-    TENSOR_PARTITION_ALONG_T_BATCH,
-} tensor_partition_type;
-
-typedef enum 
-{
-    BLOCK_PARTITION_ALONG_Z,
-    BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES,
-    BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS,
-    BLOCK_PARTITION_ALONG_Z_BATCH,
-    BLOCK_PARTITION_FLATTEN_TO_VECTOR,
-} block_partition_type;
-
-typedef enum 
-{
-    MATRIX_PARTITION_ALONG_Y,
-    MATRIX_PARTITION_ALONG_Y_BATCH,
-} matrix_partition_type;
+    dahl_partition* (*get_partition)(void const*);
+} dahl_traits_p;
 
 // Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
 // so their fields are not accessible from the public API.
@@ -79,6 +60,8 @@ typedef struct _dahl_scalar
 {
     starpu_data_handle_t handle;
     dahl_fp data;
+    // Where the data was originally allocated
+    dahl_arena* origin_arena;
     bool is_redux;
 } dahl_scalar;
 
@@ -86,7 +69,8 @@ typedef struct _dahl_vector
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
-    metadata* meta;
+    // Where the data was originally allocated
+    dahl_arena* origin_arena;
     bool is_redux;
 } dahl_vector;
 
@@ -94,7 +78,8 @@ typedef struct _dahl_matrix
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
-    metadata* meta;
+    // Where the data was originally allocated
+    dahl_arena* origin_arena;
     bool is_redux;
 } dahl_matrix;
 
@@ -102,7 +87,8 @@ typedef struct _dahl_block
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
-    metadata* meta;
+    // Where the data was originally allocated
+    dahl_arena* origin_arena;
     bool is_redux;
 } dahl_block;
 
@@ -110,17 +96,10 @@ typedef struct _dahl_tensor
 {
     starpu_data_handle_t handle;
     dahl_fp* data;
-    metadata* meta;
+    // Where the data was originally allocated
+    dahl_arena* origin_arena;
     bool is_redux;
 } dahl_tensor;
-
-// Init a new partition object in the same arena as the parent
-dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_traits* trait,
-                                struct starpu_data_filter* f, starpu_data_handle_t main_handle,
-                                dahl_arena* origin_arena);
-
-void _partition_submit_if_needed(
-        metadata* meta, int8_t index, dahl_access new_access, starpu_data_handle_t main_handle);
 
 void* _tensor_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
 void* _block_init_from_ptr(dahl_arena*, starpu_data_handle_t, dahl_fp* data);
@@ -137,10 +116,6 @@ starpu_data_handle_t _block_get_handle(void const* block);
 starpu_data_handle_t _matrix_get_handle(void const* matrix);
 starpu_data_handle_t _vector_get_handle(void const* vector);
 starpu_data_handle_t _scalar_get_handle(void const* scalar);
-
-dahl_partition* _tensor_get_current_partition(void const* tensor);
-dahl_partition* _block_get_current_partition(void const* block);
-dahl_partition* _matrix_get_current_partition(void const* matrix);
 
 size_t _tensor_get_nb_elem(void const* tensor);
 size_t _block_get_nb_elem(void const* block);
@@ -165,5 +140,26 @@ void _block_print_file(void const*, FILE*, int8_t const precision);
 void _matrix_print_file(void const*, FILE*, int8_t const precision);
 void _vector_print_file(void const*, FILE*, int8_t const precision);
 void _scalar_print_file(void const*, FILE*, int8_t const precision);
+
+// ---------------------------- Partition related ----------------------------
+typedef struct _dahl_tensor_p { dahl_tensor* ptr; dahl_partition* partition; } dahl_tensor_p;
+typedef struct _dahl_block_p  { dahl_block*  ptr; dahl_partition* partition; } dahl_block_p;
+typedef struct _dahl_matrix_p { dahl_matrix* ptr; dahl_partition* partition; } dahl_matrix_p;
+
+dahl_tensor_p* _tensor_p_init(dahl_tensor*, dahl_partition*);
+dahl_block_p* _block_p_init(dahl_block*, dahl_partition*);
+dahl_matrix_p* _matrix_p_init(dahl_matrix*, dahl_partition*);
+
+dahl_partition* _tensor_p_get_partition(void const* tensor_p);
+dahl_partition* _block_p_get_partition(void const* block_p);
+dahl_partition* _matrix_p_get_partition(void const* matrix_p);
+
+// Init a new partition object in the same arena as the parent
+dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_traits* trait,
+                                struct starpu_data_filter* f, starpu_data_handle_t main_handle,
+                                dahl_arena* origin_arena, dahl_partition_type type);
+
+void _partition_submit(dahl_partition* p);
+void _unpartition_submit(dahl_partition* p);
 
 #endif //!DAHL_DATA_STRUCTURES_H

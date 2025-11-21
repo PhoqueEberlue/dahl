@@ -917,13 +917,19 @@ void test_cross_entropy_loss_gradient_batch()
     dahl_fp expect[batch_size][num_classes] = {{ +0.228914562258680, +0.085528577269011, +0.085565029732811, +0.085528589508979, +0.085528284058099, +0.085531622590777, +0.086380691080654, -0.914471380626588, +0.085528314959661, +0.085965709167916, }};
 
     dahl_shape2d shape = { .x = num_classes, .y = batch_size };
-    dahl_matrix* targets_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&targets);
-    dahl_matrix* predictions_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&predictions);
+    dahl_matrix_p* targets_vec_p = matrix_partition_along_y(
+            matrix_init_from(testing_arena, shape, (dahl_fp*)&targets),
+            DAHL_READ);
+
+    dahl_matrix_p* predictions_vec_p = matrix_partition_along_y(
+            matrix_init_from(testing_arena, shape, (dahl_fp*)&predictions),
+            DAHL_READ);
+
     dahl_matrix* expect_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&expect);
 
-    dahl_matrix* gradient = task_cross_entropy_loss_gradient_batch_init(testing_arena, predictions_vec, targets_vec);
+    dahl_matrix_p* gradient_p = task_cross_entropy_loss_gradient_batch_init(testing_arena, predictions_vec_p, targets_vec_p);
 
-    ASSERT_MATRIX_EQUALS_ROUND(expect_vec, gradient, 15);
+    ASSERT_MATRIX_EQUALS_ROUND(expect_vec, matrix_unpartition(gradient_p), 15);
 
     dahl_arena_reset(testing_arena);
 }
@@ -1554,27 +1560,27 @@ void test_redux_sum()
 
     dahl_scalar* redux = scalar_init_redux(testing_arena);
 
-    matrix_partition_along_y(mat, DAHL_READ);
+    dahl_matrix_p* mat_p = matrix_partition_along_y(mat, DAHL_READ);
 
     for (size_t y = 0; y < ny; y++)
     {
-        TASK_SUM(GET_SUB_VECTOR(mat, y), redux);
+        TASK_SUM(GET_SUB_VECTOR(mat_p, y), redux);
     }
 
-    matrix_unpartition(mat);
+    matrix_unpartition(mat_p);
 
     dahl_scalar* expect = scalar_init_from(testing_arena, 920);
     ASSERT_SCALAR_EQUALS(expect, redux);
 
     // Of course reusing the same redux variable still accumulates the results
-    matrix_partition_along_y(mat, DAHL_READ);
+    mat_p = matrix_partition_along_y(mat, DAHL_READ);
 
     for (size_t y = 0; y < ny; y++)
     {
-        TASK_SUM(GET_SUB_VECTOR(mat, y), redux);
+        TASK_SUM(GET_SUB_VECTOR(mat_p, y), redux);
     }
 
-    matrix_unpartition(mat);
+    matrix_unpartition(mat_p);
 
     expect = scalar_init_from(testing_arena, 1840);
     ASSERT_SCALAR_EQUALS(expect, redux);
@@ -1699,24 +1705,24 @@ void test_redux_convolution_2d_backward_filters()
     dahl_shape4d shape = { .x = 3, .y = 3, .z = 2, .t = n_samples };
     dahl_tensor* out = tensor_init(testing_arena, shape);
 
-    tensor_partition_along_t(a, DAHL_READ);
-    block_partition_along_z(b, DAHL_READ);
-    tensor_partition_along_t(out, DAHL_REDUX);
+    dahl_tensor_p* a_p = tensor_partition_along_t(a, DAHL_READ);
+    dahl_block_p* b_p = block_partition_along_z(b, DAHL_READ);
+    dahl_tensor_p* out_p = tensor_partition_along_t(out, DAHL_REDUX);
 
     for (size_t i = 0; i < n_samples; i++)
     {
-        dahl_block const* a_block = GET_SUB_BLOCK(a, i);
-        dahl_matrix const* b_mat = GET_SUB_MATRIX(b, i);
-        dahl_block* out_block_redux = GET_SUB_BLOCK_MUT(out, i);
+        dahl_block const* a_block = GET_SUB_BLOCK(a_p, i);
+        dahl_matrix const* b_mat = GET_SUB_MATRIX(b_p, i);
+        dahl_block* out_block_redux = GET_SUB_BLOCK_MUT(out_p, i);
 
         // Pretend we do mulitple backward, the two functions results should accumulate correctly
         task_convolution_2d_backward_filters(a_block, b_mat, out_block_redux);
         task_convolution_2d_backward_filters(a_block, b_mat, out_block_redux);
     }
 
-    tensor_unpartition(a);
-    block_unpartition(b);
-    tensor_unpartition(out);
+    tensor_unpartition(a_p);
+    block_unpartition(b_p);
+    tensor_unpartition(out_p);
 
     ASSERT_TENSOR_EQUALS(expect_conv, out);
 

@@ -12,10 +12,33 @@ typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_vector dahl_vector;
 typedef struct _dahl_scalar dahl_scalar;
 
-typedef struct _dahl_partition dahl_partition;
+// Objects in the partioned state.
+typedef struct _dahl_tensor_p dahl_tensor_p;
+typedef struct _dahl_block_p dahl_block_p;
+typedef struct _dahl_matrix_p dahl_matrix_p;
+
+// Diferent kind of partition types
+typedef enum 
+{
+    // Tensor partitions
+    TENSOR_PARTITION_ALONG_T,
+    TENSOR_PARTITION_ALONG_T_BATCH,
+    // Block partitions
+    BLOCK_PARTITION_ALONG_Z,
+    BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES,
+    BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS,
+    BLOCK_PARTITION_ALONG_Z_BATCH,
+    BLOCK_PARTITION_FLATTEN_TO_VECTOR,
+    // Matrix partitions
+    MATRIX_PARTITION_ALONG_Y,
+    MATRIX_PARTITION_ALONG_Y_BATCH,
+    // Special partition used for fake partitions
+    FAKE_PARTITION
+} dahl_partition_type;
 
 // Using a trait mechanism to group functions together
 typedef const struct _dahl_traits dahl_traits;
+typedef const struct _dahl_traits_p dahl_traits_p;
 
 // Here we define our different traits associated to each types.
 // Those structures contains references to the implementation of each function matching with the correct type.
@@ -25,7 +48,11 @@ extern dahl_traits dahl_traits_matrix;
 extern dahl_traits dahl_traits_vector;
 extern dahl_traits dahl_traits_scalar;
 
-// Get the traits structure of an object at compile time.
+extern dahl_traits_p dahl_traits_tensor_p;
+extern dahl_traits_p dahl_traits_block_p;
+extern dahl_traits_p dahl_traits_matrix_p;
+
+// Get the traits of a dahl data structure at compile time.
 // It is useful to infer an object type.
 #define GET_TRAITS(OBJECT) _Generic((OBJECT), \
     dahl_tensor*: &dahl_traits_tensor,        \
@@ -38,6 +65,16 @@ extern dahl_traits dahl_traits_scalar;
     dahl_matrix const*: &dahl_traits_matrix,  \
     dahl_vector const*: &dahl_traits_vector,  \
     dahl_scalar const*: &dahl_traits_scalar   \
+)
+
+// Get the traits of a partitioned dahl data structure at compile time.
+#define GET_TRAITS_P(OBJECT) _Generic((OBJECT),  \
+    dahl_tensor_p*: &dahl_traits_tensor_p,       \
+    dahl_block_p* : &dahl_traits_block_p,        \
+    dahl_matrix_p*: &dahl_traits_matrix_p,       \
+    dahl_tensor_p const*: &dahl_traits_tensor_p, \
+    dahl_block_p  const*: &dahl_traits_block_p,  \
+    dahl_matrix_p const*: &dahl_traits_matrix_p  \
 )
 
 // Type comparison without taking into account const qualifiers
@@ -86,7 +123,7 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor);
 // 2. however the matrix comes already partitioned on Y axis with vector objects (flattened) that
 // follows the coherency of tensor childrens.
 // 3. no need to unpartition the matrix, it is fake.
-dahl_matrix* tensor_flatten_along_t_no_copy_partition(dahl_tensor const* tensor);
+dahl_matrix_p* tensor_flatten_along_t_no_copy_partition(dahl_tensor_p* tensor);
 
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
@@ -107,12 +144,12 @@ void tensor_release(dahl_tensor const*);
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the tensor itself cannot be used as long as it is partitioned.
-void tensor_partition_along_t(dahl_tensor const*, dahl_access);
+dahl_tensor_p* tensor_partition_along_t(dahl_tensor*, dahl_access);
 
-void tensor_partition_along_t_batch(dahl_tensor const*, dahl_access, size_t batch_size);
+dahl_tensor_p* tensor_partition_along_t_batch(dahl_tensor*, dahl_access, size_t batch_size);
 
 // Unpartition a tensor
-void tensor_unpartition(dahl_tensor const*);
+dahl_tensor* tensor_unpartition(dahl_tensor_p*);
 
 // Print a tensor
 void tensor_print(dahl_tensor const*);
@@ -175,25 +212,25 @@ void block_release(dahl_block const*);
 // Partition data along z axis, the sub matrices can then be accesed with `GET_SUB_MATRIX`.
 // Exactly creates z sub matrices, so `GET_NB_CHILDREN` should be equal to z.
 // Note the the block itself cannot be used as long as it is partitioned.
-void block_partition_along_z(dahl_block const*, dahl_access);
+dahl_block_p* block_partition_along_z(dahl_block*, dahl_access);
 
 // Same that `block_partition_along_z` but actually produces flattened matrices of the matrices on x,y.
 // Chose wether the flattened matrices are row matrices or column matrices with `is_row`.
 // Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
-void block_partition_along_z_flat_matrices(dahl_block const*, dahl_access, bool is_row);
+dahl_block_p* block_partition_along_z_flat_matrices(dahl_block*, dahl_access, bool is_row);
 
 // Same that `block_partition_along_z` but actually produces flattened vectors of the matrices on x,y.
 // Exactly creates z sub vectors, so `GET_NB_CHILDREN` should be equal to z.
-void block_partition_along_z_flat_vectors(dahl_block const*, dahl_access);
+dahl_block_p* block_partition_along_z_flat_vectors(dahl_block*, dahl_access);
 
-void block_partition_flatten_to_vector(dahl_block const*, dahl_access);
+dahl_block_p* block_partition_flatten_to_vector(dahl_block*, dahl_access);
 
 // Partition along z but by batch, so it creates sub blocks.
 // TODO: support or return an error if the batch size does not divide properly the block
-void block_partition_along_z_batch(dahl_block const*, dahl_access, size_t batch_size);
+dahl_block_p* block_partition_along_z_batch(dahl_block*, dahl_access, size_t batch_size);
 
 // Unpartition a block
-void block_unpartition(dahl_block const*);
+dahl_block* block_unpartition(dahl_block_p*);
 
 // Print a block
 void block_print(dahl_block const*);
@@ -242,7 +279,7 @@ void matrix_set_from(dahl_matrix*, dahl_fp const* data);
 // You should stop using the matrix after calling this function because no coherency/synchronization is guaranteed.
 dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const*, dahl_shape4d new_shape);
 
-dahl_tensor* matrix_to_tensor_no_copy_partition(dahl_matrix const* matrix, dahl_shape4d new_shape);
+dahl_tensor_p* matrix_to_tensor_no_copy_partition(dahl_matrix_p* matrix, dahl_shape4d new_shape);
 
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
@@ -267,16 +304,16 @@ void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const*
 // Partition data along y axis, the sub vectors can then be accesed with `GET_SUB_VECTOR`.
 // Exactly creates y sub vectors, so `GET_NB_CHILDREN` should be equal to y.
 // Note the the vector itself cannot be used as long as it is partitioned.
-void matrix_partition_along_y(dahl_matrix const*, dahl_access);
+dahl_matrix_p* matrix_partition_along_y(dahl_matrix*, dahl_access);
 
 // Partition data along y axis, and produces sub matrices of shape (x, y / batch_size).
 // Exactly creates y / batch_size sub matrices that can be accessed with `GET_SUB_MATRIX`.
 // Note the the vector itself cannot be used as long as it is partitioned.
 // TODO: support or return an error if the batch size does not divide properly the matrix
-void matrix_partition_along_y_batch(dahl_matrix const*, dahl_access, size_t batch_size);
+dahl_matrix_p* matrix_partition_along_y_batch(dahl_matrix*, dahl_access, size_t batch_size);
 
 // Unpartition a matrix
-void matrix_unpartition(dahl_matrix const*);
+dahl_matrix* matrix_unpartition(dahl_matrix_p*);
 
 // Print a matrix
 void matrix_print(dahl_matrix const*);
@@ -369,35 +406,40 @@ dahl_fp scalar_get_value(dahl_scalar const* scalar);
 void scalar_set_value(dahl_scalar* scalar, dahl_fp value);
 bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, int8_t const precision);
 void scalar_print(dahl_scalar const* scalar);
-// ---------------------------------------- PARTITION ----------------------------------------
 
-size_t get_nb_children(void const* object, dahl_traits* traits);
+// ---------------------------------------- PARTITIONED TYPES ----------------------------------------
 
-dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits);
-dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits* traits);
+// These functions can only be called using partitioned data structures.
+size_t get_nb_children(void const* object, dahl_traits_p* traits);
 
-dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits* traits);
-dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits* traits);
+dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits_p* traits);
+dahl_tensor* get_sub_tensor_mut(void* object, size_t index, dahl_traits_p* traits);
 
-dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits* traits);
-dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits* traits);
+dahl_block const* get_sub_block(void const* object, size_t index, dahl_traits_p* traits);
+dahl_block* get_sub_block_mut(void* object, size_t index, dahl_traits_p* traits);
 
-dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits* traits);
-dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits);
+dahl_matrix const* get_sub_matrix(void const* object, size_t index, dahl_traits_p* traits);
+dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits_p* traits);
 
-#define GET_NB_CHILDREN(OBJECT) get_nb_children(OBJECT, GET_TRAITS(OBJECT))
+dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits_p* traits);
+dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits_p* traits);
 
-#define GET_SUB_TENSOR(OBJECT, INDEX) get_sub_tensor(OBJECT, INDEX, GET_TRAITS(OBJECT))
-#define GET_SUB_TENSOR_MUT(OBJECT, INDEX) get_sub_tensor_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+void reactivate_partition(void* object, dahl_traits_p* traits);
 
-#define GET_SUB_BLOCK(OBJECT, INDEX) get_sub_block(OBJECT, INDEX, GET_TRAITS(OBJECT))
-#define GET_SUB_BLOCK_MUT(OBJECT, INDEX) get_sub_block_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_NB_CHILDREN(OBJECT) get_nb_children(OBJECT, GET_TRAITS_P(OBJECT))
 
-#define GET_SUB_MATRIX(OBJECT, INDEX) get_sub_matrix(OBJECT, INDEX, GET_TRAITS(OBJECT))
-#define GET_SUB_MATRIX_MUT(OBJECT, INDEX) get_sub_matrix_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_TENSOR(OBJECT, INDEX) get_sub_tensor(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+#define GET_SUB_TENSOR_MUT(OBJECT, INDEX) get_sub_tensor_mut(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
 
-#define GET_SUB_VECTOR(OBJECT, INDEX) get_sub_vector(OBJECT, INDEX, GET_TRAITS(OBJECT))
-#define GET_SUB_VECTOR_MUT(OBJECT, INDEX) get_sub_vector_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
+#define GET_SUB_BLOCK(OBJECT, INDEX) get_sub_block(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+#define GET_SUB_BLOCK_MUT(OBJECT, INDEX) get_sub_block_mut(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
 
+#define GET_SUB_MATRIX(OBJECT, INDEX) get_sub_matrix(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+#define GET_SUB_MATRIX_MUT(OBJECT, INDEX) get_sub_matrix_mut(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+
+#define GET_SUB_VECTOR(OBJECT, INDEX) get_sub_vector(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+#define GET_SUB_VECTOR_MUT(OBJECT, INDEX) get_sub_vector_mut(OBJECT, INDEX, GET_TRAITS_P(OBJECT))
+
+#define REACTIVATE_PARTITION(OBJECT) reactivate_partition(OBJECT, GET_TRAITS_P(OBJECT))
 
 #endif //!DAHL_DATA_H

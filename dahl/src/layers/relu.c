@@ -9,38 +9,34 @@ dahl_relu* relu_init(dahl_arena* arena, dahl_shape4d input_shape)
     return relu;
 }
 
-void relu_forward(dahl_relu* relu, dahl_tensor* input_batch)
+void relu_forward(dahl_relu* relu, dahl_tensor_p* input_batch_p)
 {
-    // tensor_partition_along_t(input_batch, DAHL_MUT);
-    tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
-    size_t const batch_size = GET_NB_CHILDREN(input_batch);
+    dahl_tensor_p* mask_batch_p = tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
+    size_t const batch_size = GET_NB_CHILDREN(input_batch_p);
 
     for (size_t i = 0; i < batch_size; i++)
     {
-        dahl_block* input = GET_SUB_BLOCK_MUT(input_batch, i);
-        dahl_block* mask = GET_SUB_BLOCK_MUT(relu->mask_batch, i);
+        dahl_block* input = GET_SUB_BLOCK_MUT(input_batch_p, i);
+        dahl_block* mask = GET_SUB_BLOCK_MUT(mask_batch_p, i);
         TASK_RELU_SELF(input, mask);
     }
     
-    // tensor_unpartition(input_batch);
-    // tensor_unpartition(relu->mask_batch);
+    tensor_unpartition(mask_batch_p);
 }
 
-void relu_backward(dahl_relu* relu, dahl_tensor* dl_dout_batch)
+void relu_backward(dahl_relu* relu, dahl_tensor_p* dl_dout_batch_p)
 {
-    // tensor_partition_along_t(dl_dout_batch, DAHL_MUT);
-    // tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
-    size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);
+    dahl_tensor_p* mask_batch_p = tensor_partition_along_t(relu->mask_batch, DAHL_MUT);
+    size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch_p);
 
     for (size_t i = 0; i < batch_size; i++)
     {
-        dahl_block* dl_dout = GET_SUB_BLOCK_MUT(dl_dout_batch, i);
-        dahl_block* mask = GET_SUB_BLOCK_MUT(relu->mask_batch, i);
+        dahl_block* dl_dout = GET_SUB_BLOCK_MUT(dl_dout_batch_p, i);
+        dahl_block* mask = GET_SUB_BLOCK_MUT(mask_batch_p, i);
         // Multiply dl_dout by the mask so we only keep indexes where values were positive in the
         // forward pass.
         TASK_MUL_SELF(dl_dout, mask);
     }
     
-    // tensor_unpartition(dl_dout_batch);
-    tensor_unpartition(relu->mask_batch);
+    tensor_unpartition(mask_batch_p);
 }

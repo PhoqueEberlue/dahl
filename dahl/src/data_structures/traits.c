@@ -4,7 +4,6 @@
 dahl_traits dahl_traits_tensor = {
     .init_from_ptr = _tensor_init_from_ptr,
     .get_handle = _tensor_get_handle,
-    .get_partition = _tensor_get_current_partition,
     .get_nb_elem = _tensor_get_nb_elem,
     .print_file = _tensor_print_file,
     .get_is_redux = _tensor_get_is_redux,
@@ -15,7 +14,6 @@ dahl_traits dahl_traits_tensor = {
 dahl_traits dahl_traits_block = {
     .init_from_ptr = _block_init_from_ptr,
     .get_handle = _block_get_handle,
-    .get_partition = _block_get_current_partition,
     .get_nb_elem = _block_get_nb_elem,
     .print_file = _block_print_file,
     .get_is_redux = _block_get_is_redux,
@@ -26,7 +24,6 @@ dahl_traits dahl_traits_block = {
 dahl_traits dahl_traits_matrix = {
     .init_from_ptr = _matrix_init_from_ptr,
     .get_handle = _matrix_get_handle,
-    .get_partition = _matrix_get_current_partition,
     .get_nb_elem = _matrix_get_nb_elem,
     .print_file = _matrix_print_file,
     .get_is_redux = _matrix_get_is_redux,
@@ -37,7 +34,6 @@ dahl_traits dahl_traits_matrix = {
 dahl_traits dahl_traits_vector = {
     .init_from_ptr = _vector_init_from_ptr,
     .get_handle = _vector_get_handle,
-    .get_partition = nullptr, // Vectors cannot be partitioned
     .get_nb_elem = _vector_get_nb_elem,
     .print_file = _vector_print_file,
     .get_is_redux = _vector_get_is_redux,
@@ -49,10 +45,21 @@ dahl_traits dahl_traits_vector = {
 dahl_traits dahl_traits_scalar = {
     .init_from_ptr = nullptr, // No function for scalar
     .get_handle = _scalar_get_handle,
-    .get_partition = nullptr, // Scalars cannot be partitioned
     .get_nb_elem = _scalar_get_nb_elem, // Always 1
     .print_file = _scalar_print_file,
     .get_is_redux = _scalar_get_is_redux,
     .enable_redux = _scalar_enable_redux,
     .type = DAHL_SCALAR,
+};
+
+dahl_traits_p dahl_traits_tensor_p = {
+    .get_partition = _tensor_p_get_partition,
+};
+
+dahl_traits_p dahl_traits_block_p = {
+    .get_partition = _block_p_get_partition,
+};
+
+dahl_traits_p dahl_traits_matrix_p = {
+    .get_partition = _matrix_p_get_partition,
 };

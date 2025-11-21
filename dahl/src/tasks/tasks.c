@@ -820,36 +820,31 @@ void task_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vecto
     STARPU_CHECK_RETURN_VALUE(ret, "task_cross_entropy_loss_gradient_batch");
 }
 
-void task_cross_entropy_loss_gradient_batch(dahl_matrix const* prediction_batch, dahl_matrix const* target_batch, dahl_matrix* gradient_batch)
+void task_cross_entropy_loss_gradient_batch(dahl_matrix_p const* prediction_batch_p, dahl_matrix_p const* target_batch_p, dahl_matrix_p* gradient_batch_p)
 {
-    // matrix_partition_along_y(prediction_batch, DAHL_READ);
-    matrix_partition_along_y(target_batch, DAHL_READ);
-    matrix_partition_along_y(gradient_batch, DAHL_MUT);
-
-    size_t const batch_size = GET_NB_CHILDREN(gradient_batch);
+    size_t const batch_size = GET_NB_CHILDREN(gradient_batch_p);
 
     for (size_t i = 0; i < batch_size; i++)
     {
-        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
-        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
-        dahl_vector* gradients = GET_SUB_VECTOR_MUT(gradient_batch, i);
+        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch_p, i);
+        dahl_vector const* targets = GET_SUB_VECTOR(target_batch_p, i);
+        dahl_vector* gradients = GET_SUB_VECTOR_MUT(gradient_batch_p, i);
         task_cross_entropy_loss_gradient(predictions, targets, gradients);
 
         // Divide by batch_size
         TASK_DIV_VALUE_SELF(gradients, (dahl_fp)batch_size);
     }
-    
-    // matrix_unpartition(prediction_batch);
-    // matrix_unpartition(target_batch);
-    // matrix_unpartition(gradient_batch);
 }
 
-dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
-                                                                dahl_matrix const* target_batch)
+dahl_matrix_p* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix_p const* prediction_batch_p, 
+                                                                dahl_matrix_p const* target_batch_p)
 {
-    dahl_matrix* gradient_batch = matrix_init(arena, matrix_get_shape(target_batch));
-    task_cross_entropy_loss_gradient_batch(prediction_batch, target_batch, gradient_batch);
-    return gradient_batch;
+    dahl_matrix_p* gradient_batch_p = matrix_partition_along_y(
+            matrix_init(arena, matrix_get_shape(target_batch_p->ptr)), 
+            DAHL_MUT);
+
+    task_cross_entropy_loss_gradient_batch(prediction_batch_p, target_batch_p, gradient_batch_p);
+    return gradient_batch_p;
 }
 
 void task_convolution_2d(dahl_block const* in, dahl_block const* kernel, dahl_matrix* out)
