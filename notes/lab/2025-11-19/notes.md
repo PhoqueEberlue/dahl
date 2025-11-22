@@ -106,3 +106,10 @@ The other layers are pretty solid on the graph, it seems like this is a really g
 
 Now we just need to refactor loss,pred,grad and flatten layer so that the dense layer can use the
 same trick too.
+
+-> Flatten layer and gradient calculation have been refactored (./everything-parallelized.trace).
+We notice that everything works well, but two strange sleeps between respectively:
+- dense backward and pooling backward 
+- relu backward and conv backward
+
+This seems very weird because no dependecy should block it like this?
