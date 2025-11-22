@@ -11,7 +11,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
                    size_t batch_size, size_t num_samples)
 {
     dahl_arena* epoch_arena = dahl_arena_new();
-    dahl_arena* batch_arena = dahl_arena_new(); // will be reseted after each batch
+
+    dahl_arena* batch_arenas[2] = { dahl_arena_new(), dahl_arena_new() };
 
     dahl_tensor_p* train_images_p = tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
     dahl_matrix_p* train_labels_p = matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
@@ -30,6 +31,8 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
 
         for (size_t i = 0; i < n_batches_per_epoch; i++)
         {
+            dahl_arena* batch_arena = batch_arenas[i%2];
+
             dahl_tensor const* image_batch = GET_SUB_TENSOR(train_images_p, i);
             dahl_matrix const* target_batch = GET_SUB_MATRIX(train_labels_p, i);
 
@@ -58,13 +61,15 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_tensor_p* pool_back_p = pooling_backward(batch_arena, pool, dense_back_unflattened_p);
             relu_backward(relu, pool_back_p);
 
-            dahl_tensor* conv_back = convolution_backward(batch_arena, conv, pool_back_p, LEARNING_RATE, image_batch_p);
+            dahl_tensor_p* conv_back_p = convolution_backward(batch_arena, conv, pool_back_p, LEARNING_RATE, image_batch_p);
 
             tensor_unpartition(image_batch_p);
-            dahl_arena_reset(batch_arena);
-            dahl_arena_reset(scratch_arena);
-            dahl_shutdown();exit(0);
+
+            // Reset the previous arena
+            dahl_arena_reset(batch_arenas[(i+1)%2]);
+            // dahl_arena_reset(scratch_arena);
         }
+        dahl_shutdown();exit(0);
         
         dahl_fp epoch_accuracy = scalar_get_value(correct_predictions) / (dahl_fp)num_samples;
         // the loss already gets divided by batch size so here we divide only by number of batches

@@ -48,7 +48,7 @@ dahl_matrix_p* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_p
     for (size_t i = 0; i < batch_size; i++)
     {
         _dense_forward_sample(
-            dense->scratch_arena,
+            arena,
             GET_SUB_VECTOR(input_batch_p, i),
             GET_SUB_VECTOR_MUT(output_batch_p, i),
             dense->weights,
@@ -74,7 +74,7 @@ dahl_matrix_p* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_
 { 
 
     // Init redux accumulator for the dl_dw partial results in the batch
-    dahl_matrix* dl_dw_redux = matrix_init_redux(dense->scratch_arena, dense->weights_shape);
+    dahl_matrix* dl_dw_redux = matrix_init_redux(arena, dense->weights_shape);
 
     // Initializing the result buffer, representing the derivative of the forward input and
     // partition by batch
@@ -102,7 +102,7 @@ dahl_matrix_p* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_
 
     // Updating biases
     dahl_matrix* dl_dout_batch = matrix_unpartition(dl_dout_batch_p);
-    dahl_vector* summed_dl_dout = task_matrix_sum_y_axis_init(dense->scratch_arena, dl_dout_batch);
+    dahl_vector* summed_dl_dout = task_matrix_sum_y_axis_init(arena, dl_dout_batch);
     REACTIVATE_PARTITION(dl_dout_batch_p);
 
     // Then apply learning rate

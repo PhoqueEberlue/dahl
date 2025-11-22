@@ -128,10 +128,10 @@ dahl_tensor_p* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
                                  dahl_tensor_p const* input_batch_p)
 {
     // dl_dbiases is computed by summing over axes (x,y,t) to update the biases.
-    dahl_vector* dl_dbiases_redux = vector_init_redux(conv->scratch_arena, 
+    dahl_vector* dl_dbiases_redux = vector_init_redux(arena, 
             vector_get_len(conv->biases));
 
-    dahl_tensor* dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
+    dahl_tensor* dl_dfilters = tensor_init(arena, conv->filter_shape);
 
     // Initialize the result buffer, which is the derivative of the input we got from the forward 
     // pass, and partition along batch dimension
