@@ -407,6 +407,10 @@ void scalar_set_value(dahl_scalar* scalar, dahl_fp value);
 bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, int8_t const precision);
 void scalar_print(dahl_scalar const* scalar);
 
+// Helper to create a scalar on the fly by providing the value directly at the end of the macro.
+// Mostly here for coherency with other types.
+#define SCALAR(ARENA, VALUE) scalar_init_from(ARENA, VALUE)
+
 // ---------------------------------------- PARTITIONED TYPES ----------------------------------------
 
 // These functions can only be called using partitioned data structures.
