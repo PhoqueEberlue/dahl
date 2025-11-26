@@ -45,9 +45,8 @@ Under the hood, [StarPU](https://starpu.gitlabpages.inria.fr/) is used to suppor
 │   ├── alumet/      Alumet power measuring software
 │   └── starpu/      StarPU flake and dependencies
 ├── notes/
-│   ├── archives/
-│   ├── design/      Discussions concerning problems faced during implementation
-│   ├── flamegraphs/
+│   ├── design/      Discussions concerning implementation and design choices
+│   ├── experiments/ Experiments made with DAHL
 │   └── lab/         My laboratory notebook
 ├── python-version/  Pytorch equivalent of CNN implemented with DAHL
 ├── scripts/
