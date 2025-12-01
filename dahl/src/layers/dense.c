@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../data_structures/data_structures.h"
 
 dahl_dense* dense_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape2d const input_shape, size_t const out_features)
 {
@@ -39,6 +40,8 @@ void _dense_forward_sample(dahl_arena* arena,
 
 dahl_matrix_part* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_part const* input_batch)
 {
+    assert((*(input_batch->partition))->is_active);
+
     dahl_matrix* output_batch = matrix_init(arena, dense->output_shape);
 
     matrix_partition_along_y(output_batch, DAHL_MUT);
@@ -75,6 +78,8 @@ dahl_matrix_part* dense_backward(
         dahl_matrix_part const* dl_dout_batch, 
         dahl_matrix_part const* input_batch, dahl_fp const learning_rate)
 { 
+    assert((*(dl_dout_batch->partition))->is_active);
+    assert((*(input_batch->partition))->is_active);
 
     // Init redux accumulator for the dl_dw partial results in the batch
     dahl_matrix* dl_dw_redux = matrix_init_redux(arena, dense->weights_shape);

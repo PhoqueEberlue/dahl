@@ -1,6 +1,7 @@
 #include "../../include/dahl_layers.h"
 #include "starpu.h"
 #include <stdio.h>
+#include "../data_structures/data_structures.h"
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
 {
@@ -36,6 +37,7 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
 void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
                          dahl_tensor_part const* filters, dahl_vector const* biases)
 {
+    assert((*(filters->partition))->is_active);
     // Partition by the filter dimension, each iteration will tackle a feature map
     block_partition_along_z(output, DAHL_MUT);
 
@@ -62,6 +64,7 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
 
 dahl_tensor_part* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl_tensor_part const* input_batch)
 {
+    assert((*(input_batch->partition))->is_active);
     dahl_tensor* output_batch = tensor_init(arena, conv->output_shape);
 
     // Partition by batch dimension
@@ -93,6 +96,9 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
                                   dahl_fp const learning_rate, bool is_last_sample,
                                   size_t const num_filters)
 {
+    assert((*(dl_dfilters->partition))->is_active);
+    assert((*(filters->partition))->is_active);
+
     task_block_sum_xy_axes(dl_dout, dl_dbiases_redux);
 
     // Partition by channel dimension
@@ -128,6 +134,9 @@ dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv
                                  dahl_tensor_part const* dl_dout_batch, double const learning_rate,
                                  dahl_tensor_part const* input_batch)
 {
+    assert((*(dl_dout_batch->partition))->is_active);
+    assert((*(input_batch->partition))->is_active);
+
     // dl_dbiases is computed by summing over axes (x,y,t) to update the biases.
     dahl_vector* dl_dbiases_redux = vector_init_redux(arena, 
             vector_get_len(conv->biases));

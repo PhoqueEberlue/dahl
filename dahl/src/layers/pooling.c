@@ -2,6 +2,7 @@
 #include "starpu.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "../data_structures/data_structures.h"
 
 // Not much to init because most of the other fields need to be computed depending on input data.
 dahl_pooling* pooling_init(dahl_arena* arena, size_t const pool_size, dahl_shape4d const input_shape)
@@ -52,6 +53,8 @@ void _pooling_forward_sample(dahl_block const* input,
 
 dahl_tensor_part* pooling_forward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor_part const* input_batch)
 {
+    assert((*(input_batch->partition))->is_active);
+
     dahl_tensor_part* output_batch = tensor_init(arena, pool->output_shape);
 
     // partition along batch axis
@@ -102,6 +105,7 @@ void _pooling_backward_sample(dahl_block* dl_dinput, dahl_block const* mask,
 
 dahl_tensor_part* pooling_backward(dahl_arena* arena, dahl_pooling* pool, dahl_tensor_part const* dl_dout_batch)
 {
+    assert((*(dl_dout_batch->partition))->is_active);
 
     // Initialize the result buffer, which is the derivative of the input we got from the forward 
     // pass

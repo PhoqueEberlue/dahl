@@ -182,6 +182,8 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
 
 dahl_matrix_part* tensor_flatten_along_t_no_copy_partition(dahl_tensor_part* tensor)
 {
+    assert((*(tensor->partition))->is_active);
+
     // Initialize a matrix, just to hold the childrens
     dahl_shape4d shape = tensor_get_shape(tensor);
     dahl_shape2d new_shape = { .x = shape.x * shape.y * shape.z, .y = shape.t };
@@ -226,6 +228,7 @@ dahl_matrix_part* tensor_flatten_along_t_no_copy_partition(dahl_tensor_part* ten
 
     // Pretend the matrix is partitioned
     *matrix->partition = p;
+    p->is_active = true;
     return matrix;
 }
 

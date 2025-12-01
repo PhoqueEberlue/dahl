@@ -154,7 +154,9 @@ dahl_tensor_part* matrix_to_tensor_no_copy_partition(
         starpu_data_invalidate_submit(vector->handle);
     }
 
+    // Pretend the partition is active
     *tensor->partition = p;
+    p->is_active = true;
     return tensor;
 }
 

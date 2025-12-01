@@ -825,6 +825,10 @@ void task_cross_entropy_loss_gradient_batch(
         dahl_matrix_part const* target_batch,
         dahl_matrix_part* gradient_batch)
 {
+    assert((*(prediction_batch->partition))->is_active);
+    assert((*(target_batch->partition))->is_active);
+    assert((*(gradient_batch->partition))->is_active);
+
     size_t const batch_size = GET_NB_CHILDREN(gradient_batch);
 
     for (size_t i = 0; i < batch_size; i++)
