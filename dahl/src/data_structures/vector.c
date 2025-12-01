@@ -3,17 +3,14 @@
 #include "starpu_data.h"
 #include "starpu_data_interfaces.h"
 #include "../tasks/codelets.h"
+#include <stdio.h>
 
 void* _vector_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
-    // The vector cannot be partitioned so we don't allocate space for the partition list
-    metadata* md = dahl_arena_alloc(arena, sizeof(metadata));
-    md->current_partition = -1;
-    md->origin_arena = arena;
-
     dahl_vector* vector = dahl_arena_alloc(arena, sizeof(dahl_vector));
     vector->handle = handle;
     vector->data = data;
+    vector->origin_arena = arena;
     vector->is_redux = false;
 
     return vector;
@@ -172,6 +169,29 @@ bool vector_equals(dahl_vector const* a, dahl_vector const* b, bool const roundi
 
     vector_release(a);
     vector_release(b);
+
+    return res;
+}
+
+dahl_block* vector_to_block_no_copy(dahl_vector const* vector, dahl_shape3d const new_shape)
+{
+    size_t len = vector_get_len(vector);
+    assert(len == new_shape.x * new_shape.y * new_shape.z);
+
+    // Registers our vector data as a block (with new shape), handle will be attached to the
+    // vector's origin arena.
+    starpu_data_handle_t handle = _block_data_register(
+            vector->origin_arena, new_shape, vector->data);
+    
+    dahl_block* res = _block_init_from_ptr(vector->origin_arena, handle, vector->data);
+
+    // Here we use the same trick when doing manual partitioning:
+    // Use cl_switch to force data refresh in our new handle from the vector handle
+	int ret = starpu_task_insert(&cl_switch, STARPU_RW, vector->handle, STARPU_W, handle, 0);
+	STARPU_CHECK_RETURN_VALUE(ret, "vector_flatten_along_t_no_copy");
+
+    // Then deactivate the vector handle
+    starpu_data_invalidate_submit(vector->handle);
 
     return res;
 }

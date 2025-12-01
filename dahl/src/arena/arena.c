@@ -15,6 +15,9 @@
 #define NMAX_PARTITIONS 500000
 
 // Redifinition of dahl_partition with only the children handles and the parent data handle
+// FIX: later we can simply replace _partition with dahl_partition because they contain the same
+// fields. However we need to find how to import dahl_partition, because dahl_partition also depends
+// on dahl_arena for some functions...
 typedef struct
 {
     starpu_data_handle_t main_handle;

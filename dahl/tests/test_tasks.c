@@ -417,7 +417,7 @@ void test_power()
     dahl_arena_reset(testing_arena);
 }
 
-void test_divide()
+void test_div_value()
 {
     dahl_shape3d a_shape = { .x = 4, .y = 3, .z = 2 };
     dahl_shape3d expect_shape = a_shape;
@@ -451,7 +451,7 @@ void test_divide()
     dahl_block* a_block = block_init_from(testing_arena, a_shape, (dahl_fp*)&a);
     dahl_block* expect_block = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect);
 
-    TASK_DIVIDE_SELF(a_block, 2e0);
+    TASK_DIV_VALUE_SELF(a_block, 2e0);
     ASSERT_BLOCK_EQUALS(expect_block, a_block);
 
     dahl_arena_reset(testing_arena);
@@ -918,10 +918,14 @@ void test_cross_entropy_loss_gradient_batch()
 
     dahl_shape2d shape = { .x = num_classes, .y = batch_size };
     dahl_matrix* targets_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&targets);
+    matrix_partition_along_y(targets_vec, DAHL_READ);
+
     dahl_matrix* predictions_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&predictions);
+    matrix_partition_along_y(predictions_vec, DAHL_READ);
+
     dahl_matrix* expect_vec = matrix_init_from(testing_arena, shape, (dahl_fp*)&expect);
 
-    dahl_matrix* gradient = task_cross_entropy_loss_gradient_batch_init(testing_arena, predictions_vec, targets_vec);
+    dahl_matrix_part* gradient = task_cross_entropy_loss_gradient_batch_init(testing_arena, predictions_vec, targets_vec);
 
     ASSERT_MATRIX_EQUALS_ROUND(expect_vec, gradient, 15);
 
@@ -1660,6 +1664,8 @@ void test_redux_convolution_2d_backward_filters()
             { 1, 0, 1 },
             { 0, 1, 0 },
             { 1, 0, 1 },
+            { 0, 1, 0 },
+            { 1, 0, 1 },
         },
         {
             { 1, 0, 1 },
@@ -1871,7 +1877,7 @@ void test_tasks()
     test_relu_backward();
     test_scal();
     test_power();
-    test_divide();
+    test_div_value();
     test_sub();
     test_add();
     test_mul();

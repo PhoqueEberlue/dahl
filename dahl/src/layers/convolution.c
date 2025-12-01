@@ -1,5 +1,7 @@
 #include "../../include/dahl_layers.h"
+#include "starpu.h"
 #include <stdio.h>
+#include "../data_structures/data_structures.h"
 
 dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena, dahl_shape4d input_shape, size_t filter_size, size_t num_filters)
 {
@@ -33,8 +35,9 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
 
 // Apply the forward pass to a sample
 void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
-                         dahl_tensor const* filters, dahl_vector const* biases)
+                         dahl_tensor_part const* filters, dahl_vector const* biases)
 {
+    assert((*(filters->partition))->is_active);
     // Partition by the filter dimension, each iteration will tackle a feature map
     block_partition_along_z(output, DAHL_MUT);
 
@@ -59,14 +62,13 @@ void _convolution_forward_sample(dahl_block* output, dahl_block const* input,
     block_unpartition(output);
 }
 
-dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl_tensor const* input_batch)
+dahl_tensor_part* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl_tensor_part const* input_batch)
 {
-    // Initialize the result tensor
+    assert((*(input_batch->partition))->is_active);
     dahl_tensor* output_batch = tensor_init(arena, conv->output_shape);
-    
+
     // Partition by batch dimension
     tensor_partition_along_t(output_batch, DAHL_MUT);
-    tensor_partition_along_t(input_batch, DAHL_READ);
 
     // Partition the filters already here to prevent synchronization in the sample functions
     tensor_partition_along_t(conv->filters, DAHL_READ);
@@ -81,39 +83,43 @@ dahl_tensor* convolution_forward(dahl_arena* arena, dahl_convolution* conv, dahl
             GET_SUB_BLOCK(input_batch, i), 
             conv->filters, conv->biases); 
     }
-    
-    tensor_unpartition(output_batch);
-    tensor_unpartition(input_batch);
+
     tensor_unpartition(conv->filters);
 
+    // Leave output batch partitioned, and return
     return output_batch;
 }
 
 void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* input, 
-                                  dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters,
-                                  dahl_tensor const* filters, bool first_sample)
+                                  dahl_block* dl_dinput_redux, dahl_tensor_part* dl_dfilters,
+                                  dahl_tensor_part const* filters, dahl_vector* dl_dbiases_redux,
+                                  dahl_fp const learning_rate, bool is_last_sample,
+                                  size_t const num_filters)
 {
-    dahl_shape4d filters_shape = tensor_get_shape(filters);
+    assert((*(dl_dfilters->partition))->is_active);
+    assert((*(filters->partition))->is_active);
+
+    task_block_sum_xy_axes(dl_dout, dl_dbiases_redux);
 
     // Partition by channel dimension
     block_partition_along_z(input, DAHL_READ);
     block_partition_along_z(dl_dout, DAHL_READ);
-
-    size_t const num_filters = filters_shape.t; // Output channels
-
+    
     for (size_t f = 0; f < num_filters; f++)
     {
         dahl_matrix const* dl_dout_filter = GET_SUB_MATRIX(dl_dout, f);
         dahl_block* dl_df_redux = GET_SUB_BLOCK_MUT(dl_dfilters, f);
-        // Enable redux for sub blocks of dl_dfilters so that results gets accumulated between each
-        // batch. Only required of the first sample, cause others will fill the same buffers.
-        // if (first_sample) { block_enable_redux(dl_df_redux); }
-
         task_convolution_2d_backward_filters(input, dl_dout_filter, dl_df_redux);
 
+        // Only scale on the last sample: (dl_df1 + df_df2...) * lr = dl_df1 * lr + dl_df2 * lr...
+        // but dl_dfx results are aggregated from multiple samples for each filter, that's why we
+        // only call for the last one.
+        if (is_last_sample) { TASK_SCAL_SELF(dl_df_redux, learning_rate); }
+
         // This computation is only required when the conv layer is not the first one in the network
-        dahl_block const* filter = GET_SUB_BLOCK(filters, f);
-        task_convolution_2d_backward_input_padding_free(dl_dout_filter, filter, dl_dinput_redux);
+        // TODO: See why redux for this task produces weird scheduling
+        // dahl_block const* filter = GET_SUB_BLOCK(filters, f);
+        // task_convolution_2d_backward_input_padding_free(dl_dout_filter, filter, dl_dinput_redux);
     }
 
     block_unpartition(input);
@@ -124,28 +130,30 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
 // layer is the first one we don't need to, otherwise we do.
 // OR, simply implement another function that returns void?
 // because otherwise we have to return null? idk
-dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
-                                 dahl_tensor const* dl_dout_batch, double const learning_rate,
-                                 dahl_tensor const* input_batch)
+dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv, 
+                                 dahl_tensor_part const* dl_dout_batch, double const learning_rate,
+                                 dahl_tensor_part const* input_batch)
 {
-    // Can already compute dl_dbiases by summing over axes (x,y,t) to update the biases.
-    dahl_vector* dl_dbiases = task_tensor_sum_xyt_axes_init(conv->scratch_arena, dl_dout_batch);
-    TASK_SCAL_SELF(dl_dbiases, learning_rate);
-    TASK_SUB_SELF(conv->biases, dl_dbiases);
+    assert((*(dl_dout_batch->partition))->is_active);
+    assert((*(input_batch->partition))->is_active);
 
-    // Initialize the result buffer, which is the derivative of the input we got from the forward pass
-    dahl_tensor* dl_dinput_batch_redux = tensor_init_redux(arena, conv->input_shape);
+    // dl_dbiases is computed by summing over axes (x,y,t) to update the biases.
+    dahl_vector* dl_dbiases_redux = vector_init_redux(arena, 
+            vector_get_len(conv->biases));
 
-    dahl_tensor* dl_dfilters = tensor_init(conv->scratch_arena, conv->filter_shape);
+    dahl_tensor* dl_dfilters = tensor_init(arena, conv->filter_shape);
 
-    // Partition by batch dimension
-    tensor_partition_along_t(dl_dout_batch, DAHL_READ);
-    tensor_partition_along_t(input_batch, DAHL_READ);
-    tensor_partition_along_t(dl_dinput_batch_redux, DAHL_REDUX);
+    // Initialize the result buffer, which is the derivative of the input we got from the forward 
+    // pass, and partition along batch dimension
+    dahl_tensor* dl_dinput_batch = tensor_init(arena, conv->input_shape);
 
-    // Already partition the filters (over feature maps: num_filters) because they will be accessed in every batches
+    // Partition over batch dimension
+    tensor_partition_along_t(dl_dinput_batch, DAHL_REDUX);
+
+    // Already partition the filters (over feature maps: num_filters) because they will be accessed
+    // in every batches
     tensor_partition_along_t(conv->filters, DAHL_READ);
-    tensor_partition_along_t(dl_dfilters, DAHL_MUT);
+    tensor_partition_along_t(dl_dfilters, DAHL_REDUX);
 
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);  
 
@@ -154,20 +162,23 @@ dahl_tensor* convolution_backward(dahl_arena* arena, dahl_convolution* conv,
         _convolution_backward_sample(
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
-            GET_SUB_BLOCK_MUT(dl_dinput_batch_redux, i),
+            GET_SUB_BLOCK_MUT(dl_dinput_batch, i),
             dl_dfilters,
             conv->filters,
-            i==0);
+            dl_dbiases_redux,
+            learning_rate,
+            i==batch_size-1,
+            conv->filter_shape.t);
     }
 
-    tensor_unpartition(dl_dout_batch);
-    tensor_unpartition(input_batch);
-    tensor_unpartition(dl_dinput_batch_redux);
     tensor_unpartition(conv->filters);
     tensor_unpartition(dl_dfilters);
 
-    TASK_SCAL_SELF(dl_dfilters, learning_rate);
     TASK_SUB_SELF(conv->filters, dl_dfilters);
 
-    return dl_dinput_batch_redux;
+    TASK_SCAL_SELF(dl_dbiases_redux, learning_rate);
+    TASK_SUB_SELF(conv->biases, dl_dbiases_redux);
+
+    // Leave dl_dinput_batch partitioned, and return
+    return dl_dinput_batch;
 }

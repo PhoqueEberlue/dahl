@@ -126,28 +126,23 @@ extern "C" void cuda_cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
-static __global__ void cross_entropy_loss_gradient_batch(
-    struct starpu_matrix_interface const pred,
-    struct starpu_matrix_interface const targ,
-    struct starpu_matrix_interface const out)
+// TODO: refactor to unbatched version
+static __global__ void cross_entropy_loss_gradient(
+    struct starpu_vector_interface const pred,
+    struct starpu_vector_interface const targ,
+    struct starpu_vector_interface const out)
 {
     auto const pred_p = (const dahl_fp*)pred.ptr;
     auto const targ_p = (const dahl_fp*)targ.ptr;
     auto out_p = (dahl_fp*)out.ptr;
 
-    unsigned int y = blockIdx.x * blockDim.x + threadIdx.x;
-    if (y >= pred.ny)
-        return;
-
     const size_t num_classes = pred.nx;
-    const size_t ld = pred.ld;
-    const dahl_fp inv_batch = 1.0 / (dahl_fp)pred.ny;
 
     // Find max value in the prediction batch
-    dahl_fp max_pred = pred_p[y * ld];
+    dahl_fp max_pred = pred_p[0];
     for (size_t x = 1; x < num_classes; x++)
     {
-        dahl_fp val = pred_p[y * ld + x];
+        dahl_fp val = pred_p[x];
         if (val > max_pred)
             max_pred = val;
     }
@@ -155,39 +150,34 @@ static __global__ void cross_entropy_loss_gradient_batch(
     // Compute denominator of softmax
     dahl_fp sum_exp = 0.0;
     for (size_t x = 0; x < num_classes; x++)
-        sum_exp += exp(pred_p[(y * ld) + x] - max_pred);
+        sum_exp += exp(pred_p[x] - max_pred);
 
     // Softmax probabilities and gradient
     for (size_t x = 0; x < num_classes; x++)
-    {
-        dahl_fp p = exp(pred_p[(y * ld) + x] - max_pred) / sum_exp;
-        out_p[(y * ld) + x] = p * inv_batch;
-    }
+        out_p[x] = exp(pred_p[x] - max_pred) / sum_exp;
 
     // Finding the index of the true class because targ is in one-hot format
     size_t true_idx = 0;
     for (size_t x = 0; x < num_classes; x++)
     {
-        if (targ_p[(y * ld) + x] == 1.0)
+        if (targ_p[x] == 1.0)
         {
             true_idx = x;
             break;
         }
     }
 
-    out_p[(y * ld) + true_idx] -= inv_batch;
+    // Subtract 1 for the true class
+    out_p[true_idx] -= 1.0F;
 }
 
-extern "C" void cuda_cross_entropy_loss_gradient_batch(void* buffers[3], void* cl_arg)
+extern "C" void cuda_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
 {
-    auto pred = STARPU_MATRIX_GET(buffers[0]);
-    auto targ = STARPU_MATRIX_GET(buffers[1]);
-    auto out  = STARPU_MATRIX_GET(buffers[2]);
+    auto pred = STARPU_VECTOR_GET(buffers[0]);
+    auto targ = STARPU_VECTOR_GET(buffers[1]);
+    auto out  = STARPU_VECTOR_GET(buffers[2]);
 
-    dim3 block(256);
-    dim3 grid((pred.ny + block.x - 1) / block.x);
-
-    cross_entropy_loss_gradient_batch<<<grid, block, 0, starpu_cuda_get_local_stream()>>>(
+    cross_entropy_loss_gradient<<<0, 0, 0, starpu_cuda_get_local_stream()>>>(
         pred, targ, out);
 
     dahl_cuda_check_error_and_sync();

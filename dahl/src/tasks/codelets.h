@@ -53,10 +53,7 @@ DEFINE_STARPU_CODELET(block_accumulate, 2, true, STARPU_RW|STARPU_COMMUTE, STARP
 
 // ---------------------------------------- MATRIX ----------------------------------------
 DEFINE_STARPU_CODELET(matrix_cross_correlation, 3, false, STARPU_R, STARPU_R, STARPU_W);
-// Here, STARPU_RW is required for the mask, even though we don't read data.
-// Using STARPU_W only lets STARPU assume that EVERYTHING will be replaced, however we simply mark
-// max indexes with 1, the rest being untouched.
-DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_RW, STARPU_W);
+DEFINE_STARPU_CODELET(matrix_max_pooling, 3, true, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_backward_max_pooling, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_matrix_product, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(matrix_sum_y_axis, 2, true, STARPU_R, STARPU_W);
@@ -85,7 +82,8 @@ DEFINE_STARPU_CODELET(scalar_accumulate, 2, false, STARPU_RW|STARPU_COMMUTE, STA
 // Codelets that can be used with any type
 DEFINE_STARPU_CODELET(any_relu, 3, true, STARPU_R, STARPU_W, STARPU_W);
 DEFINE_STARPU_CODELET(any_relu_backward, 3, true, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_scal, 2, true, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(any_scal, 2, true, STARPU_R, STARPU_REDUX);
+DEFINE_STARPU_CODELET(any_scal_self, 1, true, STARPU_RW);
 DEFINE_STARPU_CODELET(any_power, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_sub, 3, true, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(any_sub_self, 2, true, STARPU_R, STARPU_RW);
@@ -107,7 +105,7 @@ DEFINE_STARPU_CODELET(any_round, 2, true, STARPU_R, STARPU_W);
 // ---------------------------------------- ML Related ----------------------------------------
 DEFINE_STARPU_CODELET(check_predictions_batch, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(cross_entropy_loss_batch, 3, true, STARPU_R, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(cross_entropy_loss_gradient_batch, 3, true, STARPU_R, STARPU_R, STARPU_W);
+DEFINE_STARPU_CODELET(cross_entropy_loss_gradient, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d, 3, true, STARPU_R, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(convolution_2d_backward_filters, 3, true, STARPU_R, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 // DEFINE_STARPU_CODELET(convolution_2d_backward_input, 3, false, STARPU_R, STARPU_R, STARPU_W);

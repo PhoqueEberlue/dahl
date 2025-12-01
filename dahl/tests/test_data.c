@@ -426,14 +426,12 @@ void test_partition_reuse()
 
     dahl_vector* vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);
-
     matrix_unpartition(matrix);
 
-    matrix_partition_along_y(matrix, DAHL_MUT);
-
+    REACTIVATE_PARTITION(matrix);
+    
     vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);
-
     matrix_unpartition(matrix);
 
     ASSERT_MATRIX_EQUALS(expect_matrix, matrix);
@@ -497,12 +495,98 @@ void test_matrix_to_tensor_no_copy()
     dahl_arena_reset(testing_arena);
 }
 
-void test_block_read_jpeg()
+// Parent read, children read
+void test_partition_access_read_read()
 {
-    dahl_block* a = block_init(testing_arena, (dahl_shape3d){ .x = 1080, .y = 1440, .z = 3});
-    block_read_jpeg(a, "../datasets/big-fashion/images/1163.jpg"); 
+    dahl_matrix const* matrix = MATRIX(testing_arena, 2, 12, {
+        { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 }, 
+        { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
+    });
 
-    block_image_display(a, 1);
+    matrix_partition_along_y(matrix, DAHL_READ);
+
+    dahl_scalar* expects[2] = { SCALAR(testing_arena, 12), SCALAR(testing_arena, 48) };
+    dahl_scalar* expect = SCALAR(testing_arena, 60);
+
+    // Even when partitioned, we can access the matrix, and every tasks, including the ones on the
+    // sub vectors will be ran in parallel.
+    dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
+    {
+        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix, i);
+        dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
+        ASSERT_SCALAR_EQUALS(expects[i], sub_res);
+    }
+
+    ASSERT_SCALAR_EQUALS(expect, main_res);
+
+    matrix_unpartition(matrix);
+}
+
+// Parent write, children read
+void test_partition_access_write_read()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 2, 12, {
+        { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 }, 
+        { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
+    });
+
+    matrix_partition_along_y(matrix, DAHL_READ);
+
+    dahl_scalar* expects[2] = { SCALAR(testing_arena, 24), SCALAR(testing_arena, 96) };
+    dahl_scalar* expect = SCALAR(testing_arena, 120);
+
+    // Calling a task that modifies the main matrix, even though it is partitioned.
+    // Internally, StarPU will unpartition data, launch the task then partition again.
+    // So calling a write function will block tasks on sub vectors.
+    TASK_SCAL_SELF(matrix, 2);
+    dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
+    {
+        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix, i);
+        dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
+        ASSERT_SCALAR_EQUALS(expects[i], sub_res);
+    }
+
+    ASSERT_SCALAR_EQUALS(expect, main_res);
+
+    matrix_unpartition(matrix);
+}
+
+// Parent read and children write is not a possible state (in DAHL at least).
+// void test_partition_access_read_write()
+
+void test_partition_access_write_write()
+{
+    dahl_matrix* matrix = MATRIX(testing_arena, 2, 12, {
+        { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 }, 
+        { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
+    });
+
+    matrix_partition_along_y(matrix, DAHL_MUT);
+
+    dahl_scalar* expects[2] = { SCALAR(testing_arena, 48), SCALAR(testing_arena, 192) };
+    dahl_scalar* expect = SCALAR(testing_arena, 120);
+
+    // Calling a task that modifies the main matrix, even though it is partitioned.
+    // Internally, StarPU will unpartition data, launch the task then partition again.
+    // So calling a write function will block tasks on sub vectors.
+    TASK_SCAL_SELF(matrix, 2);
+    dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
+
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
+    {
+        dahl_vector* sub_vector = GET_SUB_VECTOR_MUT(matrix, i);
+        TASK_SCAL_SELF(sub_vector, 2);
+        dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
+        ASSERT_SCALAR_EQUALS(expects[i], sub_res);
+    }
+
+    ASSERT_SCALAR_EQUALS(expect, main_res);
+
+    matrix_unpartition(matrix);
 }
 
 void test_data()
@@ -519,5 +603,7 @@ void test_data()
     test_partition_reuse();
     test_tensor_flatten_along_t_no_copy();
     test_matrix_to_tensor_no_copy();
-    test_block_read_jpeg();
+    test_partition_access_read_read();
+    test_partition_access_write_read();
+    test_partition_access_write_write();
 }

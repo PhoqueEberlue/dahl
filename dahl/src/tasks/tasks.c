@@ -161,7 +161,7 @@ void task_matrix_max_pooling(dahl_matrix const* in, dahl_matrix* mask, dahl_matr
     int ret = starpu_task_insert(&cl_matrix_max_pooling,
                              STARPU_VALUE, &pool_size, sizeof(pool_size),
                              STARPU_R, in->handle,
-                             STARPU_RW, mask->handle, 
+                             STARPU_W, mask->handle, 
                              STARPU_W, out->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_matrix_max_pooling");
 }
@@ -518,15 +518,26 @@ void task_relu_backward(void const* input, void const* gradients, void* out, dah
 
 void task_scal(void const* in, void* out, dahl_fp factor, dahl_traits* traits)
 {
-    enum starpu_data_access_mode in_mode = (in == out)?STARPU_RW:STARPU_R; 
-    cl_any_scal.modes[0] = in_mode;
+    // Check and update mode if `c` is using redux mode.
+    enum starpu_data_access_mode out_mode = traits->get_is_redux(out)?STARPU_REDUX:STARPU_RW;
+    cl_any_scal.modes[1] = out_mode;
 
     size_t nb_elem = traits->get_nb_elem(out);
     int ret = starpu_task_insert(&cl_any_scal,
                                  STARPU_VALUE, &nb_elem, sizeof(nb_elem),
                                  STARPU_VALUE, &factor, sizeof(factor),
-                                 in_mode, traits->get_handle(in),
-                                 STARPU_W, traits->get_handle(out), 0);
+                                 STARPU_R, traits->get_handle(in),
+                                 out_mode, traits->get_handle(out), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "task_scal");
+}
+
+void task_scal_self(void* self, dahl_fp factor, dahl_traits* traits)
+{
+    size_t nb_elem = traits->get_nb_elem(self);
+    int ret = starpu_task_insert(&cl_any_scal_self,
+                                 STARPU_VALUE, &nb_elem, sizeof(nb_elem),
+                                 STARPU_VALUE, &factor, sizeof(factor),
+                                 STARPU_RW, traits->get_handle(self), 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_scal");
 }
 
@@ -800,19 +811,46 @@ dahl_scalar* task_cross_entropy_loss_batch_init(dahl_arena* arena, dahl_matrix c
     return res;
 }
 
-void task_cross_entropy_loss_gradient_batch(dahl_matrix const* predictions, dahl_matrix const* targets, dahl_matrix* gradients)
+void task_cross_entropy_loss_gradient(dahl_vector const* predictions, dahl_vector const* targets, dahl_vector* gradients)
 {
-    int ret = starpu_task_insert(&cl_cross_entropy_loss_gradient_batch,
+    int ret = starpu_task_insert(&cl_cross_entropy_loss_gradient,
                              STARPU_R, predictions->handle,
                              STARPU_R, targets->handle,
                              STARPU_W, gradients->handle, 0);
     STARPU_CHECK_RETURN_VALUE(ret, "task_cross_entropy_loss_gradient_batch");
 }
 
-dahl_matrix* task_cross_entropy_loss_gradient_batch_init(dahl_arena* arena, dahl_matrix const* prediction_batch, 
-                                                                dahl_matrix const* target_batch)
+void task_cross_entropy_loss_gradient_batch(
+        dahl_matrix_part const* prediction_batch,
+        dahl_matrix_part const* target_batch,
+        dahl_matrix_part* gradient_batch)
 {
-    dahl_matrix* gradient_batch = matrix_init(arena, matrix_get_shape(prediction_batch));
+    assert((*(prediction_batch->partition))->is_active);
+    assert((*(target_batch->partition))->is_active);
+    assert((*(gradient_batch->partition))->is_active);
+
+    size_t const batch_size = GET_NB_CHILDREN(gradient_batch);
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+        dahl_vector const* predictions = GET_SUB_VECTOR(prediction_batch, i);
+        dahl_vector const* targets = GET_SUB_VECTOR(target_batch, i);
+        dahl_vector* gradients = GET_SUB_VECTOR_MUT(gradient_batch, i);
+        task_cross_entropy_loss_gradient(predictions, targets, gradients);
+
+        // Divide by batch_size
+        TASK_DIV_VALUE_SELF(gradients, (dahl_fp)batch_size);
+    }
+}
+
+dahl_matrix_part* task_cross_entropy_loss_gradient_batch_init(
+        dahl_arena* arena,
+        dahl_matrix_part const* prediction_batch,
+        dahl_matrix_part const* target_batch)
+{
+    dahl_matrix* gradient_batch = matrix_init(arena, matrix_get_shape(target_batch));
+    matrix_partition_along_y(gradient_batch, DAHL_MUT);
+
     task_cross_entropy_loss_gradient_batch(prediction_batch, target_batch, gradient_batch);
     return gradient_batch;
 }

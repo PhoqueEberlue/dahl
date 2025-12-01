@@ -33,7 +33,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fsanitize=undefined")
 
 ### Traces
 
-Generate traces
+Generate traces (note that StarPU Debug mode should be enabled)
 ```bash
 STARPU_TRACE_BUFFER_SIZE=1028 STARPU_GENERATE_TRACE=1 STARPU_FXT_TRACE=1 STARPU_FXT_PREFIX=./traces ./executable
 ```
@@ -48,3 +48,7 @@ Display GANTT diagram of the tasks (env -u for wayland users)
 env -u WAYLAND_DISPLAY vite paje.trace & disown
 ```
 
+Generate a graph of the tasks
+```bash
+dot -Tpdf dag.dot -o output.pdf
+```

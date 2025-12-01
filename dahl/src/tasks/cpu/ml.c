@@ -112,69 +112,57 @@ void cross_entropy_loss_batch(void* buffers[3], void* cl_arg)
     *out = batch_loss / (dahl_fp)pred.ny;
 }
 
-void cross_entropy_loss_gradient_batch(void* buffers[3], void* cl_arg)
+void cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
 {
     // Predictions batch
-    auto pred = STARPU_MATRIX_GET(buffers[0]);
+    auto pred = STARPU_VECTOR_GET(buffers[0]);
     auto pred_p = (dahl_fp const*)pred.ptr;
 
     // Targets batch
-    auto targ = STARPU_MATRIX_GET(buffers[1]);
+    auto targ = STARPU_VECTOR_GET(buffers[1]);
     auto targ_p = (dahl_fp const*)targ.ptr;
 
     // Output by batch
-    auto out = STARPU_MATRIX_GET(buffers[2]);
+    auto out = STARPU_VECTOR_GET(buffers[2]);
     auto out_p = (dahl_fp*)out.ptr;
 
     assert(pred.nx == targ.nx);
-    assert(pred.ny == targ.ny);
     assert(pred.nx == out.nx);
-    assert(pred.ny == out.ny);
-    assert(pred.ld == targ.ld);
-    assert(pred.ld == out.ld);
 
     // Batch values are on y dimension, x contains the predictions per class
-    size_t const batch_size = pred.ny;
     size_t const num_classes = pred.nx;
 
-    // Loop through batch
-    for (int y = 0; y < batch_size; y++) {
+    dahl_fp max_pred = pred_p[0];
 
-        dahl_fp max_pred = pred_p[(y * pred.ld)];
-        // Find max value in the prediction batch
-        for (size_t x = 0; x < num_classes; x++) {
-            if (pred_p[(y * pred.ld) + x] > max_pred)
-            {
-                max_pred = pred_p[(y * pred.ld) + x];
-            }
-        }
-
-        // Compute denominator of softmax
-        dahl_fp sum_exp = 0.0F;
-        for (size_t x = 0; x < num_classes; x++) {
-            sum_exp += exp(pred_p[(y * pred.ld) + x] - max_pred);
-        }
-
-        // Softmax probabilities and gradient
-        for (size_t x = 0; x < num_classes; x++) {
-            dahl_fp p = exp(pred_p[(y * pred.ld) + x] - max_pred) / sum_exp;
-            out_p[(y * out.ld) + x] = p / (float)batch_size;
-        }
-
-        size_t index = 0;
-        // Finding the index of the true class because targ is in one-hot format
-        for (size_t x = 0; x < num_classes; x++)
-        {
-            if (targ_p[(y * targ.ld) + x] == 1.0F)
-            {
-                index = x;
-                continue;
-            }
-        }
-
-        // Subtract 1 for the true class
-        out_p[(y * out.ld) + index] -= 1.0F / (dahl_fp)batch_size;
+    // Find max value in the prediction batch
+    for (size_t x = 0; x < num_classes; x++)
+    {
+        if (pred_p[x] > max_pred)
+            max_pred = pred_p[x];
     }
+
+    // Compute denominator of softmax
+    dahl_fp sum_exp = 0.0F;
+    for (size_t x = 0; x < num_classes; x++)
+        sum_exp += exp(pred_p[x] - max_pred);
+
+    // Softmax probabilities and gradient
+    for (size_t x = 0; x < num_classes; x++)
+        out_p[x] = exp(pred_p[x] - max_pred) / sum_exp;
+
+    size_t index = 0;
+    // Finding the index of the true class because targ is in one-hot format
+    for (size_t x = 0; x < num_classes; x++)
+    {
+        if (targ_p[x] == 1.0F)
+        {
+            index = x;
+            continue;
+        }
+    }
+
+    // Subtract 1 for the true class
+    out_p[index] -= 1.0F;
 }
 
 void convolution_2d(void* buffers[3], void* cl_arg)

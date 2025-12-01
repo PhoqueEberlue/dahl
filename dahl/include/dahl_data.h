@@ -12,7 +12,31 @@ typedef struct _dahl_matrix dahl_matrix;
 typedef struct _dahl_vector dahl_vector;
 typedef struct _dahl_scalar dahl_scalar;
 
-typedef struct _dahl_partition dahl_partition;
+// Objects in the partioned state. Those types are just indicators for the user to precise that a
+// datastructure should be already partitioned. However, it does not ensure that the object is
+// actually partitioned, as implicit casting is allowed.
+typedef dahl_tensor dahl_tensor_part;
+typedef dahl_block dahl_block_part;
+typedef dahl_matrix dahl_matrix_part;
+
+// Diferent kind of partition types
+typedef enum 
+{
+    // Tensor partitions
+    TENSOR_PARTITION_ALONG_T,
+    TENSOR_PARTITION_ALONG_T_BATCH,
+    // Block partitions
+    BLOCK_PARTITION_ALONG_Z,
+    BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES,
+    BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS,
+    BLOCK_PARTITION_ALONG_Z_BATCH,
+    BLOCK_PARTITION_FLATTEN_TO_VECTOR,
+    // Matrix partitions
+    MATRIX_PARTITION_ALONG_Y,
+    MATRIX_PARTITION_ALONG_Y_BATCH,
+    // Special partition used for fake partitions
+    FAKE_PARTITION
+} dahl_partition_type;
 
 // Using a trait mechanism to group functions together
 typedef const struct _dahl_traits dahl_traits;
@@ -25,7 +49,7 @@ extern dahl_traits dahl_traits_matrix;
 extern dahl_traits dahl_traits_vector;
 extern dahl_traits dahl_traits_scalar;
 
-// Get the traits structure of an object at compile time.
+// Get the traits of a dahl data structure at compile time.
 // It is useful to infer an object type.
 #define GET_TRAITS(OBJECT) _Generic((OBJECT), \
     dahl_tensor*: &dahl_traits_tensor,        \
@@ -69,16 +93,28 @@ void block_read_jpeg(dahl_block* block, char const* filename);
 // This is a blocking function.
 void tensor_set_from(dahl_tensor*, dahl_fp const* data);
 
-// Get the value at index x,y,z,t. Requires to have acquired the tensor, either with `tensor_acquire()` or `tensor_acquire_mut()`.
+// Get the value at index x,y,z,t. Requires to have acquired the tensor, either with
+// `tensor_acquire()` or `tensor_acquire_mut()`.
 dahl_fp tensor_get_value(dahl_tensor const*, size_t x, size_t y, size_t z, size_t t);
 
-// Set `value` at index x,y,z,t. Requires to have mutably acquired the tensor with `tensor_acquire_mut()`.
+// Set `value` at index x,y,z,t. Requires to have mutably acquired the tensor with
+// `tensor_acquire_mut()`.
 void tensor_set_value(dahl_tensor*, size_t x, size_t y, size_t z, size_t t, dahl_fp value);
 
 // Flatten a tensor along the t dimension, producing a new matrix object of the shape (x*y*z, t).
-// No data is getting copied under the hood, and every new memory allocated (for the matrix object) will be in the same arena as the parent tensor.
-// You should stop using the tensor after calling this function because it's internal data is pointing to the same place as the matrix (that's why there is no copy) and the coherency is not managed.
-dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor);
+// No data is getting copied under the hood, and every new memory allocated (for the matrix object)
+// will be in the same arena as the parent tensor. You should stop using the tensor after calling
+// this function because it's internal data is pointing to the same place as the matrix (that's why
+// there is no copy) and the coherency is not managed.
+dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const*);
+
+// Does essentially the same thing as `tensor_flatten_along_t_no_copy` but:
+// 1. does not ensure the coherency of the matrix result. This means no synchronization is required
+// with the tensor.
+// 2. however the matrices come already partitioned on Y axis with vector objects (flattened) that
+// follows the coherency of tensor childrens.
+// 3. no need to unpartition the matrix, it is fake.
+dahl_matrix_part* tensor_flatten_along_t_no_copy_partition(dahl_tensor_part*);
 
 // Returns the tensor shape
 dahl_shape4d tensor_get_shape(dahl_tensor const*);
@@ -104,7 +140,7 @@ void tensor_partition_along_t(dahl_tensor const*, dahl_access);
 void tensor_partition_along_t_batch(dahl_tensor const*, dahl_access, size_t batch_size);
 
 // Unpartition a tensor
-void tensor_unpartition(dahl_tensor const*);
+void tensor_unpartition(dahl_tensor_part const*);
 
 // Print a tensor
 void tensor_print(dahl_tensor const*);
@@ -146,6 +182,8 @@ dahl_fp block_get_value(dahl_block const*, size_t x, size_t y, size_t z);
 // Set `value` at index x,y,z. Requires to have mutably acquired the block with `block_acquire_mut()`.
 void block_set_value(dahl_block*, size_t x, size_t y, size_t z, dahl_fp value);
 
+dahl_vector* block_flatten_no_copy(dahl_block const*);
+
 // Returns the block shape
 dahl_shape3d block_get_shape(dahl_block const*);
 
@@ -183,7 +221,7 @@ void block_partition_flatten_to_vector(dahl_block const*, dahl_access);
 void block_partition_along_z_batch(dahl_block const*, dahl_access, size_t batch_size);
 
 // Unpartition a block
-void block_unpartition(dahl_block const*);
+void block_unpartition(dahl_block_part const*);
 
 // Print a block
 void block_print(dahl_block const*);
@@ -232,6 +270,8 @@ void matrix_set_from(dahl_matrix*, dahl_fp const* data);
 // You should stop using the matrix after calling this function because no coherency/synchronization is guaranteed.
 dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const*, dahl_shape4d new_shape);
 
+dahl_tensor_part* matrix_to_tensor_no_copy_partition(dahl_matrix_part* matrix, dahl_shape4d new_shape);
+
 // Returns the matrix shape
 dahl_shape2d matrix_get_shape(dahl_matrix const*);
 
@@ -264,7 +304,7 @@ void matrix_partition_along_y(dahl_matrix const*, dahl_access);
 void matrix_partition_along_y_batch(dahl_matrix const*, dahl_access, size_t batch_size);
 
 // Unpartition a matrix
-void matrix_unpartition(dahl_matrix const*);
+void matrix_unpartition(dahl_matrix_part const*);
 
 // Print a matrix
 void matrix_print(dahl_matrix const*);
@@ -309,6 +349,8 @@ dahl_fp vector_get_value(dahl_vector const*, size_t index);
 
 // Set `value` at `index`. Requires to have mutably acquired the vector with `vector_acquire_mut()`.
 void vector_set_value(dahl_vector*, size_t index, dahl_fp value);
+
+dahl_block* vector_to_block_no_copy(dahl_vector const* vector, dahl_shape3d const new_shape);
 
 // Set values of the `vector` from an array `data` that should be of the same size.
 // This is a blocking function.
@@ -355,8 +397,14 @@ dahl_fp scalar_get_value(dahl_scalar const* scalar);
 void scalar_set_value(dahl_scalar* scalar, dahl_fp value);
 bool scalar_equals(dahl_scalar const* a, dahl_scalar const* b, bool const rounding, int8_t const precision);
 void scalar_print(dahl_scalar const* scalar);
-// ---------------------------------------- PARTITION ----------------------------------------
 
+// Helper to create a scalar on the fly by providing the value directly at the end of the macro.
+// Mostly here for coherency with other types.
+#define SCALAR(ARENA, VALUE) scalar_init_from(ARENA, VALUE)
+
+// ---------------------------------------- PARTITIONED TYPES ----------------------------------------
+
+// These functions can only be called using partitioned data structures.
 size_t get_nb_children(void const* object, dahl_traits* traits);
 
 dahl_tensor const* get_sub_tensor(void const* object, size_t index, dahl_traits* traits);
@@ -370,6 +418,8 @@ dahl_matrix* get_sub_matrix_mut(void* object, size_t index, dahl_traits* traits)
 
 dahl_vector const* get_sub_vector(void const* object, size_t index, dahl_traits* traits);
 dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits);
+
+void reactivate_partition(void const* object, dahl_traits* traits);
 
 #define GET_NB_CHILDREN(OBJECT) get_nb_children(OBJECT, GET_TRAITS(OBJECT))
 
@@ -385,5 +435,10 @@ dahl_vector* get_sub_vector_mut(void* object, size_t index, dahl_traits* traits)
 #define GET_SUB_VECTOR(OBJECT, INDEX) get_sub_vector(OBJECT, INDEX, GET_TRAITS(OBJECT))
 #define GET_SUB_VECTOR_MUT(OBJECT, INDEX) get_sub_vector_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
 
+#define REACTIVATE_PARTITION(OBJECT) reactivate_partition(OBJECT, GET_TRAITS(OBJECT))
+
+// For debug purposes
+void print_handle(void const* object, char const* name, dahl_traits* traits);
+#define PRINT_HANDLE(OBJECT) print_handle(OBJECT, #OBJECT, GET_TRAITS(OBJECT))
 
 #endif //!DAHL_DATA_H

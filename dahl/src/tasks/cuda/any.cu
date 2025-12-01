@@ -133,7 +133,7 @@ static __global__ void any_scal(size_t nb_elem, dahl_fp const* in, dahl_fp* out,
 {
     size_t index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_elem) return;
-    out[index] = in[index] * factor;
+    out[index] += in[index] * factor;
 }
 
 extern "C" void cuda_any_scal(void* buffers[2], void* cl_arg)
@@ -151,7 +151,29 @@ extern "C" void cuda_any_scal(void* buffers[2], void* cl_arg)
     any_scal<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(
             nb_elem, in, out, factor);
     dahl_cuda_check_error_and_sync();
+}
 
+static __global__ void any_scal_self(size_t nb_elem, dahl_fp* self, dahl_fp factor)
+{
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= nb_elem) return;
+    self[index] *= factor;
+}
+
+extern "C" void cuda_any_scal_self(void* buffers[1], void* cl_arg)
+{
+    size_t nb_elem;
+    dahl_fp factor;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem, &factor);
+
+    auto self = (dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+
+    int threadsPerBlock = 256;
+    int numBlocks = (nb_elem + threadsPerBlock - 1) / threadsPerBlock;
+
+    any_scal_self<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(
+            nb_elem, self, factor);
+    dahl_cuda_check_error_and_sync();
 }
 
 static __global__ void any_power(size_t nb_elem, dahl_fp const* in, dahl_fp* out, dahl_fp power)
