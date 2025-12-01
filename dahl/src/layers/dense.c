@@ -37,26 +37,27 @@ void _dense_forward_sample(dahl_arena* arena,
     TASK_ADD(partial_res, biases, output);
 }
 
-dahl_matrix_p* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_p const* input_batch_p)
+dahl_matrix_part* dense_forward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_part const* input_batch)
 {
-    dahl_matrix_p* output_batch_p = matrix_partition_along_y(
-            matrix_init(arena, dense->output_shape), 
-            DAHL_MUT);
+    dahl_matrix* output_batch = matrix_init(arena, dense->output_shape);
 
-    size_t const batch_size = GET_NB_CHILDREN(input_batch_p);
+    matrix_partition_along_y(output_batch, DAHL_MUT);
+
+    size_t const batch_size = GET_NB_CHILDREN(input_batch);
 
     for (size_t i = 0; i < batch_size; i++)
     {
         _dense_forward_sample(
             arena,
-            GET_SUB_VECTOR(input_batch_p, i),
-            GET_SUB_VECTOR_MUT(output_batch_p, i),
+            GET_SUB_VECTOR(input_batch, i),
+            GET_SUB_VECTOR_MUT(output_batch, i),
             dense->weights,
             dense->biases
         );
     }
 
-    return output_batch_p;
+    // Leave output_batch partitioned and return
+    return output_batch;
 }
 
 void _dense_backward_sample(dahl_vector const* dl_dout,
@@ -69,8 +70,10 @@ void _dense_backward_sample(dahl_vector const* dl_dout,
     task_vector_matrix_product(dl_dout, weights, dl_dinput);  
 }
 
-dahl_matrix_p* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_p const* dl_dout_batch_p, 
-                            dahl_matrix_p const* input_batch_p, dahl_fp const learning_rate)
+dahl_matrix_part* dense_backward(
+        dahl_arena* arena, dahl_dense* dense, 
+        dahl_matrix_part const* dl_dout_batch, 
+        dahl_matrix_part const* input_batch, dahl_fp const learning_rate)
 { 
 
     // Init redux accumulator for the dl_dw partial results in the batch
@@ -78,20 +81,21 @@ dahl_matrix_p* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_
 
     // Initializing the result buffer, representing the derivative of the forward input and
     // partition by batch
-    dahl_matrix_p* dl_dinput_batch_p = matrix_partition_along_y(
-            matrix_init(arena, dense->input_shape),
-            DAHL_MUT);
+    dahl_matrix* dl_dinput_batch = matrix_init(arena, dense->input_shape);
 
-    size_t const batch_size = GET_NB_CHILDREN(input_batch_p);
+    // Partition along the batch dimension
+    matrix_partition_along_y(dl_dinput_batch, DAHL_MUT);
+
+    size_t const batch_size = GET_NB_CHILDREN(input_batch);
     
     // Loop through each batch
     for (size_t i = 0; i < batch_size; i++)
     {
         _dense_backward_sample(
-            GET_SUB_VECTOR(dl_dout_batch_p, i),
-            GET_SUB_VECTOR(input_batch_p, i),
+            GET_SUB_VECTOR(dl_dout_batch, i),
+            GET_SUB_VECTOR(input_batch, i),
             dl_dw_redux,
-            GET_SUB_VECTOR_MUT(dl_dinput_batch_p, i),
+            GET_SUB_VECTOR_MUT(dl_dinput_batch, i),
             dense->weights
         );
     }
@@ -101,13 +105,14 @@ dahl_matrix_p* dense_backward(dahl_arena* arena, dahl_dense* dense, dahl_matrix_
     TASK_SUB_SELF(dense->weights, dl_dw_redux);
 
     // Updating biases
-    dahl_matrix* dl_dout_batch = matrix_unpartition(dl_dout_batch_p);
+    matrix_unpartition(dl_dout_batch);
     dahl_vector* summed_dl_dout = task_matrix_sum_y_axis_init(arena, dl_dout_batch);
-    REACTIVATE_PARTITION(dl_dout_batch_p);
+    REACTIVATE_PARTITION(dl_dout_batch);
 
     // Then apply learning rate
     TASK_SCAL_SELF(summed_dl_dout, learning_rate);
     TASK_SUB_SELF(dense->biases, summed_dl_dout);
 
-    return dl_dinput_batch_p;
+    // leave dl_dinput_batch partitioned and return
+    return dl_dinput_batch;
 }

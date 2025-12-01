@@ -12,11 +12,11 @@ void print_predictions_batch(dahl_matrix const* predictions_batch, dahl_matrix c
     size_t const num_classes = matrix_get_shape(predictions_batch).x;
     size_t const num_channels = tensor_get_shape(image_batch).z;
 
-    dahl_tensor_p* image_batch_p = tensor_partition_along_t(image_batch, DAHL_READ);
+    tensor_partition_along_t(image_batch, DAHL_READ);
 
     for (size_t y = 0; y < batch_size; y++)
     {
-        dahl_block const* image = GET_SUB_BLOCK(image_batch_p, y);
+        dahl_block const* image = GET_SUB_BLOCK(image_batch, y);
 
         size_t max_index = 0;
         size_t true_index = 0;
@@ -44,13 +44,13 @@ void print_predictions_batch(dahl_matrix const* predictions_batch, dahl_matrix c
         // Display using ImageMagick
         if (num_channels == 1)
         {
-            dahl_block_p* image_p = block_partition_along_z(image, DAHL_READ);
-            dahl_matrix const* image_single_channel = GET_SUB_MATRIX(image_p, 0);
+            block_partition_along_z(image, DAHL_READ);
+            dahl_matrix const* image_single_channel = GET_SUB_MATRIX(image, 0);
             matrix_image_display(image_single_channel, 10);
 
             // We can also display in ASCII in the terminal
             // matrix_print_ascii(image_single_channel, 0.5);
-            block_unpartition(image_p);
+            block_unpartition(image);
         }
         else if (num_channels == 3)
         {
@@ -63,7 +63,7 @@ void print_predictions_batch(dahl_matrix const* predictions_batch, dahl_matrix c
         } 
     }
 
-    tensor_unpartition(image_batch_p);
+    tensor_unpartition(image_batch);
 
     matrix_release(predictions_batch);
     matrix_release(target_batch);

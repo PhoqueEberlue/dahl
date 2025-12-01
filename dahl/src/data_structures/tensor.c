@@ -11,14 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-dahl_tensor_p* _tensor_p_init(dahl_tensor* tensor, dahl_partition* p)
-{
-    dahl_tensor_p* res = dahl_arena_alloc(tensor->origin_arena, sizeof(dahl_tensor_p));
-    res->partition = p;
-    res->ptr = tensor;
-    return res;
-}
-
 void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     dahl_tensor* tensor = dahl_arena_alloc(arena, sizeof(dahl_tensor));
@@ -26,6 +18,7 @@ void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     tensor->data = data;
     tensor->origin_arena = arena;
     tensor->is_redux = false;
+    tensor->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
 
     return tensor;
 }
@@ -187,9 +180,8 @@ dahl_matrix* tensor_flatten_along_t_no_copy(dahl_tensor const* tensor)
     return res;
 }
 
-dahl_matrix_p* tensor_flatten_along_t_no_copy_partition(dahl_tensor_p* tensor_p)
+dahl_matrix_part* tensor_flatten_along_t_no_copy_partition(dahl_tensor_part* tensor)
 {
-    dahl_tensor* tensor = tensor_p->ptr;
     // Initialize a matrix, just to hold the childrens
     dahl_shape4d shape = tensor_get_shape(tensor);
     dahl_shape2d new_shape = { .x = shape.x * shape.y * shape.z, .y = shape.t };
@@ -201,7 +193,7 @@ dahl_matrix_p* tensor_flatten_along_t_no_copy_partition(dahl_tensor_p* tensor_p)
     
     dahl_matrix* matrix = _matrix_init_from_ptr(tensor->origin_arena, handle, tensor->data);
 
-    size_t const batch_size = GET_NB_CHILDREN(tensor_p);
+    size_t const batch_size = GET_NB_CHILDREN(tensor);
 
     // Create a fake partition to hold our flat children
     dahl_partition* p = dahl_arena_alloc(
@@ -223,7 +215,7 @@ dahl_matrix_p* tensor_flatten_along_t_no_copy_partition(dahl_tensor_p* tensor_p)
 
     for (size_t i = 0; i < batch_size; i++)
     {
-        dahl_block const* block = GET_SUB_BLOCK(tensor_p, i);
+        dahl_block const* block = GET_SUB_BLOCK(tensor, i);
         dahl_vector* flat_child = block_flatten_no_copy(block);
         p->children[i] = flat_child;
         p->handles[i] = flat_child->handle;
@@ -233,7 +225,8 @@ dahl_matrix_p* tensor_flatten_along_t_no_copy_partition(dahl_tensor_p* tensor_p)
     }
 
     // Pretend the matrix is partitioned
-    return _matrix_p_init(matrix, p);
+    *matrix->partition = p;
+    return matrix;
 }
 
 dahl_shape4d tensor_get_shape(dahl_tensor const* tensor)
@@ -315,12 +308,12 @@ RELEASE:
     return res;
 }
 
-dahl_partition* _tensor_p_get_partition(void const* tensor_p)
+dahl_partition* _tensor_get_partition(void const* tensor)
 {
-    return ((dahl_tensor_p*)tensor_p)->partition;
+    return *((dahl_tensor*)tensor)->partition;
 }
 
-dahl_tensor_p* tensor_partition_along_t(dahl_tensor* tensor, dahl_access access)
+void tensor_partition_along_t(dahl_tensor const* tensor, dahl_access access)
 {
     size_t const nparts = tensor_get_shape(tensor).t;
 
@@ -335,11 +328,11 @@ dahl_tensor_p* tensor_partition_along_t(dahl_tensor* tensor, dahl_access access)
     dahl_partition* p = _partition_init(nparts, access, &dahl_traits_block, &f, tensor->handle,
                                         tensor->origin_arena, TENSOR_PARTITION_ALONG_T);
     _partition_submit(p);
-    return _tensor_p_init(tensor, p);
+    *tensor->partition = p;
 }
 
-dahl_tensor_p* tensor_partition_along_t_batch(
-        dahl_tensor* tensor, dahl_access access, size_t batch_size)
+void tensor_partition_along_t_batch(
+        dahl_tensor const* tensor, dahl_access access, size_t batch_size)
 {
     size_t const nparts = tensor_get_shape(tensor).t / batch_size;
 
@@ -355,16 +348,14 @@ dahl_tensor_p* tensor_partition_along_t_batch(
             tensor->origin_arena, TENSOR_PARTITION_ALONG_T_BATCH);
 
     _partition_submit(p);
-    return _tensor_p_init(tensor, p);
+    *tensor->partition = p;
 }
 
-dahl_tensor* tensor_unpartition(dahl_tensor_p* tensor_p)
+void tensor_unpartition(dahl_tensor_part const* tensor)
 {
-    assert(tensor_p && tensor_p->ptr);
-    assert(tensor_p->partition->is_active);
-
-    _unpartition_submit(tensor_p->partition);
-    return tensor_p->ptr;
+    dahl_partition* p = *tensor->partition;
+    assert(p && p->is_active);
+    _unpartition_submit(p);
 }
 
 void _tensor_print_file(void const* vtensor, FILE* fp, int8_t const precision)

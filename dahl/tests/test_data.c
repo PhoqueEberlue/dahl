@@ -66,19 +66,19 @@ void test_tensor_partition_along_t()
     dahl_block const* expect_block_0 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
     dahl_block const* expect_block_1 = block_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
-    dahl_tensor_p* tensor_p = tensor_partition_along_t(tensor, DAHL_READ);
+    tensor_partition_along_t(tensor, DAHL_READ);
 
-    dahl_block const* sub_block_0 = GET_SUB_BLOCK(tensor_p, 0);
+    dahl_block const* sub_block_0 = GET_SUB_BLOCK(tensor, 0);
     dahl_shape3d shape_0 = block_get_shape(sub_block_0);
     ASSERT_SHAPE3D_EQUALS(expect_shape, shape_0);
     ASSERT_BLOCK_EQUALS(expect_block_0, sub_block_0);
 
-    dahl_block const* sub_block_1 = GET_SUB_BLOCK(tensor_p, 1);
+    dahl_block const* sub_block_1 = GET_SUB_BLOCK(tensor, 1);
     dahl_shape3d shape_1 = block_get_shape(sub_block_1);
     ASSERT_SHAPE3D_EQUALS(expect_shape, shape_1);
     ASSERT_BLOCK_EQUALS(expect_block_1, sub_block_1);
 
-    tensor_unpartition(tensor_p);
+    tensor_unpartition(tensor);
 
     dahl_arena_reset(testing_arena);
 }
@@ -112,19 +112,19 @@ void test_tensor_partition_along_t_batch()
     dahl_tensor const* expect_tensor_1 = tensor_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
     size_t const batch_size = 2;
-    dahl_tensor_p* tensor_p = tensor_partition_along_t_batch(tensor, DAHL_READ, batch_size);
+    tensor_partition_along_t_batch(tensor, DAHL_READ, batch_size);
 
-    dahl_tensor const* sub_tensor_0 = GET_SUB_TENSOR(tensor_p, 0);
+    dahl_tensor const* sub_tensor_0 = GET_SUB_TENSOR(tensor, 0);
     dahl_shape4d shape_0 = tensor_get_shape(sub_tensor_0);
     ASSERT_SHAPE4D_EQUALS(expect_shape, shape_0);
     ASSERT_TENSOR_EQUALS(expect_tensor_0, sub_tensor_0);
 
-    dahl_tensor const* sub_tensor_1 = GET_SUB_TENSOR(tensor_p, 1);
+    dahl_tensor const* sub_tensor_1 = GET_SUB_TENSOR(tensor, 1);
     dahl_shape4d shape_1 = tensor_get_shape(sub_tensor_1);
     ASSERT_SHAPE4D_EQUALS(expect_shape, shape_1);
     ASSERT_TENSOR_EQUALS(expect_tensor_1, sub_tensor_1);
 
-    tensor_unpartition(tensor_p);
+    tensor_unpartition(tensor);
 
     dahl_arena_reset(testing_arena);
 }
@@ -165,19 +165,19 @@ void test_block_partition_along_z()
     dahl_matrix const* expect_matrix_0 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_0);
     dahl_matrix const* expect_matrix_1 = matrix_init_from(testing_arena, expect_shape, (dahl_fp*)&expect_1);
 
-    dahl_block_p* block_p = block_partition_along_z(block, DAHL_READ);
+    block_partition_along_z(block, DAHL_READ);
 
-    dahl_matrix const* sub_matrix_0 = GET_SUB_MATRIX(block_p, 0);
+    dahl_matrix const* sub_matrix_0 = GET_SUB_MATRIX(block, 0);
     dahl_shape2d shape_0 = matrix_get_shape(sub_matrix_0);
     ASSERT_SHAPE2D_EQUALS(expect_shape, shape_0);
     ASSERT_MATRIX_EQUALS(expect_matrix_0, sub_matrix_0);
 
-    dahl_matrix const* sub_matrix_1 = GET_SUB_MATRIX(block_p, 1);
+    dahl_matrix const* sub_matrix_1 = GET_SUB_MATRIX(block, 1);
     dahl_shape2d shape_1 = matrix_get_shape(sub_matrix_1);
     ASSERT_SHAPE2D_EQUALS(expect_shape, shape_1);
     ASSERT_MATRIX_EQUALS(expect_matrix_1, sub_matrix_1);
 
-    block_unpartition(block_p);
+    block_unpartition(block);
 
     dahl_arena_reset(testing_arena);
 }
@@ -212,13 +212,13 @@ void test_block_partition_flatten_to_vector()
 
     dahl_vector const* expect_vector = vector_init_from(testing_arena, 24, (dahl_fp*)&expect);
 
-    dahl_block_p* block_p = block_partition_flatten_to_vector(block, DAHL_READ);
+    block_partition_flatten_to_vector(block, DAHL_READ);
 
-    dahl_vector const* flat_vector = GET_SUB_VECTOR(block_p, 0);
+    dahl_vector const* flat_vector = GET_SUB_VECTOR(block, 0);
     ASSERT_SIZE_T_EQUALS(24, vector_get_len(flat_vector));
     ASSERT_VECTOR_EQUALS(expect_vector, flat_vector);
 
-    block_unpartition(block_p);
+    block_unpartition(block);
 
     dahl_arena_reset(testing_arena);
 }
@@ -239,16 +239,16 @@ void test_matrix_partition_along_y()
 
     size_t expect_len = 4;
 
-    dahl_matrix_p* matrix_p = matrix_partition_along_y(matrix, DAHL_READ);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(matrix_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
-        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix_p, i);
+        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix, i);
         size_t len = vector_get_len(sub_vector);
         ASSERT_SIZE_T_EQUALS(expect_len, len);
     }
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
     dahl_arena_reset(testing_arena);
 }
@@ -281,15 +281,15 @@ void test_matrix_partition_along_y_batch()
         { 4,-1, 9,-2 },
     });
 
-    dahl_matrix_p* matrix_p = matrix_partition_along_y_batch(matrix, DAHL_READ, 2);
+    matrix_partition_along_y_batch(matrix, DAHL_READ, 2);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(matrix_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
-        dahl_matrix const* sub_matrix = GET_SUB_MATRIX(matrix_p, i);
+        dahl_matrix const* sub_matrix = GET_SUB_MATRIX(matrix, i);
         ASSERT_MATRIX_EQUALS(expect_matrices[i], sub_matrix);
     }
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
     dahl_arena_reset(testing_arena);
 }
@@ -351,24 +351,24 @@ void test_recursive_partitioning()
         }
     };
 
-    dahl_block_p* block_p = block_partition_along_z(block, DAHL_READ);
+    block_partition_along_z(block, DAHL_READ);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(block_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(block); i++)
     {
-        dahl_matrix const* matrix = GET_SUB_MATRIX(block_p, i);
+        dahl_matrix const* matrix = GET_SUB_MATRIX(block, i);
 
-        dahl_matrix_p* matrix_p = matrix_partition_along_y(matrix, DAHL_READ);
+        matrix_partition_along_y(matrix, DAHL_READ);
 
-        for (size_t j = 0; j < GET_NB_CHILDREN(matrix_p); j++)
+        for (size_t j = 0; j < GET_NB_CHILDREN(matrix); j++)
         {
-            dahl_vector const* vector = GET_SUB_VECTOR(matrix_p, j);
+            dahl_vector const* vector = GET_SUB_VECTOR(matrix, j);
             ASSERT_VECTOR_EQUALS(expect[i][j], vector);
         }
 
-        matrix_unpartition(matrix_p);
+        matrix_unpartition(matrix);
     }
 
-    block_unpartition(block_p);
+    block_unpartition(block);
 
     dahl_arena_reset(testing_arena);
 }
@@ -386,19 +386,19 @@ void test_mut_partitioning()
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
     dahl_matrix* another_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
 
-    dahl_matrix_p* matrix_p = matrix_partition_along_y(matrix, DAHL_READ);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
     // Here I can still read from matrix because the partitionning is read only
     TASK_ADD_SELF(another_matrix, matrix);
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
-    matrix_p = matrix_partition_along_y(matrix, DAHL_MUT);
+    matrix_partition_along_y(matrix, DAHL_MUT);
     // Here I cannot read the matrix handle because it is mutably partioned
     // TASK_ADD_SELF(another_matrix, matrix);
     // TODO: I should be able to test something that should fail
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
     dahl_arena_reset(testing_arena);
 }
@@ -422,17 +422,17 @@ void test_partition_reuse()
     dahl_matrix* matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&data);
     dahl_matrix* expect_matrix = matrix_init_from(testing_arena, data_shape, (dahl_fp*)&expect);
 
-    dahl_matrix_p* matrix_p = matrix_partition_along_y(matrix, DAHL_MUT);
+    matrix_partition_along_y(matrix, DAHL_MUT);
 
-    dahl_vector* vector = GET_SUB_VECTOR_MUT(matrix_p, 0);
+    dahl_vector* vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
-    REACTIVATE_PARTITION(matrix_p);
+    REACTIVATE_PARTITION(matrix);
     
-    vector = GET_SUB_VECTOR_MUT(matrix_p, 0);
+    vector = GET_SUB_VECTOR_MUT(matrix, 0);
     TASK_SCAL_SELF(vector, 2);
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 
     ASSERT_MATRIX_EQUALS(expect_matrix, matrix);
     dahl_arena_reset(testing_arena);
@@ -503,7 +503,7 @@ void test_partition_access_read_read()
         { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
     });
 
-    dahl_matrix_p const* matrix_p = matrix_partition_along_y(matrix, DAHL_READ);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
     dahl_scalar* expects[2] = { SCALAR(testing_arena, 12), SCALAR(testing_arena, 48) };
     dahl_scalar* expect = SCALAR(testing_arena, 60);
@@ -512,16 +512,16 @@ void test_partition_access_read_read()
     // sub vectors will be ran in parallel.
     dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(matrix_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
-        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix_p, i);
+        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix, i);
         dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
         ASSERT_SCALAR_EQUALS(expects[i], sub_res);
     }
 
     ASSERT_SCALAR_EQUALS(expect, main_res);
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 }
 
 // Parent write, children read
@@ -532,7 +532,7 @@ void test_partition_access_write_read()
         { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
     });
 
-    dahl_matrix_p const* matrix_p = matrix_partition_along_y(matrix, DAHL_READ);
+    matrix_partition_along_y(matrix, DAHL_READ);
 
     dahl_scalar* expects[2] = { SCALAR(testing_arena, 24), SCALAR(testing_arena, 96) };
     dahl_scalar* expect = SCALAR(testing_arena, 120);
@@ -543,16 +543,16 @@ void test_partition_access_write_read()
     TASK_SCAL_SELF(matrix, 2);
     dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(matrix_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
-        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix_p, i);
+        dahl_vector const* sub_vector = GET_SUB_VECTOR(matrix, i);
         dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
         ASSERT_SCALAR_EQUALS(expects[i], sub_res);
     }
 
     ASSERT_SCALAR_EQUALS(expect, main_res);
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 }
 
 // Parent read and children write is not a possible state (in DAHL at least).
@@ -565,7 +565,7 @@ void test_partition_access_write_write()
         { 2, 4, 6, 2, 4, 6, 2, 4, 6, 2, 4, 6 }
     });
 
-    dahl_matrix_p* matrix_p = matrix_partition_along_y(matrix, DAHL_MUT);
+    matrix_partition_along_y(matrix, DAHL_MUT);
 
     dahl_scalar* expects[2] = { SCALAR(testing_arena, 48), SCALAR(testing_arena, 192) };
     dahl_scalar* expect = SCALAR(testing_arena, 120);
@@ -576,9 +576,9 @@ void test_partition_access_write_write()
     TASK_SCAL_SELF(matrix, 2);
     dahl_scalar const* main_res = TASK_SUM_INIT(testing_arena, matrix);
 
-    for (size_t i = 0; i < GET_NB_CHILDREN(matrix_p); i++)
+    for (size_t i = 0; i < GET_NB_CHILDREN(matrix); i++)
     {
-        dahl_vector* sub_vector = GET_SUB_VECTOR_MUT(matrix_p, i);
+        dahl_vector* sub_vector = GET_SUB_VECTOR_MUT(matrix, i);
         TASK_SCAL_SELF(sub_vector, 2);
         dahl_scalar const* sub_res = TASK_SUM_INIT(testing_arena, sub_vector);
         ASSERT_SCALAR_EQUALS(expects[i], sub_res);
@@ -586,7 +586,7 @@ void test_partition_access_write_write()
 
     ASSERT_SCALAR_EQUALS(expect, main_res);
 
-    matrix_unpartition(matrix_p);
+    matrix_unpartition(matrix);
 }
 
 void test_data()

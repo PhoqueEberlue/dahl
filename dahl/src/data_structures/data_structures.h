@@ -45,14 +45,9 @@ typedef const struct _dahl_traits
     void (*print_file)(void const*, FILE*, int8_t const);
     bool (*get_is_redux)(void const*);
     void (*enable_redux)(void*);
+    dahl_partition* (*get_partition)(void const*);
     dahl_type type;
 } dahl_traits;
-
-// Traits for the partitioned data structures
-typedef const struct _dahl_traits_p
-{
-    dahl_partition* (*get_partition)(void const*);
-} dahl_traits_p;
 
 // Definitions of dahl data structures that were previously defined as opaque types in dahl_data.h
 // so their fields are not accessible from the public API.
@@ -80,6 +75,7 @@ typedef struct _dahl_matrix
     dahl_fp* data;
     // Where the data was originally allocated
     dahl_arena* origin_arena;
+    dahl_partition** partition;
     bool is_redux;
 } dahl_matrix;
 
@@ -89,6 +85,7 @@ typedef struct _dahl_block
     dahl_fp* data;
     // Where the data was originally allocated
     dahl_arena* origin_arena;
+    dahl_partition** partition;
     bool is_redux;
 } dahl_block;
 
@@ -98,6 +95,7 @@ typedef struct _dahl_tensor
     dahl_fp* data;
     // Where the data was originally allocated
     dahl_arena* origin_arena;
+    dahl_partition** partition;
     bool is_redux;
 } dahl_tensor;
 
@@ -142,17 +140,9 @@ void _vector_print_file(void const*, FILE*, int8_t const precision);
 void _scalar_print_file(void const*, FILE*, int8_t const precision);
 
 // ---------------------------- Partition related ----------------------------
-typedef struct _dahl_tensor_p { dahl_tensor* ptr; dahl_partition* partition; } dahl_tensor_p;
-typedef struct _dahl_block_p  { dahl_block*  ptr; dahl_partition* partition; } dahl_block_p;
-typedef struct _dahl_matrix_p { dahl_matrix* ptr; dahl_partition* partition; } dahl_matrix_p;
-
-dahl_tensor_p* _tensor_p_init(dahl_tensor*, dahl_partition*);
-dahl_block_p* _block_p_init(dahl_block*, dahl_partition*);
-dahl_matrix_p* _matrix_p_init(dahl_matrix*, dahl_partition*);
-
-dahl_partition* _tensor_p_get_partition(void const* tensor_p);
-dahl_partition* _block_p_get_partition(void const* block_p);
-dahl_partition* _matrix_p_get_partition(void const* matrix_p);
+dahl_partition* _tensor_get_partition(void const* tensor);
+dahl_partition* _block_get_partition(void const* block);
+dahl_partition* _matrix_get_partition(void const* matrix);
 
 // Init a new partition object in the same arena as the parent
 dahl_partition* _partition_init(size_t nb_children, dahl_access access, dahl_traits* trait,

@@ -8,6 +8,7 @@ dahl_traits dahl_traits_tensor = {
     .print_file = _tensor_print_file,
     .get_is_redux = _tensor_get_is_redux,
     .enable_redux = _tensor_enable_redux,
+    .get_partition = _tensor_get_partition,
     .type = DAHL_TENSOR,
 };
 
@@ -18,6 +19,7 @@ dahl_traits dahl_traits_block = {
     .print_file = _block_print_file,
     .get_is_redux = _block_get_is_redux,
     .enable_redux = _block_enable_redux,
+    .get_partition = _block_get_partition,
     .type = DAHL_BLOCK,
 };
 
@@ -28,6 +30,7 @@ dahl_traits dahl_traits_matrix = {
     .print_file = _matrix_print_file,
     .get_is_redux = _matrix_get_is_redux,
     .enable_redux = _matrix_enable_redux,
+    .get_partition = _matrix_get_partition,
     .type = DAHL_MATRIX,
 };
 
@@ -38,6 +41,7 @@ dahl_traits dahl_traits_vector = {
     .print_file = _vector_print_file,
     .get_is_redux = _vector_get_is_redux,
     .enable_redux = _vector_enable_redux,
+    .get_partition = nullptr,
     .type = DAHL_VECTOR,
 };
 
@@ -49,17 +53,11 @@ dahl_traits dahl_traits_scalar = {
     .print_file = _scalar_print_file,
     .get_is_redux = _scalar_get_is_redux,
     .enable_redux = _scalar_enable_redux,
+    .get_partition = nullptr,
     .type = DAHL_SCALAR,
 };
 
-dahl_traits_p dahl_traits_tensor_p = {
-    .get_partition = _tensor_p_get_partition,
-};
-
-dahl_traits_p dahl_traits_block_p = {
-    .get_partition = _block_p_get_partition,
-};
-
-dahl_traits_p dahl_traits_matrix_p = {
-    .get_partition = _matrix_p_get_partition,
-};
+void print_handle(void const* object, char const* name, dahl_traits* traits)
+{
+    printf("Handle for %s: %p\n", name, traits->get_handle(object));
+}

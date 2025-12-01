@@ -9,14 +9,6 @@
 #include "../tasks/codelets.h"
 #include <jpeglib.h>
 
-dahl_block_p* _block_p_init(dahl_block* block, dahl_partition* p)
-{
-    dahl_block_p* res = dahl_arena_alloc(block->origin_arena, sizeof(dahl_block_p));
-    res->partition = p;
-    res->ptr = block;
-    return res;
-}
-
 // Allocate a dahl_block structure from a handle, and a pointer to data.
 void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
@@ -25,6 +17,7 @@ void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_
     block->data = data;
     block->origin_arena = arena;
     block->is_redux = false;
+    block->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
 
     return block;
 }
@@ -311,12 +304,12 @@ RELEASE:
     return res;
 }
 
-dahl_partition* _block_p_get_partition(void const* block_p)
+dahl_partition* _block_get_partition(void const* block)
 {
-    return ((dahl_block_p*)block_p)->partition;
+    return *((dahl_block*)block)->partition;
 }
 
-dahl_block_p* block_partition_along_z(dahl_block* block, dahl_access access)
+void block_partition_along_z(dahl_block const* block, dahl_access access)
 {
     size_t const nparts = block_get_shape(block).z;
 
@@ -333,10 +326,10 @@ dahl_block_p* block_partition_along_z(dahl_block* block, dahl_access access)
                                         BLOCK_PARTITION_ALONG_Z);
 
     _partition_submit(p);
-    return _block_p_init(block, p);
+    *block->partition = p;
 }
 
-dahl_block_p* block_partition_along_z_flat_matrices(dahl_block* block, dahl_access access, bool is_row)
+void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access access, bool is_row)
 {
     size_t const nparts = block_get_shape(block).z;
 
@@ -354,10 +347,10 @@ dahl_block_p* block_partition_along_z_flat_matrices(dahl_block* block, dahl_acce
                                         BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES);
 
     _partition_submit(p);
-    return _block_p_init(block, p);
+    *block->partition = p;
 }
 
-dahl_block_p* block_partition_along_z_flat_vectors(dahl_block* block, dahl_access access)
+void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access access)
 {
     size_t const nparts = block_get_shape(block).z;
 
@@ -374,10 +367,10 @@ dahl_block_p* block_partition_along_z_flat_vectors(dahl_block* block, dahl_acces
                                         BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS);
 
     _partition_submit(p);
-    return _block_p_init(block, p);
+    *block->partition = p;
 }
 
-dahl_block_p* block_partition_flatten_to_vector(dahl_block* block, dahl_access access)
+void block_partition_flatten_to_vector(dahl_block const* block, dahl_access access)
 {
     // Only one vector here because we flatten the whole block into a vector
     size_t const nparts = 1;
@@ -395,10 +388,10 @@ dahl_block_p* block_partition_flatten_to_vector(dahl_block* block, dahl_access a
                                         BLOCK_PARTITION_FLATTEN_TO_VECTOR);
 
     _partition_submit(p);
-    return _block_p_init(block, p);
+    *block->partition = p;
 }
 
-dahl_block_p* block_partition_along_z_batch(dahl_block* block, dahl_access access, size_t batch_size)
+void block_partition_along_z_batch(dahl_block const* block, dahl_access access, size_t batch_size)
 {
     size_t const nparts = block_get_shape(block).z / batch_size;
 
@@ -414,16 +407,14 @@ dahl_block_p* block_partition_along_z_batch(dahl_block* block, dahl_access acces
                                         BLOCK_PARTITION_ALONG_Z_BATCH);
 
     _partition_submit(p);
-    return _block_p_init(block, p);
+    *block->partition = p;
 }
 
-dahl_block* block_unpartition(dahl_block_p* block_p)
+void block_unpartition(dahl_block_part const* block)
 {
-    assert(block_p && block_p->ptr);
-    assert(block_p->partition->is_active);
-
-    _unpartition_submit(block_p->partition);
-    return block_p->ptr;
+    dahl_partition* p = *block->partition;
+    assert(p && p->is_active);
+    _unpartition_submit(p);
 }
 
 void _block_print_file(void const* vblock, FILE* fp, int8_t const precision)

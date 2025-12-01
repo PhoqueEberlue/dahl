@@ -6,14 +6,6 @@
 #include "sys/types.h"
 #include <stdio.h>
 
-dahl_matrix_p* _matrix_p_init(dahl_matrix* matrix, dahl_partition* p)
-{
-    dahl_matrix_p* res = dahl_arena_alloc(matrix->origin_arena, sizeof(dahl_matrix_p));
-    res->partition = p;
-    res->ptr = matrix;
-    return res;
-}
-
 void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_fp* data)
 {
     dahl_matrix* matrix = dahl_arena_alloc(arena, sizeof(dahl_matrix));
@@ -21,6 +13,7 @@ void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     matrix->data = data;
     matrix->origin_arena = arena;
     matrix->is_redux = false;
+    matrix->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
 
     return matrix;
 }
@@ -116,10 +109,9 @@ dahl_tensor* matrix_to_tensor_no_copy(dahl_matrix const* matrix, dahl_shape4d co
     return res;
 }
 
-dahl_tensor_p* matrix_to_tensor_no_copy_partition(
-        dahl_matrix_p* matrix_p, dahl_shape4d const new_shape)
+dahl_tensor_part* matrix_to_tensor_no_copy_partition(
+        dahl_matrix* matrix, dahl_shape4d const new_shape)
 {
-    dahl_matrix* matrix = matrix_p->ptr;
     // Initialize a tensor, just to hold the childrens
     dahl_shape2d shape = matrix_get_shape(matrix);
     assert(shape.x * shape.y == new_shape.x * new_shape.y * new_shape.z * new_shape.t);
@@ -131,7 +123,7 @@ dahl_tensor_p* matrix_to_tensor_no_copy_partition(
     
     dahl_tensor* tensor = _tensor_init_from_ptr(matrix->origin_arena, handle, matrix->data);
 
-    size_t const batch_size = GET_NB_CHILDREN(matrix_p);
+    size_t const batch_size = GET_NB_CHILDREN(matrix);
 
     // Create a fake partition to hold our flat children
     dahl_partition* p = dahl_arena_alloc(
@@ -153,7 +145,7 @@ dahl_tensor_p* matrix_to_tensor_no_copy_partition(
 
     for (size_t i = 0; i < batch_size; i++)
     {
-        dahl_vector const* vector = GET_SUB_VECTOR(matrix_p, i);
+        dahl_vector const* vector = GET_SUB_VECTOR(matrix, i);
         dahl_block* flat_child = vector_to_block_no_copy(vector, block_shape);
         p->children[i] = flat_child;
         p->handles[i] = flat_child->handle;
@@ -162,7 +154,8 @@ dahl_tensor_p* matrix_to_tensor_no_copy_partition(
         starpu_data_invalidate_submit(vector->handle);
     }
 
-    return _tensor_p_init(tensor, p);
+    *tensor->partition = p;
+    return tensor;
 }
 
 void _matrix_enable_redux(void* matrix)
@@ -304,12 +297,12 @@ void matrix_to_csv(dahl_matrix const* matrix, char const* file_path, char const*
     matrix_release(matrix);
 }
 
-dahl_partition* _matrix_p_get_partition(void const* matrix_p)
+dahl_partition* _matrix_get_partition(void const* matrix)
 {
-    return ((dahl_matrix_p*)matrix_p)->partition;
+    return *((dahl_matrix*)matrix)->partition;
 }
 
-dahl_matrix_p* matrix_partition_along_y(dahl_matrix* matrix, dahl_access access)
+void matrix_partition_along_y(dahl_matrix const* matrix, dahl_access access)
 {
     size_t const nparts = matrix_get_shape(matrix).y;
 
@@ -326,10 +319,10 @@ dahl_matrix_p* matrix_partition_along_y(dahl_matrix* matrix, dahl_access access)
                                         MATRIX_PARTITION_ALONG_Y);
 
     _partition_submit(p);
-    return _matrix_p_init(matrix, p);
+    *matrix->partition = p;
 }
 
-dahl_matrix_p* matrix_partition_along_y_batch(dahl_matrix* matrix, dahl_access access, size_t batch_size)
+void matrix_partition_along_y_batch(dahl_matrix const* matrix, dahl_access access, size_t batch_size)
 {
     size_t const nparts = matrix_get_shape(matrix).y / batch_size;
 
@@ -346,16 +339,14 @@ dahl_matrix_p* matrix_partition_along_y_batch(dahl_matrix* matrix, dahl_access a
                                         MATRIX_PARTITION_ALONG_Y_BATCH);
 
     _partition_submit(p);
-    return _matrix_p_init(matrix, p);
+    *matrix->partition = p;
 }
 
-dahl_matrix* matrix_unpartition(dahl_matrix_p* matrix_p)
+void matrix_unpartition(dahl_matrix_part const* matrix)
 {
-    assert(matrix_p && matrix_p->ptr);
-    assert(matrix_p->partition->is_active);
-
-    _unpartition_submit(matrix_p->partition);
-    return matrix_p->ptr;
+    dahl_partition* p = *matrix->partition;
+    assert(p && p->is_active);
+    _unpartition_submit(p);
 }
 
 void _matrix_print_file(void const* vmatrix, FILE* fp, int8_t const precision)
