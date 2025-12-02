@@ -177,7 +177,7 @@ extern "C" void cuda_cross_entropy_loss_gradient(void* buffers[3], void* cl_arg)
     auto targ = STARPU_VECTOR_GET(buffers[1]);
     auto out  = STARPU_VECTOR_GET(buffers[2]);
 
-    cross_entropy_loss_gradient<<<0, 0, 0, starpu_cuda_get_local_stream()>>>(
+    cross_entropy_loss_gradient<<<1, 1, 0, starpu_cuda_get_local_stream()>>>(
         pred, targ, out);
 
     dahl_cuda_check_error_and_sync();

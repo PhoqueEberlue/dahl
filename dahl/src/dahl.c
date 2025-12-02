@@ -11,7 +11,7 @@ void dahl_init()
         printf("Could not initialize starpu");
     }
 
-    // starpu_cuda_set_device(0);
+    starpu_cuda_set_device(0);
 
     // Force the codelet switch to be executed on the main RAM.
     // Required to refresh and synchronize buffers.

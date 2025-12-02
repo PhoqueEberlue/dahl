@@ -253,11 +253,33 @@ extern "C" void cuda_any_clip(void* buffers[2], void* cl_arg)
     dahl_cuda_check_error_and_sync();
 }
 
+static __global__ void any_sum(size_t nb_elem, const dahl_fp* in, dahl_fp* out)
+{
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t stride = blockDim.x * gridDim.x;
 
-// TODO: Does not make much sense to implement for cuda right?
+    dahl_fp local_sum = 0.0F;
+
+    for (; i < nb_elem; i += stride)
+        local_sum += in[i];
+
+    atomicAdd(out, local_sum);
+}
+
 extern "C" void cuda_any_sum(void* buffers[2], void* cl_arg)
 {
+    size_t nb_elem;
+    starpu_codelet_unpack_args(cl_arg, &nb_elem);
 
+    auto in = (const dahl_fp*)STARPU_ANY_GET_PTR(buffers[0]);
+    auto out = (dahl_fp*)STARPU_VARIABLE_GET_PTR(buffers[1]);
+
+    int threads = 256;
+    int blocks = (nb_elem + threads - 1) / threads;
+
+    any_sum<<<blocks, threads, 0, starpu_cuda_get_local_stream()>>>(nb_elem, in, out);
+
+    dahl_cuda_check_error_and_sync();
 }
 
 // TODO: Does not make much sense to implement for cuda right?
@@ -286,6 +308,11 @@ extern "C" void cuda_any_fill(void* buffers[1], void* cl_arg)
 
     any_fill<<<numBlocks, threadsPerBlock, 0, starpu_cuda_get_local_stream()>>>(nb_elem, buf, value);
     dahl_cuda_check_error_and_sync();
+}
+
+extern "C" void cuda_any_wait(void* buffers[2], void* cl_arg)
+{
+    // Do nothing.
 }
 
 extern "C" void cuda_any_copy(void* buffers[2], void* cl_arg)

@@ -93,10 +93,11 @@ DEFINE_STARPU_CODELET(any_add_value, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_mul, 3, true, STARPU_R, STARPU_R, STARPU_RW);
 DEFINE_STARPU_CODELET(any_div, 3, true, STARPU_R, STARPU_R, STARPU_RW);
 DEFINE_STARPU_CODELET(any_clip, 2, true, STARPU_R, STARPU_W);
-DEFINE_STARPU_CODELET(any_sum, 2, false, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
+DEFINE_STARPU_CODELET(any_sum, 2, true, STARPU_R, STARPU_REDUX); // Last mode can be either STARPU_REDUX or STARPU_RW
 DEFINE_STARPU_CODELET(any_mean, 2, false, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_fill, 1, true, STARPU_W);
-DEFINE_STARPU_CODELET(any_wait, 1, false, STARPU_W);
+DEFINE_STARPU_CODELET(any_wait, 1, true, STARPU_RW); // Important: should be RW otherwise CUDA will
+                                                     // wipe existing data as wait doesn't fill.
 DEFINE_STARPU_CODELET(any_copy, 2, true, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_min, 2, false, STARPU_R, STARPU_W);
 DEFINE_STARPU_CODELET(any_max, 2, false, STARPU_R, STARPU_W);

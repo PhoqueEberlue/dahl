@@ -712,10 +712,8 @@ void task_wait(void const* object, unsigned int duration, dahl_traits* traits)
 {
     int ret = starpu_task_insert(&cl_any_wait,
                                  STARPU_VALUE, &duration, sizeof(duration),
-                                 STARPU_W, traits->get_handle(object), 0);
-    // Can't use sleep for CUDA, so we ignore error "-19:No such device"
-    if (ret != -19)
-        STARPU_CHECK_RETURN_VALUE(ret, "task_wait");
+                                 STARPU_RW, traits->get_handle(object), 0);
+    STARPU_CHECK_RETURN_VALUE(ret, "task_wait");
 }
 
 void task_copy(void const* in, void* out, dahl_traits* traits)
