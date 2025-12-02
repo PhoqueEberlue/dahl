@@ -435,6 +435,7 @@ void reactivate_partition(void const* object, dahl_traits* traits);
 #define GET_SUB_VECTOR(OBJECT, INDEX) get_sub_vector(OBJECT, INDEX, GET_TRAITS(OBJECT))
 #define GET_SUB_VECTOR_MUT(OBJECT, INDEX) get_sub_vector_mut(OBJECT, INDEX, GET_TRAITS(OBJECT))
 
+// Reactivate the last partition with the exact same access.
 #define REACTIVATE_PARTITION(OBJECT) reactivate_partition(OBJECT, GET_TRAITS(OBJECT))
 
 // For debug purposes

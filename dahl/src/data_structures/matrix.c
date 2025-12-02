@@ -14,6 +14,7 @@ void* _matrix_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     matrix->origin_arena = arena;
     matrix->is_redux = false;
     matrix->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
+    *matrix->partition = nullptr;
 
     return matrix;
 }
@@ -306,6 +307,9 @@ dahl_partition* _matrix_get_partition(void const* matrix)
 
 void matrix_partition_along_y(dahl_matrix const* matrix, dahl_access access)
 {
+    if (*matrix->partition && (*matrix->partition)->type == MATRIX_PARTITION_ALONG_Y)
+        goto SUBMIT;
+
     size_t const nparts = matrix_get_shape(matrix).y;
 
     struct starpu_data_filter f =
@@ -316,16 +320,18 @@ void matrix_partition_along_y(dahl_matrix const* matrix, dahl_access access)
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_vector,
+    *matrix->partition = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, matrix->handle, matrix->origin_arena,
                                         MATRIX_PARTITION_ALONG_Y);
-
-    _partition_submit(p);
-    *matrix->partition = p;
+SUBMIT:
+    _partition_submit(*matrix->partition);
 }
 
 void matrix_partition_along_y_batch(dahl_matrix const* matrix, dahl_access access, size_t batch_size)
 {
+    if (*matrix->partition && (*matrix->partition)->type == MATRIX_PARTITION_ALONG_Y_BATCH)
+        goto SUBMIT;
+
     size_t const nparts = matrix_get_shape(matrix).y / batch_size;
 
     struct starpu_data_filter f =
@@ -336,12 +342,11 @@ void matrix_partition_along_y_batch(dahl_matrix const* matrix, dahl_access acces
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_matrix,
+    *matrix->partition = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, matrix->handle, matrix->origin_arena,
                                         MATRIX_PARTITION_ALONG_Y_BATCH);
-
-    _partition_submit(p);
-    *matrix->partition = p;
+SUBMIT:
+    _partition_submit(*matrix->partition);
 }
 
 void matrix_unpartition(dahl_matrix_part const* matrix)

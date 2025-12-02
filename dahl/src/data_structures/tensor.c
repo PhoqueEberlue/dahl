@@ -19,6 +19,7 @@ void* _tensor_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl
     tensor->origin_arena = arena;
     tensor->is_redux = false;
     tensor->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
+    *tensor->partition = nullptr;
 
     return tensor;
 }
@@ -318,6 +319,9 @@ dahl_partition* _tensor_get_partition(void const* tensor)
 
 void tensor_partition_along_t(dahl_tensor const* tensor, dahl_access access)
 {
+    if (*tensor->partition && (*tensor->partition)->type == TENSOR_PARTITION_ALONG_T)
+        goto SUBMIT;
+
     size_t const nparts = tensor_get_shape(tensor).t;
 
     struct starpu_data_filter f =
@@ -328,15 +332,18 @@ void tensor_partition_along_t(dahl_tensor const* tensor, dahl_access access)
 	};
 
     // Create the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_block, &f, tensor->handle,
+    *tensor->partition = _partition_init(nparts, access, &dahl_traits_block, &f, tensor->handle,
                                         tensor->origin_arena, TENSOR_PARTITION_ALONG_T);
-    _partition_submit(p);
-    *tensor->partition = p;
+SUBMIT:
+    _partition_submit(*tensor->partition);
 }
 
 void tensor_partition_along_t_batch(
         dahl_tensor const* tensor, dahl_access access, size_t batch_size)
 {
+    if (*tensor->partition && (*tensor->partition)->type == TENSOR_PARTITION_ALONG_T_BATCH)
+        goto SUBMIT;
+
     size_t const nparts = tensor_get_shape(tensor).t / batch_size;
 
     struct starpu_data_filter f =
@@ -346,12 +353,11 @@ void tensor_partition_along_t_batch(
 		.get_child_ops = starpu_tensor_filter_pick_tensor_child_ops
 	};
 
-    dahl_partition* p = _partition_init(
+    *tensor->partition = _partition_init(
             nparts, access, &dahl_traits_tensor, &f, tensor->handle, 
             tensor->origin_arena, TENSOR_PARTITION_ALONG_T_BATCH);
-
-    _partition_submit(p);
-    *tensor->partition = p;
+SUBMIT:
+    _partition_submit(*tensor->partition);
 }
 
 void tensor_unpartition(dahl_tensor_part const* tensor)

@@ -18,6 +18,7 @@ void* _block_init_from_ptr(dahl_arena* arena, starpu_data_handle_t handle, dahl_
     block->origin_arena = arena;
     block->is_redux = false;
     block->partition = (dahl_partition**)dahl_arena_alloc(arena, sizeof(dahl_partition**));
+    *block->partition = nullptr;
 
     return block;
 }
@@ -311,6 +312,9 @@ dahl_partition* _block_get_partition(void const* block)
 
 void block_partition_along_z(dahl_block const* block, dahl_access access)
 {
+    if (*block->partition && (*block->partition)->type == BLOCK_PARTITION_ALONG_Z)
+        goto SUBMIT;
+
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -321,16 +325,18 @@ void block_partition_along_z(dahl_block const* block, dahl_access access)
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_matrix,
+    *block->partition = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, block->handle, block->origin_arena, 
                                         BLOCK_PARTITION_ALONG_Z);
-
-    _partition_submit(p);
-    *block->partition = p;
+SUBMIT:
+    _partition_submit(*block->partition);
 }
 
 void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access access, bool is_row)
 {
+    if (*block->partition && (*block->partition)->type == BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES)
+        goto SUBMIT;
+
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -342,16 +348,18 @@ void block_partition_along_z_flat_matrices(dahl_block const* block, dahl_access 
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_matrix,
+    *block->partition = _partition_init(nparts, access, &dahl_traits_matrix,
                                         &f, block->handle, block->origin_arena,
                                         BLOCK_PARTITION_ALONG_Z_FLAT_MATRICES);
-
-    _partition_submit(p);
-    *block->partition = p;
+SUBMIT:
+    _partition_submit(*block->partition);
 }
 
 void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access access)
 {
+    if (*block->partition && (*block->partition)->type == BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS)
+        goto SUBMIT;
+
     size_t const nparts = block_get_shape(block).z;
 
     struct starpu_data_filter f =
@@ -362,16 +370,18 @@ void block_partition_along_z_flat_vectors(dahl_block const* block, dahl_access a
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_vector,
+    *block->partition = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, block->handle, block->origin_arena,
                                         BLOCK_PARTITION_ALONG_Z_FLAT_VECTORS);
-
-    _partition_submit(p);
-    *block->partition = p;
+SUBMIT:
+    _partition_submit(*block->partition);
 }
 
 void block_partition_flatten_to_vector(dahl_block const* block, dahl_access access)
 {
+    if (*block->partition && (*block->partition)->type == BLOCK_PARTITION_FLATTEN_TO_VECTOR)
+        goto SUBMIT;
+
     // Only one vector here because we flatten the whole block into a vector
     size_t const nparts = 1;
 
@@ -383,16 +393,18 @@ void block_partition_flatten_to_vector(dahl_block const* block, dahl_access acce
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_vector,
+    *block->partition = _partition_init(nparts, access, &dahl_traits_vector,
                                         &f, block->handle, block->origin_arena,
                                         BLOCK_PARTITION_FLATTEN_TO_VECTOR);
-
-    _partition_submit(p);
-    *block->partition = p;
+SUBMIT:
+    _partition_submit(*block->partition);
 }
 
 void block_partition_along_z_batch(dahl_block const* block, dahl_access access, size_t batch_size)
 {
+    if (*block->partition && (*block->partition)->type == BLOCK_PARTITION_ALONG_Z_BATCH)
+        goto SUBMIT;
+
     size_t const nparts = block_get_shape(block).z / batch_size;
 
     struct starpu_data_filter f =
@@ -402,12 +414,11 @@ void block_partition_along_z_batch(dahl_block const* block, dahl_access access, 
 	};
 
     // Create and set the partition
-    dahl_partition* p = _partition_init(nparts, access, &dahl_traits_block,
+    *block->partition = _partition_init(nparts, access, &dahl_traits_block,
                                         &f, block->handle, block->origin_arena,
                                         BLOCK_PARTITION_ALONG_Z_BATCH);
-
-    _partition_submit(p);
-    *block->partition = p;
+SUBMIT:
+    _partition_submit(*block->partition);
 }
 
 void block_unpartition(dahl_block_part const* block)
