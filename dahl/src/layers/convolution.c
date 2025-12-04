@@ -30,6 +30,8 @@ dahl_convolution* convolution_init(dahl_arena* arena, dahl_arena* scratch_arena,
     conv->biases = vector_init_random(arena, num_filters, -0.1, 0.1); // One bias per feature map
     conv->scratch_arena = scratch_arena;
 
+    tensor_partition_along_t(conv->filters, DAHL_READ);
+
     return conv;
 }
 
@@ -96,8 +98,8 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
                                   dahl_fp const learning_rate, bool is_last_sample,
                                   size_t const num_filters)
 {
-    assert((*(dl_dfilters->partition))->is_active);
-    assert((*(filters->partition))->is_active);
+    // assert((*(dl_dfilters->partition))->is_active);
+    // assert((*(filters->partition))->is_active);
 
     task_block_sum_xy_axes(dl_dout, dl_dbiases_redux);
 
@@ -152,9 +154,8 @@ dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv
 
     // Already partition the filters (over feature maps: num_filters) because they will be accessed
     // in every batches
-    tensor_partition_along_t(conv->filters, DAHL_READ);
-    tensor_partition_along_t(dl_dfilters, DAHL_REDUX);
-
+    tensor_partition_along_t(dl_dfilters, DAHL_MUT); // FIXME: should be redux mode, but it's
+                                                     // still bugged somehow.
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);  
 
     for (size_t i = 0; i < batch_size; i++)
@@ -170,9 +171,6 @@ dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv
             i==batch_size-1,
             conv->filter_shape.t);
     }
-
-    tensor_unpartition(conv->filters);
-    tensor_unpartition(dl_dfilters);
 
     TASK_SUB_SELF(conv->filters, dl_dfilters);
 

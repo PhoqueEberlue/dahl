@@ -17,7 +17,7 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
     tensor_partition_along_t_batch(dataset->train_images, DAHL_READ, batch_size);
     matrix_partition_along_y_batch(dataset->train_labels, DAHL_READ, batch_size);
 
-    num_samples = 600; // Only use first 1k samples for now
+    num_samples = 1000; // Only use first 1k samples for now
     size_t const n_batches_per_epoch = num_samples / batch_size; // Number of batch we want to do per epoch, not to be confused with batch size
 
     // Store accuracy and loss here
@@ -37,6 +37,7 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_matrix const* target_batch = GET_SUB_MATRIX(dataset->train_labels, i);
 
             tensor_partition_along_t(image_batch, DAHL_READ);
+            matrix_partition_along_y(target_batch, DAHL_READ);
 
             dahl_tensor_part* conv_out_p = convolution_forward(batch_arena, conv, image_batch);
             relu_forward(relu, conv_out_p);
@@ -44,17 +45,23 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
             dahl_tensor_part* pool_out = pooling_forward(batch_arena, pool, conv_out_p);
             dahl_matrix_part* pool_out_flattened = tensor_flatten_along_t_no_copy_partition(pool_out);
 
-            dahl_matrix_part* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); // Returns the predictions for each batch 
-            // dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
-            // TASK_ADD_SELF(total_loss, loss);
+             // Returns the predictions for each batch 
+            dahl_matrix_part* dense_out = dense_forward(batch_arena, dense, pool_out_flattened); 
 
-            // dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
-            // TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
-
-            matrix_partition_along_y(target_batch, DAHL_READ);
+            // We compute the gradients before loss/correct_pred so that we don't block next layers
             dahl_matrix_part* gradient_batch = task_cross_entropy_loss_gradient_batch_init(batch_arena, dense_out, target_batch); 
+
+            // Then unpartition dense and targets cause we need the whole batch to compute loss and
+            // predictions.
+            matrix_unpartition(dense_out);
             matrix_unpartition(target_batch);
 
+            dahl_scalar* loss = task_cross_entropy_loss_batch_init(batch_arena, dense_out, target_batch);
+            TASK_ADD_SELF(total_loss, loss);
+            dahl_scalar* correct_predictions_batch = task_check_predictions_batch_init(batch_arena, dense_out, target_batch);
+            TASK_ADD_SELF(correct_predictions, correct_predictions_batch);
+
+            // Reuse gradient results obtained before, previous tasks won't be blocking
             dahl_matrix_part* dense_back = dense_backward(batch_arena, dense, gradient_batch, pool_out_flattened, LEARNING_RATE);
 
             dahl_tensor_part* dense_back_unflattened = matrix_to_tensor_no_copy_partition(dense_back, pool->output_shape);
@@ -63,13 +70,12 @@ void train_network(dahl_arena* scratch_arena, dahl_arena* network_arena, dahl_da
 
             dahl_tensor_part* conv_back = convolution_backward(batch_arena, conv, pool_back, LEARNING_RATE, image_batch);
 
-            // tensor_unpartition(image_batch);
-
-            // Reset the previous arena
+            // Reset the previous arena, along with previous image_batch that is implicitly
+            // unpartitioned.
             dahl_arena_reset(batch_arenas[(i+1)%2]);
             // dahl_arena_reset(scratch_arena);
         }
-        dahl_shutdown();exit(0);
+        // dahl_shutdown();exit(0);
         
         dahl_fp epoch_accuracy = scalar_get_value(correct_predictions) / (dahl_fp)num_samples;
         // the loss already gets divided by batch size so here we divide only by number of batches
@@ -104,15 +110,15 @@ int main(int argc, char **argv)
     // So we put the dataset and the layers containing the trainable parameters (weights & biases).
     dahl_arena* network_arena = dahl_arena_new();
 
-    // dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
+    dahl_dataset* dataset = dataset_load_fashion_mnist(network_arena, argv[1], argv[2]);
     // dahl_dataset* dataset = dataset_load_cifar_10(network_arena, argv[1]);
-    dahl_dataset* dataset = dataset_load_big_fashion(network_arena, "../datasets/big-fashion/styles.csv", "../datasets/big-fashion/images_270_360/");
-    //dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 640);
+    // dahl_dataset* dataset = dataset_load_big_fashion(network_arena, "../datasets/big-fashion/styles.csv", "../datasets/big-fashion/images_270_360/");
+    // dahl_dataset* dataset = dataset_load_factice(network_arena, (dahl_shape3d){ .x = 512, .y = 512, .z = 3 }, 1000);
 
     dahl_shape4d images_shape = tensor_get_shape(dataset->train_images);
 
     // FIXME: support batch size that do not divide the dataset size
-    size_t const batch_size = 60;
+    size_t const batch_size = 10;
     size_t const num_samples = images_shape.t;
     size_t const num_channels = images_shape.z;
     size_t const num_filters = 4;
@@ -140,8 +146,9 @@ int main(int argc, char **argv)
 
     train_network(scratch_arena, network_arena, dataset, conv, relu, pool, dense, batch_size, num_samples);
 
-    dahl_arena_delete(network_arena);
-    dahl_arena_delete(scratch_arena);
+    // FIXME: I simply can't unpartition because some of the objects are still partitioned
+    // dahl_arena_delete(network_arena);
+    // dahl_arena_delete(scratch_arena);
 
     dahl_shutdown();
     return 0;

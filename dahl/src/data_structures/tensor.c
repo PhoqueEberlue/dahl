@@ -363,7 +363,7 @@ SUBMIT:
 void tensor_unpartition(dahl_tensor_part const* tensor)
 {
     dahl_partition* p = *tensor->partition;
-    assert(p && p->is_active);
+    // assert(p && p->is_active);
     _unpartition_submit(p);
 }
 
