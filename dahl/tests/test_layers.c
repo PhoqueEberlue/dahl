@@ -247,8 +247,8 @@ void test_flow()
         ASSERT_MATRIX_EQUALS_ROUND(expect_dense_forward_batch[i], dense_forward_out, 13);
 
         // Backward pass
-        // dahl_scalar* loss = task_cross_entropy_loss_batch_init(testing_arena, dense_forward_out, target_batches[i]);
-        // ASSERT_FP_EQUALS_ROUND(expect_dense_loss[i], scalar_get_value(loss), 14);
+        dahl_scalar* loss = task_cross_entropy_loss_batch_init(testing_arena, dense_forward_out, target_batches[i]);
+        ASSERT_FP_EQUALS_ROUND(expect_dense_loss[i], scalar_get_value(loss), 14);
 
         dahl_matrix_part* gradient_batch = task_cross_entropy_loss_gradient_batch_init(testing_arena, dense_forward_out, target_batches[i]);
         ASSERT_MATRIX_EQUALS_ROUND(expect_dense_gradient_batch[i], gradient_batch, 14);

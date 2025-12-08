@@ -93,7 +93,7 @@ dahl_tensor_part* convolution_forward(dahl_arena* arena, dahl_convolution* conv,
 }
 
 void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* input, 
-                                  dahl_block* dl_dinput_redux, dahl_tensor_part* dl_dfilters,
+                                  dahl_block* dl_dinput_redux, dahl_tensor* dl_dfilters,
                                   dahl_tensor_part const* filters, dahl_vector* dl_dbiases_redux,
                                   dahl_fp const learning_rate, bool is_last_sample,
                                   size_t const num_filters)
@@ -104,8 +104,8 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
     task_block_sum_xy_axes(dl_dout, dl_dbiases_redux);
 
     // Partition by channel dimension
-    block_partition_along_z(input, DAHL_READ);
     block_partition_along_z(dl_dout, DAHL_READ);
+    tensor_partition_along_t(dl_dfilters, DAHL_MUT);
     
     for (size_t f = 0; f < num_filters; f++)
     {
@@ -116,7 +116,7 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
         // Only scale on the last sample: (dl_df1 + df_df2...) * lr = dl_df1 * lr + dl_df2 * lr...
         // but dl_dfx results are aggregated from multiple samples for each filter, that's why we
         // only call for the last one.
-        if (is_last_sample) { TASK_SCAL_SELF(dl_df_redux, learning_rate); }
+        // if (is_last_sample) { TASK_SCAL_SELF(dl_df_redux, learning_rate); }
 
         // This computation is only required when the conv layer is not the first one in the network
         // TODO: See why redux for this task produces weird scheduling
@@ -124,8 +124,8 @@ void _convolution_backward_sample(dahl_block const* dl_dout, dahl_block const* i
         // task_convolution_2d_backward_input_padding_free(dl_dout_filter, filter, dl_dinput_redux);
     }
 
-    block_unpartition(input);
     block_unpartition(dl_dout);
+    tensor_unpartition(dl_dfilters);
 }
 
 // TODO: We should add a parameter that controls wether the output should be computed or not: if the
@@ -143,7 +143,7 @@ dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv
     dahl_vector* dl_dbiases_redux = vector_init_redux(arena, 
             vector_get_len(conv->biases));
 
-    dahl_tensor* dl_dfilters = tensor_init(arena, conv->filter_shape);
+    dahl_tensor* dl_dfilters = tensor_init_redux(arena, conv->filter_shape);
 
     // Initialize the result buffer, which is the derivative of the input we got from the forward 
     // pass, and partition along batch dimension
@@ -154,22 +154,37 @@ dahl_tensor_part* convolution_backward(dahl_arena* arena, dahl_convolution* conv
 
     // Already partition the filters (over feature maps: num_filters) because they will be accessed
     // in every batches
-    tensor_partition_along_t(dl_dfilters, DAHL_MUT); // FIXME: should be redux mode, but it's
-                                                     // still bugged somehow.
+    // tensor_partition_along_t(dl_dfilters, DAHL_REDUX); // FIXME: redux causes problems here
+
     size_t const batch_size = GET_NB_CHILDREN(dl_dout_batch);  
+
+    dahl_tensor* dl_dfilters_arr[batch_size];
 
     for (size_t i = 0; i < batch_size; i++)
     {
+        dl_dfilters_arr[i] = tensor_init(arena, conv->filter_shape);
+
         _convolution_backward_sample(
             GET_SUB_BLOCK(dl_dout_batch, i),
             GET_SUB_BLOCK(input_batch, i),
             GET_SUB_BLOCK_MUT(dl_dinput_batch, i),
-            dl_dfilters,
+            dl_dfilters_arr[i],
             conv->filters,
             dl_dbiases_redux,
             learning_rate,
             i==batch_size-1,
             conv->filter_shape.t);
+    }
+
+    // Temporary workaround cause using redux on children is somewhat bugged.
+    // When this works we may reactivate the dl_dfilters partition, delete the array and remove
+    // init_redux on dl_dfilters, and re enable scal self inside the sample function.
+    assert(batch_size%2 == 0);
+    for (size_t i = 0; i < batch_size; i+=2)
+    {
+        TASK_SCAL_SELF(dl_dfilters_arr[i], learning_rate);
+        TASK_SCAL_SELF(dl_dfilters_arr[i+1], learning_rate);
+        TASK_ADD(dl_dfilters_arr[i], dl_dfilters_arr[i+1], dl_dfilters);
     }
 
     TASK_SUB_SELF(conv->filters, dl_dfilters);
